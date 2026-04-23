@@ -9,7 +9,14 @@ IntentName = Literal[
     "sensor_query",
     "general_chat",
 ]
-ResponseSource = Literal["ollama", "fallback", "placeholder"]
+ResponseSource = Literal[
+    "ollama",
+    "fallback",
+    "placeholder",
+    "device_control",
+    "sensor",
+    "weather_api",
+]
 
 
 class ChatRequest(BaseModel):

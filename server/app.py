@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from server.config import get_settings
 from server.routes.chat import router as chat_router
+from server.routes.esp32 import router as esp32_router
 from server.routes.health import router as health_router
 
 
@@ -15,6 +16,7 @@ def create_app() -> FastAPI:
         debug=settings.debug,
     )
     app.include_router(chat_router)
+    app.include_router(esp32_router)
     app.include_router(health_router)
 
     return app
