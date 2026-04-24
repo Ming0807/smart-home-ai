@@ -1,0 +1,43 @@
+from datetime import datetime
+
+from pydantic import BaseModel
+
+from server.models.esp32 import RelayCommand
+
+
+class SensorSnapshot(BaseModel):
+    device_id: str
+    temperature: float | None = None
+    humidity: float | None = None
+    timestamp: datetime | None = None
+    received_at: datetime | None = None
+    is_fresh: bool = False
+
+
+class DeviceSnapshot(BaseModel):
+    device_id: str
+    online: bool = False
+    last_seen_at: datetime | None = None
+    pending_command_count: int = 0
+    latest_command: RelayCommand | None = None
+
+
+class VoiceSnapshot(BaseModel):
+    tts_enabled: bool
+    demo_voice_mode: bool
+    provider: str
+    default_voice: str
+    output_file: str
+
+
+class AppSnapshot(BaseModel):
+    demo_mode: bool
+    debug_logs: bool
+    max_chat_history_items: int
+
+
+class DashboardStatusResponse(BaseModel):
+    sensor: SensorSnapshot
+    device: DeviceSnapshot
+    voice: VoiceSnapshot
+    app: AppSnapshot

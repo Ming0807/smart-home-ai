@@ -7,6 +7,7 @@ IntentName = Literal[
     "weather_query",
     "traffic_query",
     "sensor_query",
+    "system_status",
     "general_chat",
 ]
 ResponseSource = Literal[
@@ -15,6 +16,7 @@ ResponseSource = Literal[
     "placeholder",
     "device_control",
     "sensor",
+    "system_status",
     "weather_api",
 ]
 
@@ -35,3 +37,4 @@ class ChatResponse(BaseModel):
     reply: str
     intent: IntentName
     source: ResponseSource
+    audio_url: str | None = None

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -11,6 +12,18 @@ class HealthResponse(BaseModel):
 
 
 class ReadyResponse(BaseModel):
-    status: Literal["ready"] = Field(default="ready")
+    status: Literal["ready", "degraded"] = Field(default="ready")
     service: str
-    checks: dict[str, Literal["ok"]]
+    checks: dict[str, Literal["ok", "degraded"]]
+
+
+class LLMHealthResponse(BaseModel):
+    status: Literal["ok", "degraded"] = Field(default="ok")
+    available: bool
+    model_present: bool
+    warmed_up: bool
+    checked_at: datetime | None = None
+    source: Literal["live", "cache"]
+    model: str
+    last_error: str | None = None
+    latency_ms: float | None = None

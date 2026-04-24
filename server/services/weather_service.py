@@ -10,6 +10,7 @@ import requests
 from requests.exceptions import RequestException, Timeout
 
 from server.config import Settings, get_settings
+from server.utils.observability import log_timing, start_timer
 
 logger = logging.getLogger(__name__)
 
@@ -75,12 +76,20 @@ class WeatherService:
         cache_key = self._cache_key(location)
         cached_weather = self._get_cached(cache_key)
         if cached_weather is not None:
+            log_timing(
+                logger,
+                self._settings,
+                "weather.cache",
+                0.0,
+                location=cache_key,
+            )
             return cached_weather
 
         if not self._settings.openweather_api_key:
             logger.warning("OPENWEATHER_API_KEY is not configured")
             return None
 
+        timer = start_timer()
         try:
             current_payload = self._get_current_weather(location)
             rain_chance = self._get_rain_chance(location)
@@ -96,6 +105,13 @@ class WeatherService:
             return None
 
         self._set_cached(cache_key, weather_data)
+        log_timing(
+            logger,
+            self._settings,
+            "weather.fetch",
+            timer.elapsed_ms,
+            location=cache_key,
+        )
         return weather_data
 
     def _get_current_weather(self, location: str) -> dict[str, Any]:

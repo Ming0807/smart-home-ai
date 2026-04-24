@@ -62,6 +62,19 @@ class IntentRouter:
 
 DEFAULT_RULES: tuple[KeywordRule, ...] = (
     KeywordRule(
+        intent="system_status",
+        keywords=(
+            "เชื่อมต่อ",
+            "เชื่อต่อ",
+            "ออนไลน์",
+            "online",
+            "iot",
+            "esp32",
+            "บอร์ด",
+            "ตรวจสอบระบบ",
+        ),
+    ),
+    KeywordRule(
         intent="device_control",
         keywords=(
             "เปิดไฟ",
@@ -96,7 +109,7 @@ DEFAULT_RULES: tuple[KeywordRule, ...] = (
         keywords=(
             "ฝน",
             "อากาศ",
-            "ข้างนอกร้อน",
+            "ข้างนอกร้อนไหม",
             "ข้างนอกเย็น",
             "ข้างนอกหนาว",
             "ข้างนอกเป็นยังไง",

@@ -1,13 +1,18 @@
 # Environments
 venv/
+.venv/
 env/
 .env
+.phase*_deps/
 
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+
+# Generated media
+static/*.mp3
 
 # Node
 node_modules/

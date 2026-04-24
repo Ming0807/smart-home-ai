@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Smart Home Dashboard</title>
+    <link rel="stylesheet" href="/webui/style.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">AI Smart Home Thai Assistant</p>
+          <h1>Dashboard ทดสอบระบบ</h1>
+          <p class="hero-copy">
+            ใช้สำหรับเดโม chat, sensor, relay, weather และ Thai TTS จากหน้าเดียว
+          </p>
+        </div>
+        <div class="hero-actions">
+          <a class="link-button" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+          <button id="refresh-all-button" class="secondary-button" type="button">รีเฟรชทั้งหมด</button>
+        </div>
+      </header>
+
+      <main class="dashboard-grid">
+        <section class="panel panel-chat">
+          <div class="panel-header">
+            <div>
+              <p class="panel-title">Chat Panel</p>
+              <p class="panel-subtitle">ทดสอบ intent routing, sensor, weather, device control และ LLM</p>
+            </div>
+            <span id="chat-status" class="status-pill neutral">พร้อมใช้งาน</span>
+          </div>
+
+          <div class="quick-actions" id="quick-actions">
+            <button type="button" data-message="สวัสดี">สวัสดี</button>
+            <button type="button" data-message="ห้องร้อนไหม">ห้องร้อนไหม</button>
+            <button type="button" data-message="เปิดไฟ">เปิดไฟ</button>
+            <button type="button" data-message="ปิดไฟ">ปิดไฟ</button>
+            <button type="button" data-message="ข้างนอกร้อนไหม">ข้างนอกร้อนไหม</button>
+            <button type="button" data-message="ฝนจะตกไหม">ฝนจะตกไหม</button>
+          </div>
+
+          <div id="chat-history" class="chat-history" aria-live="polite"></div>
+
+          <form id="chat-form" class="chat-form">
+            <label class="sr-only" for="chat-input">ข้อความ</label>
+            <textarea
+              id="chat-input"
+              rows="3"
+              placeholder="พิมพ์ข้อความ เช่น วันนี้ยะลาอากาศยังไง"
+            ></textarea>
+            <div class="chat-form-actions">
+              <span id="chat-loading" class="loading-text" hidden>AI กำลังตอบ...</span>
+              <button id="chat-send-button" type="submit">ส่งข้อความ</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-title">Sensor Panel</p>
+              <p class="panel-subtitle">ดูข้อมูล DHT22 ล่าสุดจาก ESP32</p>
+            </div>
+            <button id="sensor-refresh-button" class="secondary-button" type="button">รีเฟรช</button>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span class="metric-label">อุณหภูมิ</span>
+              <strong id="sensor-temperature" class="metric-value">-</strong>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">ความชื้น</span>
+              <strong id="sensor-humidity" class="metric-value">-</strong>
+            </article>
+          </div>
+
+          <dl class="detail-list">
+            <div>
+              <dt>สถานะข้อมูล</dt>
+              <dd id="sensor-freshness">ยังไม่มีข้อมูล</dd>
+            </div>
+            <div>
+              <dt>อัปเดตล่าสุด</dt>
+              <dd id="sensor-updated">-</dd>
+            </div>
+            <div>
+              <dt>Device ID</dt>
+              <dd id="sensor-device-id">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-title">Device Control Panel</p>
+              <p class="panel-subtitle">ทดสอบ queue คำสั่ง relay ผ่าน flow เดิมของ chat</p>
+            </div>
+            <span id="device-online-indicator" class="status-pill neutral">ไม่ทราบสถานะ</span>
+          </div>
+
+          <div class="action-row">
+            <button id="relay-on-button" type="button">เปิด Relay</button>
+            <button id="relay-off-button" class="secondary-button" type="button">ปิด Relay</button>
+          </div>
+
+          <dl class="detail-list">
+            <div>
+              <dt>คำสั่งล่าสุด</dt>
+              <dd id="device-latest-command">-</dd>
+            </div>
+            <div>
+              <dt>คิวคำสั่งคงเหลือ</dt>
+              <dd id="device-pending-count">0</dd>
+            </div>
+            <div>
+              <dt>Heartbeat ล่าสุด</dt>
+              <dd id="device-last-seen">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-title">Voice / TTS Panel</p>
+              <p class="panel-subtitle">ทดลองสร้างเสียงไทยและตรวจโหมด demo voice</p>
+            </div>
+            <span id="voice-mode-indicator" class="status-pill neutral">กำลังโหลด</span>
+          </div>
+
+          <form id="tts-form" class="stack-form">
+            <label for="tts-input">ข้อความสำหรับสร้างเสียง</label>
+            <textarea id="tts-input" rows="3">สวัสดี วันนี้อากาศร้อนนะ</textarea>
+            <div class="action-row">
+              <button id="tts-submit-button" type="submit">สร้างเสียง</button>
+              <span id="tts-status-text" class="loading-text"></span>
+            </div>
+          </form>
+
+          <audio id="tts-audio-player" controls preload="metadata"></audio>
+          <p id="voice-debug-status" class="debug-text">กำลังอ่านสถานะเสียง...</p>
+
+          <dl class="detail-list">
+            <div>
+              <dt>Provider</dt>
+              <dd id="voice-provider">-</dd>
+            </div>
+            <div>
+              <dt>Voice</dt>
+              <dd id="voice-name">-</dd>
+            </div>
+            <div>
+              <dt>Output file</dt>
+              <dd id="voice-output-file">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel panel-weather">
+          <div class="panel-header">
+            <div>
+              <p class="panel-title">Weather Panel</p>
+              <p class="panel-subtitle">ถามอากาศผ่าน chat endpoint ตาม architecture ปัจจุบัน</p>
+            </div>
+          </div>
+
+          <form id="weather-form" class="inline-form">
+            <label class="sr-only" for="weather-location">สถานที่</label>
+            <input id="weather-location" type="text" placeholder="เช่น ยะลา" />
+            <button id="weather-submit-button" type="submit">ถามอากาศ</button>
+          </form>
+
+          <div id="weather-result" class="result-box muted">
+            ยังไม่ได้ถามอากาศ
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/webui/app.js"></script>
+  </body>
+</html>
