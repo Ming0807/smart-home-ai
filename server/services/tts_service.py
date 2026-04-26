@@ -49,33 +49,34 @@ class TTSService:
         self._output_dir = resolve_project_path(settings.tts_output_dir)
         self._synthesis_lock = Lock()
         self._current_token: str | None = None
+        self._pending_token: str | None = None
         self._last_generated_at: datetime | None = None
         self._last_error: str | None = None
 
     def synthesize(self, text: str, token: str | None = None) -> TTSResult:
         cleaned_text = text.strip()
         timer = start_timer()
+        active_token = token or self._create_token()
         if not self._settings.tts_enabled:
-            self._last_error = "tts disabled"
+            self._mark_failed_token(active_token, "tts disabled")
             return TTSResult(
                 ok=False,
                 text=cleaned_text,
                 error="tts disabled",
-                token=token,
+                token=active_token,
             )
         if not cleaned_text:
-            self._last_error = "empty text"
+            self._mark_failed_token(active_token, "empty text")
             return TTSResult(
                 ok=False,
                 text=cleaned_text,
                 error="empty text",
-                token=token,
+                token=active_token,
             )
 
         provider = self._settings.tts_provider.strip().lower()
-        active_token = token or self._create_token()
         if provider != "edge_tts":
-            self._last_error = f"unsupported tts provider: {provider}"
+            self._mark_failed_token(active_token, f"unsupported tts provider: {provider}")
             return TTSResult(
                 ok=False,
                 text=cleaned_text,
@@ -83,7 +84,7 @@ class TTSService:
                 token=active_token,
             )
         if edge_tts is None:
-            self._last_error = "edge-tts is not installed"
+            self._mark_failed_token(active_token, "edge-tts is not installed")
             return TTSResult(
                 ok=False,
                 text=cleaned_text,
@@ -97,6 +98,7 @@ class TTSService:
                 self._output_dir.mkdir(parents=True, exist_ok=True)
                 output_path = self._write_audio_file(cleaned_text, output_path)
                 self._current_token = active_token
+                self._pending_token = active_token
                 self._last_generated_at = self._now()
                 self._last_error = None
                 if self._settings.tts_overwrite_output:
@@ -105,7 +107,7 @@ class TTSService:
                     self._cleanup_old_files()
         except Exception as exc:  # pragma: no cover - runtime/network dependent
             logger.warning("TTS generation failed: %s", exc.__class__.__name__)
-            self._last_error = str(exc)
+            self._mark_failed_token(active_token, str(exc))
             return TTSResult(
                 ok=False,
                 text=cleaned_text,
@@ -142,6 +144,7 @@ class TTSService:
 
     def create_pending_audio_url(self) -> tuple[str, str]:
         token = self._create_token()
+        self._pending_token = token
         return token, self.get_audio_url(token=token)
 
     def get_current_audio_bytes(self, token: str | None = None) -> bytes | None:
@@ -157,12 +160,13 @@ class TTSService:
         return audio_bytes
 
     def get_status(self) -> TTSStatus:
-        audio_bytes = self.get_current_audio_bytes()
+        visible_token = self._pending_token or self._current_token
+        audio_bytes = self.get_current_audio_bytes(token=visible_token)
         return TTSStatus(
             tts_enabled=self._settings.tts_enabled,
             provider=self._settings.tts_provider,
             output_file=self._build_filename(""),
-            current_token=self._current_token,
+            current_token=visible_token,
             audio_ready=audio_bytes is not None,
             file_size_bytes=len(audio_bytes) if audio_bytes is not None else 0,
             last_generated_at=self._last_generated_at,
@@ -248,6 +252,11 @@ class TTSService:
     @staticmethod
     def _create_token() -> str:
         return uuid4().hex
+
+    def _mark_failed_token(self, token: str, error: str) -> None:
+        self._last_error = error
+        if self._pending_token == token:
+            self._pending_token = self._current_token
 
     @staticmethod
     def _now() -> datetime:

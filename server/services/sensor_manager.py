@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from threading import Lock
 
 from server.config import get_settings
 from server.models.esp32 import SensorReading, SensorRequest
+from server.services.motion_manager import MotionManager, get_motion_manager
 
 
 @dataclass(frozen=True)
@@ -13,11 +16,12 @@ class SensorAnswer:
 
 
 class SensorManager:
-    """Store and explain the latest ESP32 DHT22 reading."""
+    """Store and explain the latest ESP32 sensor readings."""
 
-    def __init__(self) -> None:
+    def __init__(self, motion_manager: MotionManager | None = None) -> None:
         self._lock = Lock()
         self._latest_readings: dict[str, SensorReading] = {}
+        self._motion_manager = motion_manager or get_motion_manager()
 
     def record_reading(self, request: SensorRequest) -> None:
         with self._lock:
@@ -39,20 +43,30 @@ class SensorManager:
         device_id: str,
         freshness_seconds: int,
     ) -> SensorAnswer:
+        if self._is_motion_query(message):
+            motion_answer = self._motion_manager.answer_motion_query(device_id)
+            return SensorAnswer(reply=motion_answer.reply, source=motion_answer.source)
+
         reading = self.get_latest_reading(device_id)
         if reading is None:
             return SensorAnswer(
-                reply="ตอนนี้ยังไม่มีข้อมูลจากเซนเซอร์ DHT22 ล่าสุด ลองให้ ESP32 ส่งค่ามาก่อนนะ",
+                reply=(
+                    "ตอนนี้ยังไม่มีข้อมูลจากเซนเซอร์ DHT22 ล่าสุด "
+                    "ลองให้ ESP32 ส่งค่ามาก่อนนะ"
+                ),
                 source="fallback",
             )
         if not self.is_fresh(reading, freshness_seconds):
             return SensorAnswer(
-                reply="ข้อมูลเซนเซอร์ล่าสุดเก่าไปนิดนึง รอ ESP32 ส่งค่าใหม่แล้วถามอีกครั้งได้ไหม",
+                reply=(
+                    "ข้อมูลเซนเซอร์ล่าสุดเก่าไปนิดนึง "
+                    "รอ ESP32 ส่งค่าใหม่แล้วถามอีกครั้งได้ไหม"
+                ),
                 source="fallback",
             )
 
         return SensorAnswer(
-            reply=self._build_reply(message, reading),
+            reply=self._build_environment_reply(message, reading),
             source="sensor",
         )
 
@@ -68,24 +82,36 @@ class SensorManager:
         return age_seconds <= max_age_seconds
 
     @staticmethod
-    def _build_reply(message: str, reading: SensorReading) -> str:
+    def _build_environment_reply(message: str, reading: SensorReading) -> str:
         temperature = round(reading.temperature)
         humidity = round(reading.humidity)
         normalized_message = _normalize(message)
 
         if "ความชื้น" in normalized_message:
-            return f"ตอนนี้ความชื้นประมาณ {humidity}% {SensorManager._humidity_summary(humidity)}"
-        if "กี่องศา" in normalized_message or "อุณหภูมิ" in normalized_message:
             return (
-                f"ตอนนี้ประมาณ {temperature} องศา "
-                f"{SensorManager._temperature_summary(temperature)} "
-                f"ความชื้นราว {humidity}%"
+                f"ตอนนี้ความชื้นประมาณ {humidity}% "
+                f"{SensorManager._humidity_summary(humidity)}"
             )
+
         return (
             f"ตอนนี้ประมาณ {temperature} องศา "
             f"{SensorManager._temperature_summary(temperature)} "
             f"ความชื้นราว {humidity}%"
         )
+
+    @staticmethod
+    def _is_motion_query(message: str) -> bool:
+        normalized_message = _normalize(message)
+        motion_keywords = (
+            "มีคนอยู่ไหม",
+            "มีคนเดินผ่านไหม",
+            "ตรวจเจอคนไหม",
+            "มีการเคลื่อนไหวไหม",
+            "motion ล่าสุดเมื่อไหร่",
+            "motion ล่าสุด",
+            "motion",
+        )
+        return any(_normalize(keyword) in normalized_message for keyword in motion_keywords)
 
     @staticmethod
     def _temperature_summary(temperature: int) -> str:

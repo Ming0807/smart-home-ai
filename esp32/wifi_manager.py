@@ -11,6 +11,11 @@ def connect_wifi(timeout_seconds=20):
     if wlan.isconnected():
         return wlan
 
+    try:
+        wlan.disconnect()
+    except OSError:
+        pass
+
     print("Connecting to Wi-Fi...")
     wlan.connect(WIFI_SSID, WIFI_PASSWORD)
 

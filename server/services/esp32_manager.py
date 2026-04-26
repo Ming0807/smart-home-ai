@@ -6,6 +6,7 @@ from threading import Lock
 from server.config import get_settings
 from server.models.esp32 import (
     DeviceHeartbeat,
+    DeviceStatusResponse,
     HeartbeatRequest,
     RelayAction,
     RelayCommand,
@@ -65,6 +66,35 @@ class Esp32Manager:
     def get_latest_heartbeat(self, device_id: str) -> DeviceHeartbeat | None:
         with self._lock:
             return self._heartbeats.get(device_id)
+
+    def get_device_status(
+        self,
+        device_id: str,
+        offline_timeout_seconds: int,
+    ) -> DeviceStatusResponse:
+        heartbeat = self.get_latest_heartbeat(device_id)
+        if heartbeat is None:
+            return DeviceStatusResponse(
+                device_id=device_id,
+                online=False,
+                last_seen_at=None,
+                seconds_since_heartbeat=None,
+                pending_command_count=self.get_pending_command_count(device_id),
+                latest_command=self.get_latest_command(device_id),
+            )
+
+        seconds_since_heartbeat = max(
+            0,
+            int(round((self._now() - heartbeat.last_seen_at).total_seconds())),
+        )
+        return DeviceStatusResponse(
+            device_id=device_id,
+            online=seconds_since_heartbeat <= offline_timeout_seconds,
+            last_seen_at=heartbeat.last_seen_at,
+            seconds_since_heartbeat=seconds_since_heartbeat,
+            pending_command_count=self.get_pending_command_count(device_id),
+            latest_command=self.get_latest_command(device_id),
+        )
 
     def get_latest_command(self, device_id: str) -> RelayCommand | None:
         with self._lock:

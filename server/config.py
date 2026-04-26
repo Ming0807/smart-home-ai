@@ -25,11 +25,31 @@ class Settings(BaseModel):
     llm_response_cache_ttl_seconds: int = Field(default=120)
     system_prompt_path: str = Field(default="prompts/system_prompt.txt")
     default_esp32_device_id: str = Field(default="esp32-01")
+    esp32_offline_timeout_seconds: int = Field(default=60)
     sensor_freshness_seconds: int = Field(default=300)
     openweather_api_key: str = Field(default="")
     default_weather_location: str = Field(default="Yala,TH")
     weather_timeout_seconds: float = Field(default=5.0)
     weather_cache_ttl_seconds: int = Field(default=600)
+    currents_api_key: str = Field(default="")
+    news_provider: str = Field(default="currents")
+    news_default_language: str = Field(default="th")
+    news_default_country: str = Field(default="TH")
+    news_cache_ttl_seconds: int = Field(default=600)
+    news_timeout_seconds: float = Field(default=5.0)
+    news_max_items: int = Field(default=5)
+    nav_provider: str = Field(default="openrouteservice")
+    openrouteservice_api_key: str = Field(default="")
+    nav_default_origin: str = Field(default="Yala")
+    nav_timeout_seconds: float = Field(default=5.0)
+    nav_cache_ttl_seconds: int = Field(default=600)
+    nav_default_language: str = Field(default="th")
+    traffic_provider: str = Field(default="tomtom")
+    tomtom_api_key: str = Field(default="")
+    traffic_timeout_seconds: float = Field(default=5.0)
+    traffic_cache_ttl_seconds: int = Field(default=300)
+    traffic_default_location: str = Field(default="Yala")
+    traffic_flow_zoom: int = Field(default=10)
     tts_enabled: bool = Field(default=True)
     demo_voice_mode: bool = Field(default=True)
     tts_provider: str = Field(default="edge_tts")
@@ -124,11 +144,31 @@ def get_settings() -> Settings:
         llm_response_cache_ttl_seconds=_get_int_env("LLM_RESPONSE_CACHE_TTL_SECONDS", 120),
         system_prompt_path=getenv("SYSTEM_PROMPT_PATH", "prompts/system_prompt.txt"),
         default_esp32_device_id=getenv("DEFAULT_ESP32_DEVICE_ID", "esp32-01"),
+        esp32_offline_timeout_seconds=_get_int_env("ESP32_OFFLINE_TIMEOUT_SECONDS", 60),
         sensor_freshness_seconds=_get_int_env("SENSOR_FRESHNESS_SECONDS", 300),
         openweather_api_key=getenv("OPENWEATHER_API_KEY", ""),
         default_weather_location=getenv("DEFAULT_WEATHER_LOCATION", "Yala,TH"),
         weather_timeout_seconds=_get_float_env("WEATHER_TIMEOUT_SECONDS", 5.0),
         weather_cache_ttl_seconds=_get_int_env("WEATHER_CACHE_TTL_SECONDS", 600),
+        currents_api_key=getenv("CURRENTS_API_KEY", ""),
+        news_provider=getenv("NEWS_PROVIDER", "currents"),
+        news_default_language=getenv("NEWS_DEFAULT_LANGUAGE", "th"),
+        news_default_country=getenv("NEWS_DEFAULT_COUNTRY", "TH"),
+        news_cache_ttl_seconds=_get_int_env("NEWS_CACHE_TTL_SECONDS", 600),
+        news_timeout_seconds=_get_float_env("NEWS_TIMEOUT_SECONDS", 5.0),
+        news_max_items=_get_int_env("NEWS_MAX_ITEMS", 5),
+        nav_provider=getenv("NAV_PROVIDER", "openrouteservice"),
+        openrouteservice_api_key=getenv("OPENROUTESERVICE_API_KEY", ""),
+        nav_default_origin=getenv("NAV_DEFAULT_ORIGIN", "Yala"),
+        nav_timeout_seconds=_get_float_env("NAV_TIMEOUT_SECONDS", 5.0),
+        nav_cache_ttl_seconds=_get_int_env("NAV_CACHE_TTL_SECONDS", 600),
+        nav_default_language=getenv("NAV_DEFAULT_LANGUAGE", "th"),
+        traffic_provider=getenv("TRAFFIC_PROVIDER", "tomtom"),
+        tomtom_api_key=getenv("TOMTOM_API_KEY", ""),
+        traffic_timeout_seconds=_get_float_env("TRAFFIC_TIMEOUT_SECONDS", 5.0),
+        traffic_cache_ttl_seconds=_get_int_env("TRAFFIC_CACHE_TTL_SECONDS", 300),
+        traffic_default_location=getenv("TRAFFIC_DEFAULT_LOCATION", "Yala"),
+        traffic_flow_zoom=_get_int_env("TRAFFIC_FLOW_ZOOM", 10),
         tts_enabled=_get_bool_env("TTS_ENABLED", True),
         demo_voice_mode=_get_bool_env("DEMO_VOICE_MODE", True),
         tts_provider=getenv("TTS_PROVIDER", "edge_tts"),

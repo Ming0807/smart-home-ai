@@ -10,11 +10,17 @@ from server.services.device_control import (
 )
 from server.services.intent_router import IntentRouter, get_intent_router
 from server.services.llm_manager import LLMManager, get_llm_manager
+from server.services.navigation_service import (
+    NavigationService,
+    get_navigation_service,
+)
+from server.services.news_service import NewsService, get_news_service
 from server.services.sensor_manager import SensorManager, get_sensor_manager
 from server.services.system_status_service import (
     SystemStatusService,
     get_system_status_service,
 )
+from server.services.traffic_service import TrafficService, get_traffic_service
 from server.services.tts_service import TTSService, get_tts_service
 from server.services.weather_service import WeatherService, get_weather_service
 from server.utils.observability import log_timing, start_timer
@@ -35,8 +41,11 @@ def chat(
     intent_router: IntentRouter = Depends(get_intent_router),
     llm_manager: LLMManager = Depends(get_llm_manager),
     device_control_service: DeviceControlService = Depends(get_device_control_service),
+    navigation_service: NavigationService = Depends(get_navigation_service),
+    news_service: NewsService = Depends(get_news_service),
     sensor_manager: SensorManager = Depends(get_sensor_manager),
     system_status_service: SystemStatusService = Depends(get_system_status_service),
+    traffic_service: TrafficService = Depends(get_traffic_service),
     tts_service: TTSService = Depends(get_tts_service),
     weather_service: WeatherService = Depends(get_weather_service),
 ) -> ChatResponse:
@@ -85,6 +94,51 @@ def chat(
                 ),
             )
 
+        if intent_match.intent == "news_query":
+            news_answer = news_service.answer_news_query(request.message)
+            source = news_answer.source
+            return ChatResponse(
+                reply=news_answer.reply,
+                intent="news_query",
+                source=news_answer.source,
+                audio_url=_schedule_audio_generation(
+                    settings,
+                    background_tasks,
+                    tts_service,
+                    news_answer.reply,
+                ),
+            )
+
+        if intent_match.intent == "navigation_query":
+            navigation_answer = navigation_service.answer_navigation_query(request.message)
+            source = navigation_answer.source
+            return ChatResponse(
+                reply=navigation_answer.reply,
+                intent="navigation_query",
+                source=navigation_answer.source,
+                audio_url=_schedule_audio_generation(
+                    settings,
+                    background_tasks,
+                    tts_service,
+                    navigation_answer.reply,
+                ),
+            )
+
+        if intent_match.intent == "news_detail_query":
+            news_detail_answer = news_service.answer_news_detail_query(request.message)
+            source = news_detail_answer.source
+            return ChatResponse(
+                reply=news_detail_answer.reply,
+                intent="news_detail_query",
+                source=news_detail_answer.source,
+                audio_url=_schedule_audio_generation(
+                    settings,
+                    background_tasks,
+                    tts_service,
+                    news_detail_answer.reply,
+                ),
+            )
+
         if intent_match.intent == "system_status":
             system_status_answer = system_status_service.get_status(
                 device_id=settings.default_esp32_device_id,
@@ -114,6 +168,21 @@ def chat(
                     background_tasks,
                     tts_service,
                     weather_answer.reply,
+                ),
+            )
+
+        if intent_match.intent == "traffic_query":
+            traffic_answer = traffic_service.answer_traffic_query(request.message)
+            source = traffic_answer.source
+            return ChatResponse(
+                reply=traffic_answer.reply,
+                intent="traffic_query",
+                source=traffic_answer.source,
+                audio_url=_schedule_audio_generation(
+                    settings,
+                    background_tasks,
+                    tts_service,
+                    traffic_answer.reply,
                 ),
             )
 

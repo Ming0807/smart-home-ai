@@ -6,10 +6,12 @@ from server.models.dashboard import (
     AppSnapshot,
     DashboardStatusResponse,
     DeviceSnapshot,
+    MotionSnapshot,
     SensorSnapshot,
     VoiceSnapshot,
 )
 from server.services.esp32_manager import Esp32Manager, get_esp32_manager
+from server.services.motion_manager import MotionManager, get_motion_manager
 from server.services.sensor_manager import SensorManager, get_sensor_manager
 
 router = APIRouter(tags=["dashboard"])
@@ -28,11 +30,17 @@ def dashboard_status(
     settings: Settings = Depends(get_settings),
     sensor_manager: SensorManager = Depends(get_sensor_manager),
     esp32_manager: Esp32Manager = Depends(get_esp32_manager),
+    motion_manager: MotionManager = Depends(get_motion_manager),
 ) -> DashboardStatusResponse:
     device_id = settings.default_esp32_device_id
     reading = sensor_manager.get_latest_reading(device_id)
-    heartbeat = esp32_manager.get_latest_heartbeat(device_id)
+    device_status = esp32_manager.get_device_status(
+        device_id=device_id,
+        offline_timeout_seconds=settings.esp32_offline_timeout_seconds,
+    )
     latest_command = esp32_manager.get_latest_command(device_id)
+    latest_motion_event = motion_manager.get_latest_event(device_id)
+    latest_detected_motion = motion_manager.get_latest_detected_event(device_id)
 
     sensor_snapshot = SensorSnapshot(
         device_id=device_id,
@@ -48,10 +56,26 @@ def dashboard_status(
     )
     device_snapshot = DeviceSnapshot(
         device_id=device_id,
-        online=heartbeat is not None,
-        last_seen_at=heartbeat.last_seen_at if heartbeat is not None else None,
-        pending_command_count=esp32_manager.get_pending_command_count(device_id),
-        latest_command=latest_command,
+        online=device_status.online,
+        last_seen_at=device_status.last_seen_at,
+        seconds_since_heartbeat=device_status.seconds_since_heartbeat,
+        pending_command_count=device_status.pending_command_count,
+        latest_command=device_status.latest_command or latest_command,
+    )
+    motion_snapshot = MotionSnapshot(
+        device_id=device_id,
+        motion_detected=(
+            latest_motion_event.motion if latest_motion_event is not None else False
+        ),
+        last_motion_at=(
+            latest_detected_motion.received_at
+            if latest_detected_motion is not None
+            else None
+        ),
+        last_event_at=(
+            latest_motion_event.received_at if latest_motion_event is not None else None
+        ),
+        greeting_message=motion_manager.get_latest_greeting(device_id),
     )
     voice_snapshot = VoiceSnapshot(
         tts_enabled=settings.tts_enabled,
@@ -63,6 +87,7 @@ def dashboard_status(
     return DashboardStatusResponse(
         sensor=sensor_snapshot,
         device=device_snapshot,
+        motion=motion_snapshot,
         voice=voice_snapshot,
         app=AppSnapshot(
             demo_mode=settings.demo_mode,

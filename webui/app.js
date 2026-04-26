@@ -12,6 +12,11 @@ const sensorFreshness = document.getElementById("sensor-freshness");
 const sensorUpdated = document.getElementById("sensor-updated");
 const sensorDeviceId = document.getElementById("sensor-device-id");
 
+const motionStatus = document.getElementById("motion-status");
+const motionLastDetected = document.getElementById("motion-last-detected");
+const motionLastEvent = document.getElementById("motion-last-event");
+const motionGreeting = document.getElementById("motion-greeting");
+
 const deviceOnlineIndicator = document.getElementById("device-online-indicator");
 const deviceLatestCommand = document.getElementById("device-latest-command");
 const devicePendingCount = document.getElementById("device-pending-count");
@@ -36,6 +41,7 @@ const weatherSubmitButton = document.getElementById("weather-submit-button");
 
 const refreshAllButton = document.getElementById("refresh-all-button");
 const sensorRefreshButton = document.getElementById("sensor-refresh-button");
+const motionRefreshButton = document.getElementById("motion-refresh-button");
 const relayOnButton = document.getElementById("relay-on-button");
 const relayOffButton = document.getElementById("relay-off-button");
 
@@ -235,6 +241,13 @@ async function loadAudioWithRetry(
       }
     }
   } catch (error) {
+    if (isSupersededAudioError(error)) {
+      if (statusElement) {
+        statusElement.textContent = "มีคำตอบใหม่กว่า ข้ามเสียงนี้";
+      }
+      return;
+    }
+
     if (attempt < maxAttempts - 1) {
       window.setTimeout(() => {
         loadAudioWithRetry(
@@ -317,9 +330,17 @@ async function ensureAudioTokenReady(url) {
     throw new Error("voice status failed");
   }
 
-  if (data.current_token !== token || !data.audio_ready) {
+  if (data.current_token && data.current_token !== token) {
+    throw new Error("audio superseded");
+  }
+
+  if (!data.audio_ready) {
     throw new Error("audio not ready");
   }
+}
+
+function isSupersededAudioError(error) {
+  return error instanceof Error && error.message === "audio superseded";
 }
 
 async function fetchJson(url, options = {}, timeoutMs = 30000) {
@@ -478,6 +499,25 @@ async function refreshDashboardStatus() {
       throw new Error("dashboard status failed");
     }
 
+    let esp32Status = {
+      device_id: data.device.device_id,
+      online: data.device.online,
+      last_seen_at: data.device.last_seen_at,
+      seconds_since_heartbeat: data.device.seconds_since_heartbeat,
+      pending_command_count: data.device.pending_command_count,
+      latest_command: data.device.latest_command,
+    };
+
+    try {
+      const encodedDeviceId = encodeURIComponent(data.device.device_id || data.sensor.device_id || "esp32-01");
+      const statusResult = await fetchJson(`/esp32/status?device_id=${encodedDeviceId}`, {}, 10000);
+      if (statusResult.response.ok) {
+        esp32Status = statusResult.data;
+      }
+    } catch (statusError) {
+      // Keep the dashboard fallback state from /dashboard/status.
+    }
+
     state.maxChatHistoryItems =
       Number.isFinite(data.app?.max_chat_history_items) && data.app.max_chat_history_items > 0
         ? data.app.max_chat_history_items
@@ -494,16 +534,27 @@ async function refreshDashboardStatus() {
       : "ยังไม่มีข้อมูลใหม่";
     sensorUpdated.textContent = formatDate(data.sensor.received_at || data.sensor.timestamp);
 
+    motionStatus.textContent = data.motion.motion_detected ? "พบการเคลื่อนไหว" : "ยังไม่พบการเคลื่อนไหว";
+    motionLastDetected.textContent = formatDate(data.motion.last_motion_at);
+    motionLastEvent.textContent = formatDate(data.motion.last_event_at);
+    motionGreeting.textContent = data.motion.greeting_message || "-";
+
     setPillState(
       deviceOnlineIndicator,
-      data.device.online ? "good" : "warn",
-      data.device.online ? "ESP32 online" : "ESP32 offline"
+      esp32Status.online ? "good" : "warn",
+      esp32Status.online ? "ESP32 online" : "ESP32 offline"
     );
     deviceLatestCommand.textContent = data.device.latest_command
       ? `relay ch${data.device.latest_command.channel} -> ${data.device.latest_command.action}`
       : "-";
-    devicePendingCount.textContent = String(data.device.pending_command_count ?? 0);
-    deviceLastSeen.textContent = formatDate(data.device.last_seen_at);
+    if (esp32Status.latest_command) {
+      deviceLatestCommand.textContent = `relay ch${esp32Status.latest_command.channel} -> ${esp32Status.latest_command.action}`;
+    }
+    devicePendingCount.textContent = String(esp32Status.pending_command_count ?? data.device.pending_command_count ?? 0);
+    deviceLastSeen.textContent = formatHeartbeatStatus(
+      esp32Status.last_seen_at,
+      esp32Status.seconds_since_heartbeat
+    );
 
     voiceProvider.textContent = data.voice.provider || "-";
     voiceName.textContent = data.voice.default_voice || "-";
@@ -518,9 +569,26 @@ async function refreshDashboardStatus() {
     }
   } catch (error) {
     sensorFreshness.textContent = "ดึงสถานะไม่สำเร็จ";
+    motionStatus.textContent = "ดึงสถานะไม่สำเร็จ";
+    motionLastDetected.textContent = "-";
+    motionLastEvent.textContent = "-";
+    motionGreeting.textContent = "-";
     setPillState(deviceOnlineIndicator, "bad", "อ่านสถานะไม่ได้");
     setPillState(voiceModeIndicator, "bad", "อ่านสถานะไม่ได้");
   }
+}
+
+function formatHeartbeatStatus(lastHeartbeatAt, secondsSinceHeartbeat) {
+  if (!lastHeartbeatAt) {
+    return "-";
+  }
+
+  const formattedTime = formatDate(lastHeartbeatAt);
+  if (secondsSinceHeartbeat === null || secondsSinceHeartbeat === undefined) {
+    return formattedTime;
+  }
+
+  return `${formattedTime} (${secondsSinceHeartbeat} วินาทีก่อน)`;
 }
 
 chatForm.addEventListener("submit", async (event) => {
@@ -537,6 +605,7 @@ quickActions.addEventListener("click", async (event) => {
 });
 
 sensorRefreshButton.addEventListener("click", refreshDashboardStatus);
+motionRefreshButton.addEventListener("click", refreshDashboardStatus);
 refreshAllButton.addEventListener("click", async () => {
   await refreshDashboardStatus();
   await refreshVoiceDebugStatus();

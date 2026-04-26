@@ -39,6 +39,14 @@
             <button type="button" data-message="ปิดไฟ">ปิดไฟ</button>
             <button type="button" data-message="ข้างนอกร้อนไหม">ข้างนอกร้อนไหม</button>
             <button type="button" data-message="ฝนจะตกไหม">ฝนจะตกไหม</button>
+            <button type="button" data-message="ข่าววันนี้">ข่าววันนี้</button>
+            <button type="button" data-message="ข่าว AI ล่าสุด">ข่าว AI ล่าสุด</button>
+            <button type="button" data-message="ในยะลารถติดไหม">ในยะลารถติดไหม</button>
+            <button type="button" data-message="ไปสนามบินตอนนี้รถติดไหม">ไปสนามบินตอนนี้รถติดไหม</button>
+            <button type="button" data-message="ไปสนามบินใช้เวลากี่นาที">ไปสนามบินใช้เวลากี่นาที</button>
+            <button type="button" data-message="ไปตลาดใช้เวลากี่นาที">ไปตลาดใช้เวลากี่นาที</button>
+            <button type="button" data-message="ไปโรงพยาบาลยะลา">ไปโรงพยาบาลยะลา</button>
+            <button type="button" data-message="มีคนเดินผ่านไหม">มีคนเดินผ่านไหม</button>
           </div>
 
           <div id="chat-history" class="chat-history" aria-live="polite"></div>
@@ -119,6 +127,38 @@
             <div>
               <dt>Heartbeat ล่าสุด</dt>
               <dd id="device-last-seen">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="panel-title">Motion Panel</p>
+              <p class="panel-subtitle">ดูสถานะ PIR motion ล่าสุดและข้อความต้อนรับอัตโนมัติ</p>
+            </div>
+            <button id="motion-refresh-button" class="secondary-button" type="button">รีเฟรช</button>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span class="metric-label">สถานะการเคลื่อนไหว</span>
+              <strong id="motion-status" class="metric-value">-</strong>
+            </article>
+            <article class="metric-card">
+              <span class="metric-label">ตรวจพบล่าสุด</span>
+              <strong id="motion-last-detected" class="metric-value metric-value-small">-</strong>
+            </article>
+          </div>
+
+          <dl class="detail-list">
+            <div>
+              <dt>อัปเดต event ล่าสุด</dt>
+              <dd id="motion-last-event">-</dd>
+            </div>
+            <div>
+              <dt>Greeting ล่าสุด</dt>
+              <dd id="motion-greeting">-</dd>
             </div>
           </dl>
         </section>

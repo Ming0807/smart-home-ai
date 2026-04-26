@@ -4,6 +4,9 @@ from pydantic import BaseModel, Field, field_validator
 
 IntentName = Literal[
     "device_control",
+    "navigation_query",
+    "news_detail_query",
+    "news_query",
     "weather_query",
     "traffic_query",
     "sensor_query",
@@ -15,6 +18,10 @@ ResponseSource = Literal[
     "fallback",
     "placeholder",
     "device_control",
+    "motion_sensor",
+    "navigation_api",
+    "traffic_api",
+    "currents_api",
     "sensor",
     "system_status",
     "weather_api",

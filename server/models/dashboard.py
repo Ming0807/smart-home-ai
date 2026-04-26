@@ -18,8 +18,17 @@ class DeviceSnapshot(BaseModel):
     device_id: str
     online: bool = False
     last_seen_at: datetime | None = None
+    seconds_since_heartbeat: int | None = None
     pending_command_count: int = 0
     latest_command: RelayCommand | None = None
+
+
+class MotionSnapshot(BaseModel):
+    device_id: str
+    motion_detected: bool = False
+    last_motion_at: datetime | None = None
+    last_event_at: datetime | None = None
+    greeting_message: str | None = None
 
 
 class VoiceSnapshot(BaseModel):
@@ -39,5 +48,6 @@ class AppSnapshot(BaseModel):
 class DashboardStatusResponse(BaseModel):
     sensor: SensorSnapshot
     device: DeviceSnapshot
+    motion: MotionSnapshot
     voice: VoiceSnapshot
     app: AppSnapshot
