@@ -64,6 +64,7 @@ class ChatService:
         message: str,
         background_tasks: BackgroundTasks,
         force_audio: bool = False,
+        suppress_audio: bool = False,
     ) -> ChatResponse:
         timer = start_timer()
         intent = "unknown"
@@ -86,6 +87,7 @@ class ChatService:
                     source=device_result.source,
                     background_tasks=background_tasks,
                     force_audio=force_audio,
+                    suppress_audio=suppress_audio,
                 )
 
             if intent_match.intent == "sensor_query":
@@ -101,6 +103,7 @@ class ChatService:
                     source=sensor_answer.source,
                     background_tasks=background_tasks,
                     force_audio=force_audio,
+                    suppress_audio=suppress_audio,
                 )
 
             if intent_match.intent == "news_query":
@@ -112,6 +115,7 @@ class ChatService:
                     source=news_answer.source,
                     background_tasks=background_tasks,
                     force_audio=force_audio,
+                    suppress_audio=suppress_audio,
                 )
 
             if intent_match.intent == "navigation_query":
@@ -123,6 +127,7 @@ class ChatService:
                     source=navigation_answer.source,
                     background_tasks=background_tasks,
                     force_audio=force_audio,
+                    suppress_audio=suppress_audio,
                 )
 
             if intent_match.intent == "news_detail_query":
@@ -134,6 +139,7 @@ class ChatService:
                     source=news_detail_answer.source,
                     background_tasks=background_tasks,
                     force_audio=force_audio,
+                    suppress_audio=suppress_audio,
                 )
 
             if intent_match.intent == "system_status":
@@ -147,6 +153,7 @@ class ChatService:
                     source=system_status_answer.source,
                     background_tasks=background_tasks,
                     force_audio=force_audio,
+                    suppress_audio=suppress_audio,
                 )
 
             if intent_match.intent == "weather_query":
@@ -158,6 +165,7 @@ class ChatService:
                     source=weather_answer.source,
                     background_tasks=background_tasks,
                     force_audio=force_audio,
+                    suppress_audio=suppress_audio,
                 )
 
             if intent_match.intent == "traffic_query":
@@ -169,6 +177,7 @@ class ChatService:
                     source=traffic_answer.source,
                     background_tasks=background_tasks,
                     force_audio=force_audio,
+                    suppress_audio=suppress_audio,
                 )
 
             placeholder_response = self._intent_router.get_placeholder_response(intent_match.intent)
@@ -180,6 +189,7 @@ class ChatService:
                     source="placeholder",
                     background_tasks=background_tasks,
                     force_audio=force_audio,
+                    suppress_audio=suppress_audio,
                 )
 
             llm_response = self._llm_manager.generate_reply(message)
@@ -191,6 +201,7 @@ class ChatService:
                 source=llm_response.source,
                 background_tasks=background_tasks,
                 force_audio=force_audio,
+                suppress_audio=suppress_audio,
             )
         except Exception:
             status_text = "error"
@@ -211,6 +222,7 @@ class ChatService:
         reply: str,
         background_tasks: BackgroundTasks,
         force_audio: bool = False,
+        suppress_audio: bool = False,
     ) -> ChatResponse:
         return self._build_response(
             reply=reply,
@@ -218,6 +230,7 @@ class ChatService:
             source="fallback",
             background_tasks=background_tasks,
             force_audio=force_audio,
+            suppress_audio=suppress_audio,
         )
 
     def _build_response(
@@ -227,6 +240,7 @@ class ChatService:
         source: str,
         background_tasks: BackgroundTasks,
         force_audio: bool,
+        suppress_audio: bool,
     ) -> ChatResponse:
         return ChatResponse(
             reply=reply,
@@ -236,6 +250,7 @@ class ChatService:
                 background_tasks=background_tasks,
                 reply=reply,
                 force_audio=force_audio,
+                suppress_audio=suppress_audio,
             ),
         )
 
@@ -244,7 +259,10 @@ class ChatService:
         background_tasks: BackgroundTasks,
         reply: str,
         force_audio: bool,
+        suppress_audio: bool,
     ) -> str | None:
+        if suppress_audio:
+            return None
         if not self._settings.tts_enabled:
             return None
         if not force_audio and not self._settings.demo_voice_mode:

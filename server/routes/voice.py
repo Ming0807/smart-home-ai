@@ -3,22 +3,28 @@ from fastapi import (
     BackgroundTasks,
     Depends,
     File,
+    Form,
     HTTPException,
     Query,
     Response,
     UploadFile,
     status,
 )
+from pydantic import ValidationError
 
 from server.models.voice import (
     SpeakRequest,
     SpeakResponse,
+    VoiceChatRequestMeta,
     VoiceChatResponse,
     VoiceStatusResponse,
 )
-from server.services.chat_service import ChatService, get_chat_service
 from server.services.stt_service import STTService, get_stt_service
 from server.services.tts_service import TTSService, get_tts_service
+from server.services.voice_conversation_service import (
+    VoiceConversationService,
+    get_voice_conversation_service,
+)
 
 router = APIRouter(prefix="/voice", tags=["voice"])
 
@@ -55,36 +61,45 @@ def speak(
 )
 async def voice_chat(
     background_tasks: BackgroundTasks,
-    audio: UploadFile = File(...),
-    chat_service: ChatService = Depends(get_chat_service),
+    message: str | None = Form(default=None),
+    pir_state: int = Form(default=0),
+    audio: UploadFile | None = File(default=None),
     stt_service: STTService = Depends(get_stt_service),
+    voice_conversation_service: VoiceConversationService = Depends(
+        get_voice_conversation_service
+    ),
 ) -> VoiceChatResponse:
-    stt_result = await stt_service.transcribe_upload(audio)
-    if not stt_result.ok:
-        fallback_response = chat_service.build_fallback_response(
-            reply="ตอนนี้ระบบฟังเสียงยังไม่พร้อม ลองพูดใหม่อีกครั้งหรือพิมพ์ข้อความแทนก่อนได้ไหม",
-            background_tasks=background_tasks,
-            force_audio=True,
-        )
-        return VoiceChatResponse(
-            heard_text="",
-            reply=fallback_response.reply,
-            intent=fallback_response.intent,
-            source=fallback_response.source,
-            audio_url=fallback_response.audio_url,
-        )
+    try:
+        request_meta = VoiceChatRequestMeta(message=message, pir_state=pir_state)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.errors(),
+        ) from exc
+    heard_text = request_meta.message
 
-    chat_response = chat_service.handle_message(
-        stt_result.text,
-        background_tasks=background_tasks,
-        force_audio=True,
-    )
+    if heard_text is None:
+        if audio is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="message or audio is required",
+            )
+
+        stt_result = await stt_service.transcribe_upload(audio)
+        if not stt_result.ok:
+            return VoiceChatResponse(
+                data=voice_conversation_service.build_stt_unavailable_response(
+                    background_tasks=background_tasks,
+                )
+            )
+        heard_text = stt_result.text
+
     return VoiceChatResponse(
-        heard_text=stt_result.text,
-        reply=chat_response.reply,
-        intent=chat_response.intent,
-        source=chat_response.source,
-        audio_url=chat_response.audio_url,
+        data=voice_conversation_service.handle_turn(
+            heard_text=heard_text,
+            pir_state=request_meta.pir_state,
+            background_tasks=background_tasks,
+        )
     )
 
 

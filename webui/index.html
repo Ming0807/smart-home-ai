@@ -29,8 +29,8 @@
             <div>
               <p class="panel-title">Chat Panel</p>
               <p class="panel-subtitle">
-                ทดสอบ intent routing, sensor, weather, news, navigation, traffic,
-                relay control และ LLM
+                ทดสอบ intent routing, sensor, weather, news, navigation, traffic, relay control,
+                voice chat และ LLM
               </p>
             </div>
             <span id="chat-status" class="status-pill neutral">พร้อมใช้งาน</span>
@@ -67,8 +67,28 @@
               <button id="chat-mic-button" class="secondary-button" type="button">ไมค์</button>
               <button id="chat-send-button" type="submit">ส่งข้อความ</button>
             </div>
+
+            <div class="voice-session-toolbar">
+              <label class="toggle-control" for="pir-sim-toggle">
+                <input id="pir-sim-toggle" type="checkbox" checked />
+                <span>จำลอง PIR มีคนอยู่</span>
+              </label>
+              <span id="mic-state-indicator" class="status-pill neutral">Closed</span>
+              <span id="keep-mic-indicator" class="status-pill neutral">keep_mic_open: false</span>
+              <button id="chat-stop-button" class="secondary-button" type="button">หยุด</button>
+            </div>
+
+            <div class="quick-actions quick-actions-exit" id="exit-quick-actions">
+              <button type="button" data-exit-message="ขอบคุณ">ขอบคุณ</button>
+              <button type="button" data-exit-message="พอแล้ว">พอแล้ว</button>
+              <button type="button" data-exit-message="แค่นี้แหละ">แค่นี้แหละ</button>
+              <button type="button" data-exit-message="เลิกคุย">เลิกคุย</button>
+              <button type="button" data-exit-message="หยุดฟัง">หยุดฟัง</button>
+            </div>
+
             <p id="chat-mic-status" class="debug-text">ไมโครโฟนพร้อมใช้งานเมื่ออนุญาตจากเบราว์เซอร์</p>
             <p id="chat-heard-text" class="debug-text" hidden></p>
+            <p id="voice-turn-status" class="debug-text">พร้อมเริ่มคุยต่อเนื่องเมื่อกดไมค์</p>
           </form>
         </section>
 

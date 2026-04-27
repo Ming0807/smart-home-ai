@@ -76,6 +76,28 @@ class LLMManager:
         if cached_response is not None:
             return cached_response
 
+        llm_response = self.generate_custom_reply(
+            message=message,
+            system_prompt=self._load_system_prompt(),
+            max_tokens=self._settings.llm_max_tokens,
+            temperature=self._settings.llm_temperature,
+            log_mode="default",
+        )
+        if llm_response.source == "ollama":
+            self._set_cached_response(message, llm_response)
+        return llm_response
+
+    def generate_custom_reply(
+        self,
+        message: str,
+        system_prompt: str,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+        log_mode: str = "custom",
+    ) -> LLMResponse:
+        if not system_prompt.strip():
+            return self._fallback("empty system prompt")
+
         health_status = self.get_health_status()
         if not health_status.available:
             return self._fallback(health_status.last_error or "ollama unavailable")
@@ -84,18 +106,22 @@ class LLMManager:
         try:
             response = self._session.post(
                 self._chat_url,
-                json=self._build_payload(message=message, stream=False),
+                json=self._build_payload(
+                    message=message,
+                    stream=False,
+                    system_prompt=system_prompt,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                ),
                 timeout=self._request_timeout_seconds,
             )
             response.raise_for_status()
             reply = self._parse_chat_response(response)
-            llm_response = LLMResponse(
+            return LLMResponse(
                 reply=reply,
                 model=self._settings.ollama_model,
                 source="ollama",
             )
-            self._set_cached_response(message, llm_response)
-            return llm_response
         except Timeout:
             self._set_error("ollama timeout")
             logger.warning("Ollama chat request timed out")
@@ -118,6 +144,7 @@ class LLMManager:
                 "llm.chat",
                 timer.elapsed_ms,
                 model=self._settings.ollama_model,
+                mode=log_mode,
             )
 
     def stream_reply(self, message: str) -> Iterator[str]:
@@ -259,17 +286,26 @@ class LLMManager:
             self._settings.ollama_timeout_seconds,
         )
 
-    def _build_payload(self, message: str, stream: bool) -> dict[str, Any]:
+    def _build_payload(
+        self,
+        message: str,
+        stream: bool,
+        system_prompt: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+    ) -> dict[str, Any]:
         return {
             "model": self._settings.ollama_model,
             "messages": [
-                {"role": "system", "content": self._load_system_prompt()},
+                {"role": "system", "content": system_prompt or self._load_system_prompt()},
                 {"role": "user", "content": message},
             ],
             "stream": stream,
             "options": {
-                "temperature": self._settings.llm_temperature,
-                "num_predict": self._settings.llm_max_tokens,
+                "temperature": (
+                    self._settings.llm_temperature if temperature is None else temperature
+                ),
+                "num_predict": self._settings.llm_max_tokens if max_tokens is None else max_tokens,
             },
         }
 

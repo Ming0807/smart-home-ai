@@ -25,6 +25,7 @@ ResponseSource = Literal[
     "sensor",
     "system_status",
     "weather_api",
+    "voice_control",
 ]
 
 

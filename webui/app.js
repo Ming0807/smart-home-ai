@@ -5,9 +5,15 @@ const chatLoading = document.getElementById("chat-loading");
 const chatStatus = document.getElementById("chat-status");
 const chatSendButton = document.getElementById("chat-send-button");
 const chatMicButton = document.getElementById("chat-mic-button");
+const chatStopButton = document.getElementById("chat-stop-button");
 const chatMicStatus = document.getElementById("chat-mic-status");
 const chatHeardText = document.getElementById("chat-heard-text");
+const voiceTurnStatus = document.getElementById("voice-turn-status");
 const quickActions = document.getElementById("quick-actions");
+const exitQuickActions = document.getElementById("exit-quick-actions");
+const micStateIndicator = document.getElementById("mic-state-indicator");
+const keepMicIndicator = document.getElementById("keep-mic-indicator");
+const pirSimToggle = document.getElementById("pir-sim-toggle");
 
 const sensorTemperature = document.getElementById("sensor-temperature");
 const sensorHumidity = document.getElementById("sensor-humidity");
@@ -59,6 +65,10 @@ const state = {
   mediaStream: null,
   audioChunks: [],
   maxChatHistoryItems: 50,
+  keepMicOpen: false,
+  stopRequested: false,
+  autoListenTimerId: null,
+  pirTouched: false,
 };
 
 function formatDate(value) {
@@ -77,6 +87,10 @@ function formatDate(value) {
   });
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 function setPillState(element, tone, text) {
   element.className = `status-pill ${tone}`;
   element.textContent = text;
@@ -86,7 +100,6 @@ function setMicStatus(message, tone = "neutral") {
   chatMicStatus.hidden = false;
   chatMicStatus.textContent = message;
   chatMicStatus.classList.remove("chat-mic-status-live", "chat-mic-status-busy");
-
   if (tone === "live") {
     chatMicStatus.classList.add("chat-mic-status-live");
   } else if (tone === "busy") {
@@ -98,23 +111,59 @@ function showHeardText(text) {
   if (!text) {
     chatHeardText.hidden = true;
     chatHeardText.textContent = "";
-    chatHeardText.classList.remove("chat-heard-text");
     return;
   }
 
   chatHeardText.hidden = false;
-  chatHeardText.classList.add("chat-heard-text");
   chatHeardText.textContent = `ได้ยินว่า: ${text}`;
+}
+
+function setMicState(mode) {
+  if (mode === "listening") {
+    setPillState(micStateIndicator, "good", "Listening");
+    return;
+  }
+  if (mode === "thinking") {
+    setPillState(micStateIndicator, "warn", "Thinking");
+    return;
+  }
+  setPillState(micStateIndicator, "neutral", "Closed");
+}
+
+function setKeepMicIndicator(keepOpen, reason = "") {
+  state.keepMicOpen = keepOpen;
+  if (keepOpen) {
+    setPillState(keepMicIndicator, "good", "keep_mic_open: true");
+    voiceTurnStatus.textContent = reason || "AI ขอเปิดไมค์ต่อเพื่อคุยต่อเนื่อง";
+    return;
+  }
+  setPillState(keepMicIndicator, "neutral", "keep_mic_open: false");
+  if (reason) {
+    voiceTurnStatus.textContent = reason;
+  }
+}
+
+function currentPirState() {
+  return pirSimToggle.checked ? 1 : 0;
+}
+
+function clearAutoListenTimer() {
+  if (state.autoListenTimerId !== null) {
+    window.clearTimeout(state.autoListenTimerId);
+    state.autoListenTimerId = null;
+  }
 }
 
 function getChatActionButtons() {
   return [
     chatSendButton,
     chatMicButton,
+    chatStopButton,
     weatherSubmitButton,
     relayOnButton,
     relayOffButton,
     ...quickActions.querySelectorAll("button[data-message]"),
+    ...exitQuickActions.querySelectorAll("button[data-exit-message]"),
   ];
 }
 
@@ -123,9 +172,15 @@ function setChatBusy(isBusy) {
   const controlsDisabled = isBusy || state.recording;
 
   chatInput.disabled = controlsDisabled;
+  pirSimToggle.disabled = isBusy;
+
   for (const button of getChatActionButtons()) {
-    if (button === chatMicButton && state.recording) {
+    if ((button === chatMicButton || button === chatStopButton) && state.recording) {
       button.disabled = false;
+      continue;
+    }
+    if (button === chatStopButton) {
+      button.disabled = !state.recording && !state.keepMicOpen;
       continue;
     }
     button.disabled = controlsDisabled;
@@ -163,73 +218,6 @@ function trimChatHistory() {
     }
     oldest.remove();
   }
-}
-
-function appendMessage(role, text, meta = {}) {
-  const wrapper = document.createElement("article");
-  wrapper.className = `message ${role}`;
-
-  const timestamp = new Date().toLocaleTimeString("th-TH", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  const header = document.createElement("div");
-  header.className = "message-header";
-
-  const roleLabel = document.createElement("span");
-  roleLabel.className = "message-role";
-  roleLabel.textContent = role === "user" ? "คุณ" : "AI";
-
-  const timeLabel = document.createElement("span");
-  timeLabel.className = "message-time";
-  timeLabel.textContent = timestamp;
-
-  header.append(roleLabel, timeLabel);
-
-  const body = document.createElement("p");
-  body.className = "message-text";
-  body.textContent = text;
-
-  wrapper.append(header, body);
-
-  if (meta.intent || meta.source) {
-    const metaRow = document.createElement("div");
-    metaRow.className = "message-meta";
-
-    if (meta.intent) {
-      const intentBadge = document.createElement("span");
-      intentBadge.className = "badge";
-      intentBadge.textContent = `intent: ${meta.intent}`;
-      metaRow.appendChild(intentBadge);
-    }
-
-    if (meta.source) {
-      const sourceBadge = document.createElement("span");
-      sourceBadge.className = "badge";
-      sourceBadge.textContent = `source: ${meta.source}`;
-      metaRow.appendChild(sourceBadge);
-    }
-
-    wrapper.appendChild(metaRow);
-  }
-
-  if (meta.audioUrl) {
-    const audio = document.createElement("audio");
-    audio.controls = true;
-    audio.preload = "metadata";
-
-    const audioStatus = document.createElement("p");
-    audioStatus.className = "audio-status";
-    audioStatus.textContent = "กำลังเตรียมเสียง...";
-
-    wrapper.append(audio, audioStatus);
-    loadAudioWithRetry(audio, meta.audioUrl, true, audioStatus, 0, text);
-  }
-
-  chatHistory.appendChild(wrapper);
-  trimChatHistory();
-  chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
 function attachAudioBlob(audioElement, blobUrl) {
@@ -275,17 +263,6 @@ async function requestSpeechAudioUrl(text) {
   return data.audio_url;
 }
 
-async function ensureChatAudioUrl(replyText, audioUrl) {
-  if (audioUrl) {
-    return audioUrl;
-  }
-  if (!replyText || !replyText.trim()) {
-    return null;
-  }
-
-  return requestSpeechAudioUrl(replyText.trim());
-}
-
 function getAudioToken(url) {
   try {
     const resolvedUrl = new URL(url, window.location.origin);
@@ -305,18 +282,12 @@ async function ensureAudioTokenReady(url) {
   if (!response.ok) {
     throw new Error("voice status failed");
   }
-
   if (data.current_token && data.current_token !== token) {
     throw new Error("audio superseded");
   }
-
   if (!data.audio_ready) {
     throw new Error("audio not ready");
   }
-}
-
-function isSupersededAudioError(error) {
-  return error instanceof Error && error.message === "audio superseded";
 }
 
 async function fetchAudioBlobUrl(url) {
@@ -334,7 +305,6 @@ async function fetchAudioBlobUrl(url) {
   if (!audioBlob.size) {
     throw new Error("audio blob is empty");
   }
-
   return URL.createObjectURL(audioBlob);
 }
 
@@ -344,8 +314,7 @@ async function loadAudioWithRetry(
   autoplay = false,
   statusElement = null,
   attempt = 0,
-  recoveryText = null,
-  hasRecovered = false
+  recoveryText = null
 ) {
   const maxAttempts = 24;
   if (statusElement) {
@@ -362,12 +331,10 @@ async function loadAudioWithRetry(
         cleanup();
         resolve();
       };
-
       const onError = () => {
         cleanup();
         reject(new Error("audio not playable"));
       };
-
       const cleanup = () => {
         audioElement.removeEventListener("canplaythrough", onLoaded);
         audioElement.removeEventListener("error", onError);
@@ -388,7 +355,8 @@ async function loadAudioWithRetry(
       }
     }
   } catch (error) {
-    if (isSupersededAudioError(error)) {
+    const isSuperseded = error instanceof Error && error.message === "audio superseded";
+    if (isSuperseded) {
       if (statusElement) {
         statusElement.textContent = "มีคำตอบใหม่กว่า ข้ามเสียงนี้";
       }
@@ -396,39 +364,23 @@ async function loadAudioWithRetry(
     }
 
     if (attempt < maxAttempts - 1) {
-      window.setTimeout(() => {
-        loadAudioWithRetry(
-          audioElement,
-          url,
-          autoplay,
-          statusElement,
-          attempt + 1,
-          recoveryText,
-          hasRecovered
-        );
-      }, 750);
-      return;
+      await sleep(750);
+      return loadAudioWithRetry(
+        audioElement,
+        url,
+        autoplay,
+        statusElement,
+        attempt + 1,
+        recoveryText
+      );
     }
 
-    if (recoveryText && !hasRecovered) {
-      if (statusElement) {
-        statusElement.textContent = "กำลังลองสร้างเสียงใหม่อีกครั้ง...";
-      }
-
+    if (recoveryText) {
       try {
         const regeneratedAudioUrl = await requestSpeechAudioUrl(recoveryText);
-        await loadAudioWithRetry(
-          audioElement,
-          regeneratedAudioUrl,
-          autoplay,
-          statusElement,
-          0,
-          null,
-          true
-        );
-        return;
+        return loadAudioWithRetry(audioElement, regeneratedAudioUrl, autoplay, statusElement, 0, null);
       } catch (recoveryError) {
-        // Fall through to the final error state below.
+        // Final error state below.
       }
     }
 
@@ -436,6 +388,80 @@ async function loadAudioWithRetry(
       statusElement.textContent = "ยังสร้างเสียงไม่สำเร็จ ลองใหม่อีกครั้งได้";
     }
   }
+}
+
+function appendMessage(role, text, meta = {}) {
+  const wrapper = document.createElement("article");
+  wrapper.className = `message ${role}`;
+
+  const header = document.createElement("div");
+  header.className = "message-header";
+
+  const roleLabel = document.createElement("span");
+  roleLabel.className = "message-role";
+  roleLabel.textContent = role === "user" ? "คุณ" : "AI";
+
+  const timeLabel = document.createElement("span");
+  timeLabel.className = "message-time";
+  timeLabel.textContent = new Date().toLocaleTimeString("th-TH", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  header.append(roleLabel, timeLabel);
+
+  const body = document.createElement("p");
+  body.className = "message-text";
+  body.textContent = text;
+  wrapper.append(header, body);
+
+  if (meta.intent || meta.source || meta.action) {
+    const metaRow = document.createElement("div");
+    metaRow.className = "message-meta";
+
+    for (const [key, value] of [
+      ["intent", meta.intent],
+      ["source", meta.source],
+      ["action", meta.action],
+    ]) {
+      if (!value) {
+        continue;
+      }
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = `${key}: ${value}`;
+      metaRow.appendChild(badge);
+    }
+
+    if (typeof meta.keepMicOpen === "boolean") {
+      const keepBadge = document.createElement("span");
+      keepBadge.className = "badge";
+      keepBadge.textContent = `keep_mic_open: ${meta.keepMicOpen ? "true" : "false"}`;
+      metaRow.appendChild(keepBadge);
+    }
+
+    wrapper.appendChild(metaRow);
+  }
+
+  let audioElement = null;
+  let audioPromise = Promise.resolve();
+  if (meta.audioUrl) {
+    audioElement = document.createElement("audio");
+    audioElement.controls = true;
+    audioElement.preload = "metadata";
+
+    const audioStatus = document.createElement("p");
+    audioStatus.className = "audio-status";
+    audioStatus.textContent = "กำลังเตรียมเสียง...";
+
+    wrapper.append(audioElement, audioStatus);
+    audioPromise = loadAudioWithRetry(audioElement, meta.audioUrl, true, audioStatus, 0, text);
+  }
+
+  chatHistory.appendChild(wrapper);
+  trimChatHistory();
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+  return { wrapper, audioElement, audioPromise };
 }
 
 async function refreshVoiceDebugStatus() {
@@ -449,7 +475,6 @@ async function refreshVoiceDebugStatus() {
       `ready: ${data.audio_ready ? "yes" : "no"}`,
       `size: ${data.file_size_bytes || 0} bytes`,
     ];
-
     if (data.current_token) {
       parts.push(`token: ${data.current_token.slice(0, 8)}`);
     }
@@ -459,7 +484,6 @@ async function refreshVoiceDebugStatus() {
     if (data.last_error) {
       parts.push(`error: ${data.last_error}`);
     }
-
     voiceDebugStatus.textContent = parts.join(" | ");
   } catch (error) {
     voiceDebugStatus.textContent = "อ่านสถานะเสียงไม่สำเร็จ";
@@ -470,15 +494,12 @@ function getReadableErrorMessage(error, fallbackText) {
   if (error && error.name === "AbortError") {
     return "คำขอนี้ใช้เวลานานเกินไป ลองใหม่อีกครั้งได้";
   }
-
   if (error instanceof TypeError) {
     return "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ลองเช็กว่า backend ยังทำงานอยู่";
   }
-
   if (error instanceof SyntaxError) {
     return "เซิร์ฟเวอร์ตอบกลับมาไม่สมบูรณ์";
   }
-
   return error instanceof Error && error.message ? error.message : fallbackText;
 }
 
@@ -486,12 +507,10 @@ function formatHeartbeatStatus(lastHeartbeatAt, secondsSinceHeartbeat) {
   if (!lastHeartbeatAt) {
     return "-";
   }
-
   const formattedTime = formatDate(lastHeartbeatAt);
   if (secondsSinceHeartbeat === null || secondsSinceHeartbeat === undefined) {
     return formattedTime;
   }
-
   return `${formattedTime} (${secondsSinceHeartbeat} วินาทีก่อน)`;
 }
 
@@ -507,7 +526,6 @@ function createSpeechRecognition() {
   if (!SpeechRecognitionConstructor) {
     return null;
   }
-
   const recognition = new SpeechRecognitionConstructor();
   recognition.lang = "th-TH";
   recognition.continuous = false;
@@ -523,13 +541,11 @@ function getSupportedRecordingMimeType() {
     "audio/ogg;codecs=opus",
     "audio/mp4",
   ];
-
   for (const candidate of candidates) {
     if (window.MediaRecorder && MediaRecorder.isTypeSupported(candidate)) {
       return candidate;
     }
   }
-
   return "";
 }
 
@@ -539,25 +555,153 @@ function cleanupMediaStream() {
       track.stop();
     }
   }
-
   state.mediaStream = null;
   state.mediaRecorder = null;
   state.audioChunks = [];
 }
 
-async function handleChatResponse(data, options = {}) {
-  const {
-    appendUserMessage = true,
-    userMessage = "",
-    heardText = "",
-    refreshStatus = true,
-  } = options;
+async function waitForAssistantPlayback(entry) {
+  if (!entry) {
+    await sleep(400);
+    return;
+  }
 
+  await entry.audioPromise.catch(() => {});
+  const audioElement = entry.audioElement;
+  if (!audioElement) {
+    await sleep(400);
+    return;
+  }
+
+  if (audioElement.paused) {
+    await sleep(400);
+    return;
+  }
+
+  await new Promise((resolve) => {
+    const finish = () => {
+      cleanup();
+      resolve();
+    };
+    const cleanup = () => {
+      audioElement.removeEventListener("ended", finish);
+      audioElement.removeEventListener("error", finish);
+      window.clearTimeout(timeoutId);
+    };
+    const timeoutId = window.setTimeout(finish, 12000);
+    audioElement.addEventListener("ended", finish, { once: true });
+    audioElement.addEventListener("error", finish, { once: true });
+  });
+}
+
+function normalizeVoicePayload(payload) {
+  if (payload && payload.data) {
+    return payload.data;
+  }
+  return payload;
+}
+
+async function refreshDashboardStatus() {
+  try {
+    const { response, data } = await fetchJson("/dashboard/status", {}, 10000);
+    if (!response.ok) {
+      throw new Error("dashboard status failed");
+    }
+
+    let esp32Status = {
+      device_id: data.device.device_id,
+      online: data.device.online,
+      last_seen_at: data.device.last_seen_at,
+      seconds_since_heartbeat: data.device.seconds_since_heartbeat,
+      pending_command_count: data.device.pending_command_count,
+      latest_command: data.device.latest_command,
+    };
+
+    try {
+      const encodedDeviceId = encodeURIComponent(data.device.device_id || data.sensor.device_id || "esp32-01");
+      const statusResult = await fetchJson(`/esp32/status?device_id=${encodedDeviceId}`, {}, 10000);
+      if (statusResult.response.ok) {
+        esp32Status = statusResult.data;
+      }
+    } catch (statusError) {
+      // Keep aggregate state.
+    }
+
+    state.maxChatHistoryItems =
+      Number.isFinite(data.app?.max_chat_history_items) && data.app.max_chat_history_items > 0
+        ? data.app.max_chat_history_items
+        : state.maxChatHistoryItems;
+    trimChatHistory();
+
+    sensorDeviceId.textContent = data.sensor.device_id || "-";
+    sensorTemperature.textContent =
+      data.sensor.temperature === null ? "-" : `${Math.round(data.sensor.temperature)} °C`;
+    sensorHumidity.textContent =
+      data.sensor.humidity === null ? "-" : `${Math.round(data.sensor.humidity)} %`;
+    sensorFreshness.textContent = data.sensor.is_fresh ? "ข้อมูลล่าสุดพร้อมใช้งาน" : "ยังไม่มีข้อมูลใหม่";
+    sensorUpdated.textContent = formatDate(data.sensor.received_at || data.sensor.timestamp);
+
+    motionStatus.textContent = data.motion.motion_detected ? "พบการเคลื่อนไหว" : "ยังไม่พบการเคลื่อนไหว";
+    motionLastDetected.textContent = formatDate(data.motion.last_motion_at);
+    motionLastEvent.textContent = formatDate(data.motion.last_event_at);
+    motionGreeting.textContent = data.motion.greeting_message || "-";
+
+    if (!state.pirTouched) {
+      pirSimToggle.checked = Boolean(data.motion.motion_detected);
+    }
+
+    setPillState(
+      deviceOnlineIndicator,
+      esp32Status.online ? "good" : "warn",
+      esp32Status.online ? "ESP32 online" : "ESP32 offline"
+    );
+    deviceLatestCommand.textContent = esp32Status.latest_command
+      ? `relay ch${esp32Status.latest_command.channel} -> ${esp32Status.latest_command.action}`
+      : "-";
+    devicePendingCount.textContent = String(esp32Status.pending_command_count ?? 0);
+    deviceLastSeen.textContent = formatHeartbeatStatus(
+      esp32Status.last_seen_at,
+      esp32Status.seconds_since_heartbeat
+    );
+
+    voiceProvider.textContent = data.voice.provider || "-";
+    voiceName.textContent = data.voice.default_voice || "-";
+    voiceOutputFile.textContent = data.voice.output_file || "-";
+
+    if (data.voice.tts_enabled && data.voice.demo_voice_mode) {
+      setPillState(voiceModeIndicator, "good", "Demo voice mode เปิดอยู่");
+    } else if (data.voice.tts_enabled) {
+      setPillState(voiceModeIndicator, "warn", "TTS เปิดอยู่ แต่ demo voice ปิด");
+    } else {
+      setPillState(voiceModeIndicator, "bad", "TTS ปิดอยู่");
+    }
+  } catch (error) {
+    sensorFreshness.textContent = "ดึงสถานะไม่สำเร็จ";
+    motionStatus.textContent = "ดึงสถานะไม่สำเร็จ";
+    motionLastDetected.textContent = "-";
+    motionLastEvent.textContent = "-";
+    motionGreeting.textContent = "-";
+    setPillState(deviceOnlineIndicator, "bad", "อ่านสถานะไม่ได้");
+    setPillState(voiceModeIndicator, "bad", "อ่านสถานะไม่ได้");
+  }
+}
+
+async function ensureChatAudioUrl(replyText, audioUrl) {
+  if (audioUrl) {
+    return audioUrl;
+  }
+  if (!replyText || !replyText.trim()) {
+    return null;
+  }
+  return requestSpeechAudioUrl(replyText.trim());
+}
+
+async function handleChatResponse(data, options = {}) {
+  const { appendUserMessage = true, userMessage = "", heardText = "", refreshStatus = true } = options;
   const userText = heardText || userMessage;
   if (appendUserMessage && userText) {
     appendMessage("user", userText);
   }
-
   if (heardText) {
     showHeardText(heardText);
   } else if (!userMessage) {
@@ -567,27 +711,74 @@ async function handleChatResponse(data, options = {}) {
   let resolvedAudioUrl = null;
   try {
     resolvedAudioUrl = await ensureChatAudioUrl(data.reply, data.audio_url || null);
-  } catch (audioError) {
+  } catch (error) {
     resolvedAudioUrl = null;
   }
 
-  appendMessage("assistant", data.reply, {
+  const assistantEntry = appendMessage("assistant", data.reply, {
     intent: data.intent,
     source: data.source,
     audioUrl: resolvedAudioUrl,
   });
 
   setPillState(chatStatus, "good", "ตอบแล้ว");
-
   if (data.intent === "weather_query") {
     weatherResult.textContent = data.reply;
     weatherResult.classList.remove("muted");
   }
-
   if (refreshStatus) {
     await refreshDashboardStatus();
     await refreshVoiceDebugStatus();
   }
+  return assistantEntry;
+}
+
+async function maybeContinueListening(assistantEntry) {
+  clearAutoListenTimer();
+  if (!state.keepMicOpen || state.stopRequested) {
+    setMicState("closed");
+    return;
+  }
+
+  await waitForAssistantPlayback(assistantEntry);
+  if (!state.keepMicOpen || state.stopRequested || state.recording || state.chatBusy) {
+    setMicState("closed");
+    return;
+  }
+
+  voiceTurnStatus.textContent = "กำลังเปิดไมค์ต่ออัตโนมัติ...";
+  state.autoListenTimerId = window.setTimeout(() => {
+    state.autoListenTimerId = null;
+    startVoiceRecording();
+  }, 350);
+}
+
+async function handleVoiceTurnResponse(payload, options = {}) {
+  const data = normalizeVoicePayload(payload);
+  const { appendUserMessage = true } = options;
+
+  if (data.heard_text) {
+    showHeardText(data.heard_text);
+  }
+
+  const assistantEntry = appendMessage("assistant", data.reply, {
+    intent: data.intent,
+    source: data.source,
+    action: data.action,
+    keepMicOpen: data.keep_mic_open,
+    audioUrl: data.audio_url || null,
+  });
+
+  if (appendUserMessage && data.heard_text) {
+    chatHistory.insertBefore(appendMessage("user", data.heard_text).wrapper, assistantEntry.wrapper);
+  }
+
+  setKeepMicIndicator(Boolean(data.keep_mic_open), data.keep_mic_open ? "AI อยากคุยต่อ" : "AI ปิดไมค์หลังตอบรอบนี้");
+  setPillState(chatStatus, "good", "ตอบแล้ว");
+
+  await refreshDashboardStatus();
+  await refreshVoiceDebugStatus();
+  void maybeContinueListening(assistantEntry);
 }
 
 async function sendChatMessage(message) {
@@ -600,6 +791,8 @@ async function sendChatMessage(message) {
   chatInput.value = "";
   showHeardText("");
   setChatBusy(true);
+  state.stopRequested = true;
+  setKeepMicIndicator(false, "โหมดแชตข้อความปิดไมค์ต่อเนื่องไว้ก่อน");
 
   try {
     const { response, data } = await fetchJson(
@@ -616,64 +809,60 @@ async function sendChatMessage(message) {
       throw new Error(data.detail || "ส่งข้อความไม่สำเร็จ");
     }
 
-    await handleChatResponse(data, {
-      appendUserMessage: false,
-      userMessage: trimmed,
-    });
+    await handleChatResponse(data, { appendUserMessage: false, userMessage: trimmed });
   } catch (error) {
-    const messageText = getReadableErrorMessage(
-      error,
-      "เกิดปัญหาระหว่างส่งข้อความ ลองใหม่อีกครั้งได้ไหม"
-    );
-    appendMessage("assistant", messageText, { source: "fallback" });
+    appendMessage("assistant", getReadableErrorMessage(error, "เกิดปัญหาระหว่างส่งข้อความ ลองใหม่อีกครั้งได้ไหม"), {
+      source: "fallback",
+    });
     setPillState(chatStatus, "bad", "เกิดข้อผิดพลาด");
   } finally {
     setChatBusy(false);
+    setMicState("closed");
   }
 }
 
-async function sendRecognizedText(transcript) {
-  const trimmed = transcript.trim();
-  if (!trimmed) {
-    setMicStatus("ยังจับคำพูดไม่ได้ชัด ลองพูดใหม่อีกครั้งได้", "busy");
+async function sendVoiceText(message) {
+  const trimmed = message.trim();
+  if (!trimmed || state.chatBusy) {
     return;
   }
 
-  showHeardText(trimmed);
-  setMicStatus("ได้ยินเสียงแล้ว กำลังส่งเข้าระบบ...", "busy");
+  clearAutoListenTimer();
   setChatBusy(true);
+  setMicState("thinking");
+  setMicStatus("กำลังส่งข้อความเสียงเข้า voice chat...", "busy");
+
+  const formData = new FormData();
+  formData.append("message", trimmed);
+  formData.append("pir_state", String(currentPirState()));
 
   try {
     const { response, data } = await fetchJson(
-      "/chat",
+      "/voice/chat",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed }),
+        body: formData,
       },
-      45000
+      60000
     );
 
     if (!response.ok) {
       throw new Error(data.detail || "ส่งข้อความเสียงไม่สำเร็จ");
     }
 
-    await handleChatResponse(data, {
-      appendUserMessage: true,
-      heardText: trimmed,
-    });
-
-    setMicStatus("ตอบกลับด้วยเสียงแล้ว พร้อมฟังรอบถัดไป");
+    await handleVoiceTurnResponse(data);
+    setMicStatus("ตอบกลับด้วยเสียงแล้ว", "busy");
   } catch (error) {
-    const messageText = getReadableErrorMessage(
-      error,
-      "เกิดปัญหาระหว่างส่งข้อความเสียง ลองใหม่อีกครั้งได้ไหม"
-    );
+    const messageText = getReadableErrorMessage(error, "เกิดปัญหาระหว่างส่งข้อความเสียง ลองใหม่อีกครั้งได้ไหม");
     appendMessage("assistant", messageText, { source: "fallback" });
     setPillState(chatStatus, "bad", "เกิดข้อผิดพลาด");
+    setKeepMicIndicator(false, "ปิดไมค์ต่อเนื่องชั่วคราวเพราะเกิดข้อผิดพลาด");
     setMicStatus(messageText, "busy");
   } finally {
     setChatBusy(false);
+    if (!state.recording) {
+      setMicState(state.keepMicOpen ? "listening" : "closed");
+    }
   }
 }
 
@@ -684,16 +873,14 @@ async function sendVoiceRecording(audioBlob, mimeType) {
   }
 
   setChatBusy(true);
+  setMicState("thinking");
   setMicStatus("กำลังแปลงเสียงเป็นข้อความ...", "busy");
   showHeardText("");
 
-  const extension = mimeType.includes("ogg")
-    ? "ogg"
-    : mimeType.includes("mp4")
-      ? "m4a"
-      : "webm";
+  const extension = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "m4a" : "webm";
   const formData = new FormData();
   formData.append("audio", audioBlob, `voice-input.${extension}`);
+  formData.append("pir_state", String(currentPirState()));
 
   try {
     const { response, data } = await fetchJson(
@@ -709,28 +896,19 @@ async function sendVoiceRecording(audioBlob, mimeType) {
       throw new Error(data.detail || "ส่งเสียงไม่สำเร็จ");
     }
 
-    if (data.heard_text) {
-      setMicStatus("ได้ยินเสียงแล้ว กำลังตอบกลับ...", "busy");
-    } else {
-      setMicStatus("ยังจับข้อความไม่ได้ชัด ลองพูดใหม่อีกครั้งได้", "busy");
-    }
-
-    await handleChatResponse(data, {
-      appendUserMessage: Boolean(data.heard_text),
-      heardText: data.heard_text || "",
-    });
-
-    setMicStatus("ตอบกลับด้วยเสียงแล้ว พร้อมฟังรอบถัดไป");
+    await handleVoiceTurnResponse(data);
+    setMicStatus("ตอบกลับด้วยเสียงแล้ว", "busy");
   } catch (error) {
-    const messageText = getReadableErrorMessage(
-      error,
-      "เกิดปัญหาระหว่างส่งเสียง ลองใหม่อีกครั้งได้ไหม"
-    );
+    const messageText = getReadableErrorMessage(error, "เกิดปัญหาระหว่างส่งเสียง ลองใหม่อีกครั้งได้ไหม");
     appendMessage("assistant", messageText, { source: "fallback" });
     setPillState(chatStatus, "bad", "เกิดข้อผิดพลาด");
+    setKeepMicIndicator(false, "ปิดไมค์ต่อเนื่องชั่วคราวเพราะเกิดข้อผิดพลาด");
     setMicStatus(messageText, "busy");
   } finally {
     setChatBusy(false);
+    if (!state.recording) {
+      setMicState(state.keepMicOpen ? "listening" : "closed");
+    }
   }
 }
 
@@ -744,6 +922,7 @@ async function startBrowserSpeechRecognition() {
     state.speechRecognition = recognition;
     state.recording = true;
     chatMicButton.textContent = "หยุดฟัง";
+    setMicState("listening");
     setMicStatus("กำลังฟังผ่านเบราว์เซอร์ พูดได้เลย", "live");
     setChatBusy(false);
 
@@ -757,7 +936,7 @@ async function startBrowserSpeechRecognition() {
       state.speechRecognition = null;
       chatMicButton.textContent = "ไมค์";
       setChatBusy(false);
-      await sendRecognizedText(transcript);
+      await sendVoiceText(transcript);
     };
 
     recognition.onerror = (event) => {
@@ -765,6 +944,8 @@ async function startBrowserSpeechRecognition() {
       state.speechRecognition = null;
       chatMicButton.textContent = "ไมค์";
       setChatBusy(false);
+      setKeepMicIndicator(false, "เบราว์เซอร์ฟังเสียงไม่สำเร็จ");
+      setMicState("closed");
 
       if (event.error === "no-speech") {
         setMicStatus("ไม่ได้ยินเสียงชัดพอ ลองพูดใหม่อีกครั้งได้", "busy");
@@ -774,7 +955,6 @@ async function startBrowserSpeechRecognition() {
         setMicStatus("เบราว์เซอร์ยังไม่ได้รับสิทธิ์ไมโครโฟน ลองอนุญาตก่อน", "busy");
         return;
       }
-
       setMicStatus("เบราว์เซอร์ฟังเสียงไม่สำเร็จ จะสลับไปใช้อัปโหลดเสียงแทน", "busy");
     };
 
@@ -786,6 +966,7 @@ async function startBrowserSpeechRecognition() {
       state.speechRecognition = null;
       chatMicButton.textContent = "ไมค์";
       setChatBusy(false);
+      setMicState("closed");
       setMicStatus("หยุดฟังแล้ว ลองกดไมค์ใหม่อีกครั้งได้", "busy");
     };
 
@@ -796,6 +977,7 @@ async function startBrowserSpeechRecognition() {
     state.speechRecognition = null;
     chatMicButton.textContent = "ไมค์";
     setChatBusy(false);
+    setMicState("closed");
     setMicStatus("เปิดโหมดฟังเสียงในเบราว์เซอร์ไม่สำเร็จ จะใช้อัปโหลดเสียงแทน", "busy");
     return false;
   }
@@ -805,6 +987,9 @@ async function startVoiceRecording() {
   if (state.chatBusy || state.recording) {
     return;
   }
+
+  clearAutoListenTimer();
+  state.stopRequested = false;
 
   if (browserSupportsSpeechRecognition()) {
     const startedBrowserRecognition = await startBrowserSpeechRecognition();
@@ -854,6 +1039,7 @@ async function startVoiceRecording() {
 
     state.recording = true;
     chatMicButton.textContent = "หยุดอัด";
+    setMicState("listening");
     setMicStatus("กำลังอัดเสียงอยู่ กดหยุดเมื่อพูดจบ", "live");
     setChatBusy(false);
     state.mediaRecorder.start();
@@ -862,6 +1048,7 @@ async function startVoiceRecording() {
     state.recording = false;
     chatMicButton.textContent = "ไมค์";
     setChatBusy(false);
+    setMicState("closed");
     setMicStatus(
       getReadableErrorMessage(error, "เปิดไมโครโฟนไม่สำเร็จ ลองเช็ก permission ของเบราว์เซอร์"),
       "busy"
@@ -881,6 +1068,7 @@ function stopVoiceRecording() {
     state.recording = false;
     chatMicButton.textContent = "ไมค์";
     setChatBusy(false);
+    setMicState("thinking");
     return;
   }
 
@@ -889,96 +1077,21 @@ function stopVoiceRecording() {
   }
 
   setMicStatus("หยุดอัดแล้ว กำลังเตรียมส่งเสียง...", "busy");
-
   if (state.mediaRecorder.state !== "inactive") {
     state.mediaRecorder.stop();
   }
+  setMicState("thinking");
 }
 
-async function refreshDashboardStatus() {
-  try {
-    const { response, data } = await fetchJson("/dashboard/status", {}, 10000);
-    if (!response.ok) {
-      throw new Error("dashboard status failed");
-    }
-
-    let esp32Status = {
-      device_id: data.device.device_id,
-      online: data.device.online,
-      last_seen_at: data.device.last_seen_at,
-      seconds_since_heartbeat: data.device.seconds_since_heartbeat,
-      pending_command_count: data.device.pending_command_count,
-      latest_command: data.device.latest_command,
-    };
-
-    try {
-      const encodedDeviceId = encodeURIComponent(data.device.device_id || data.sensor.device_id || "esp32-01");
-      const statusResult = await fetchJson(`/esp32/status?device_id=${encodedDeviceId}`, {}, 10000);
-      if (statusResult.response.ok) {
-        esp32Status = statusResult.data;
-      }
-    } catch (statusError) {
-      // Keep the aggregate fallback state from /dashboard/status.
-    }
-
-    state.maxChatHistoryItems =
-      Number.isFinite(data.app?.max_chat_history_items) && data.app.max_chat_history_items > 0
-        ? data.app.max_chat_history_items
-        : state.maxChatHistoryItems;
-    trimChatHistory();
-
-    sensorDeviceId.textContent = data.sensor.device_id || "-";
-    sensorTemperature.textContent =
-      data.sensor.temperature === null ? "-" : `${Math.round(data.sensor.temperature)} °C`;
-    sensorHumidity.textContent =
-      data.sensor.humidity === null ? "-" : `${Math.round(data.sensor.humidity)} %`;
-    sensorFreshness.textContent = data.sensor.is_fresh
-      ? "ข้อมูลล่าสุดพร้อมใช้งาน"
-      : "ยังไม่มีข้อมูลใหม่";
-    sensorUpdated.textContent = formatDate(data.sensor.received_at || data.sensor.timestamp);
-
-    motionStatus.textContent = data.motion.motion_detected
-      ? "พบการเคลื่อนไหว"
-      : "ยังไม่พบการเคลื่อนไหว";
-    motionLastDetected.textContent = formatDate(data.motion.last_motion_at);
-    motionLastEvent.textContent = formatDate(data.motion.last_event_at);
-    motionGreeting.textContent = data.motion.greeting_message || "-";
-
-    setPillState(
-      deviceOnlineIndicator,
-      esp32Status.online ? "good" : "warn",
-      esp32Status.online ? "ESP32 online" : "ESP32 offline"
-    );
-    deviceLatestCommand.textContent = esp32Status.latest_command
-      ? `relay ch${esp32Status.latest_command.channel} -> ${esp32Status.latest_command.action}`
-      : "-";
-    devicePendingCount.textContent = String(
-      esp32Status.pending_command_count ?? data.device.pending_command_count ?? 0
-    );
-    deviceLastSeen.textContent = formatHeartbeatStatus(
-      esp32Status.last_seen_at,
-      esp32Status.seconds_since_heartbeat
-    );
-
-    voiceProvider.textContent = data.voice.provider || "-";
-    voiceName.textContent = data.voice.default_voice || "-";
-    voiceOutputFile.textContent = data.voice.output_file || "-";
-
-    if (data.voice.tts_enabled && data.voice.demo_voice_mode) {
-      setPillState(voiceModeIndicator, "good", "Demo voice mode เปิดอยู่");
-    } else if (data.voice.tts_enabled) {
-      setPillState(voiceModeIndicator, "warn", "TTS เปิดอยู่ แต่ demo voice ปิด");
-    } else {
-      setPillState(voiceModeIndicator, "bad", "TTS ปิดอยู่");
-    }
-  } catch (error) {
-    sensorFreshness.textContent = "ดึงสถานะไม่สำเร็จ";
-    motionStatus.textContent = "ดึงสถานะไม่สำเร็จ";
-    motionLastDetected.textContent = "-";
-    motionLastEvent.textContent = "-";
-    motionGreeting.textContent = "-";
-    setPillState(deviceOnlineIndicator, "bad", "อ่านสถานะไม่ได้");
-    setPillState(voiceModeIndicator, "bad", "อ่านสถานะไม่ได้");
+function stopContinuousConversation() {
+  state.stopRequested = true;
+  clearAutoListenTimer();
+  setKeepMicIndicator(false, "ปิดไมค์ต่อเนื่องแล้ว");
+  if (state.recording) {
+    stopVoiceRecording();
+  } else {
+    setMicState("closed");
+    setMicStatus("หยุดฟังแล้ว กดไมค์เมื่ออยากเริ่มใหม่", "busy");
   }
 }
 
@@ -992,8 +1105,11 @@ chatMicButton.addEventListener("click", async () => {
     stopVoiceRecording();
     return;
   }
-
   await startVoiceRecording();
+});
+
+chatStopButton.addEventListener("click", () => {
+  stopContinuousConversation();
 });
 
 quickActions.addEventListener("click", async (event) => {
@@ -1002,6 +1118,21 @@ quickActions.addEventListener("click", async (event) => {
     return;
   }
   await sendChatMessage(button.dataset.message || "");
+});
+
+exitQuickActions.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-exit-message]");
+  if (!button || button.disabled) {
+    return;
+  }
+  await sendVoiceText(button.dataset.exitMessage || "");
+});
+
+pirSimToggle.addEventListener("change", () => {
+  state.pirTouched = true;
+  voiceTurnStatus.textContent = pirSimToggle.checked
+    ? "PIR จำลอง: มีคนอยู่ ระบบพร้อมเปิดไมค์ต่อเมื่อเหมาะสม"
+    : "PIR จำลอง: ไม่มีคนอยู่ ระบบจะเคารพคำตัดสินของ AI มากขึ้น";
 });
 
 sensorRefreshButton.addEventListener("click", refreshDashboardStatus);
@@ -1077,6 +1208,7 @@ window.addEventListener("offline", () => {
 });
 
 window.addEventListener("beforeunload", () => {
+  clearAutoListenTimer();
   if (state.speechRecognition) {
     state.speechRecognition.abort();
     state.speechRecognition = null;
@@ -1102,6 +1234,8 @@ if (browserSupportsSpeechRecognition()) {
   chatMicButton.disabled = true;
 }
 
+setMicState("closed");
+setKeepMicIndicator(false, "พร้อมเริ่มคุยต่อเนื่องเมื่อกดไมค์");
 setPillState(chatStatus, "neutral", "พร้อมใช้งาน");
 setChatBusy(false);
 refreshDashboardStatus();

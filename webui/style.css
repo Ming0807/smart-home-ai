@@ -293,6 +293,37 @@ button:active,
   flex-wrap: wrap;
 }
 
+.voice-session-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.toggle-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.toggle-control input {
+  width: 16px;
+  height: 16px;
+}
+
+.quick-actions-exit {
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+
+.quick-actions-exit button {
+  background: rgba(224, 165, 44, 0.14);
+  border-color: rgba(224, 165, 44, 0.28);
+}
+
 .loading-text {
   color: var(--panel-muted);
   min-height: 1em;
