@@ -4,6 +4,9 @@ const chatInput = document.getElementById("chat-input");
 const chatLoading = document.getElementById("chat-loading");
 const chatStatus = document.getElementById("chat-status");
 const chatSendButton = document.getElementById("chat-send-button");
+const chatMicButton = document.getElementById("chat-mic-button");
+const chatMicStatus = document.getElementById("chat-mic-status");
+const chatHeardText = document.getElementById("chat-heard-text");
 const quickActions = document.getElementById("quick-actions");
 
 const sensorTemperature = document.getElementById("sensor-temperature");
@@ -45,8 +48,16 @@ const motionRefreshButton = document.getElementById("motion-refresh-button");
 const relayOnButton = document.getElementById("relay-on-button");
 const relayOffButton = document.getElementById("relay-off-button");
 
+const SpeechRecognitionConstructor =
+  window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
 const state = {
   chatBusy: false,
+  recording: false,
+  speechRecognition: null,
+  mediaRecorder: null,
+  mediaStream: null,
+  audioChunks: [],
   maxChatHistoryItems: 50,
 };
 
@@ -71,9 +82,35 @@ function setPillState(element, tone, text) {
   element.textContent = text;
 }
 
+function setMicStatus(message, tone = "neutral") {
+  chatMicStatus.hidden = false;
+  chatMicStatus.textContent = message;
+  chatMicStatus.classList.remove("chat-mic-status-live", "chat-mic-status-busy");
+
+  if (tone === "live") {
+    chatMicStatus.classList.add("chat-mic-status-live");
+  } else if (tone === "busy") {
+    chatMicStatus.classList.add("chat-mic-status-busy");
+  }
+}
+
+function showHeardText(text) {
+  if (!text) {
+    chatHeardText.hidden = true;
+    chatHeardText.textContent = "";
+    chatHeardText.classList.remove("chat-heard-text");
+    return;
+  }
+
+  chatHeardText.hidden = false;
+  chatHeardText.classList.add("chat-heard-text");
+  chatHeardText.textContent = `ได้ยินว่า: ${text}`;
+}
+
 function getChatActionButtons() {
   return [
     chatSendButton,
+    chatMicButton,
     weatherSubmitButton,
     relayOnButton,
     relayOffButton,
@@ -83,16 +120,27 @@ function getChatActionButtons() {
 
 function setChatBusy(isBusy) {
   state.chatBusy = isBusy;
-  chatInput.disabled = isBusy;
+  const controlsDisabled = isBusy || state.recording;
+
+  chatInput.disabled = controlsDisabled;
   for (const button of getChatActionButtons()) {
-    button.disabled = isBusy;
+    if (button === chatMicButton && state.recording) {
+      button.disabled = false;
+      continue;
+    }
+    button.disabled = controlsDisabled;
   }
+
   chatLoading.hidden = !isBusy;
 
   if (isBusy) {
     setPillState(chatStatus, "warn", "กำลังประมวลผล");
+  } else if (state.recording) {
+    setPillState(chatStatus, "warn", "กำลังฟังเสียง");
   } else if (!navigator.onLine) {
     setPillState(chatStatus, "bad", "ออฟไลน์");
+  } else {
+    setPillState(chatStatus, "neutral", "พร้อมใช้งาน");
   }
 }
 
@@ -191,6 +239,105 @@ function attachAudioBlob(audioElement, blobUrl) {
   audioElement.load();
 }
 
+async function fetchJson(url, options = {}, timeoutMs = 30000) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+      ...options,
+      signal: controller.signal,
+    });
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : {};
+    return { response, data };
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
+async function requestSpeechAudioUrl(text) {
+  const { response, data } = await fetchJson(
+    "/voice/speak",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    },
+    40000
+  );
+
+  if (!response.ok || data.status !== "ok" || !data.audio_url) {
+    throw new Error(data.error || "tts request failed");
+  }
+
+  return data.audio_url;
+}
+
+async function ensureChatAudioUrl(replyText, audioUrl) {
+  if (audioUrl) {
+    return audioUrl;
+  }
+  if (!replyText || !replyText.trim()) {
+    return null;
+  }
+
+  return requestSpeechAudioUrl(replyText.trim());
+}
+
+function getAudioToken(url) {
+  try {
+    const resolvedUrl = new URL(url, window.location.origin);
+    return resolvedUrl.searchParams.get("token");
+  } catch (error) {
+    return null;
+  }
+}
+
+async function ensureAudioTokenReady(url) {
+  const token = getAudioToken(url);
+  if (!token) {
+    return;
+  }
+
+  const { response, data } = await fetchJson("/voice/status", {}, 8000);
+  if (!response.ok) {
+    throw new Error("voice status failed");
+  }
+
+  if (data.current_token && data.current_token !== token) {
+    throw new Error("audio superseded");
+  }
+
+  if (!data.audio_ready) {
+    throw new Error("audio not ready");
+  }
+}
+
+function isSupersededAudioError(error) {
+  return error instanceof Error && error.message === "audio superseded";
+}
+
+async function fetchAudioBlobUrl(url) {
+  const bustUrl = `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+  const response = await fetch(bustUrl, {
+    cache: "no-store",
+    headers: { Accept: "audio/mpeg" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`audio request failed: ${response.status}`);
+  }
+
+  const audioBlob = await response.blob();
+  if (!audioBlob.size) {
+    throw new Error("audio blob is empty");
+  }
+
+  return URL.createObjectURL(audioBlob);
+}
+
 async function loadAudioWithRetry(
   audioElement,
   url,
@@ -281,7 +428,7 @@ async function loadAudioWithRetry(
         );
         return;
       } catch (recoveryError) {
-        // Let the UI fall through to the final error state below.
+        // Fall through to the final error state below.
       }
     }
 
@@ -289,105 +436,6 @@ async function loadAudioWithRetry(
       statusElement.textContent = "ยังสร้างเสียงไม่สำเร็จ ลองใหม่อีกครั้งได้";
     }
   }
-}
-
-async function fetchAudioBlobUrl(url) {
-  const bustUrl = `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
-  const response = await fetch(bustUrl, {
-    cache: "no-store",
-    headers: { Accept: "audio/mpeg" },
-  });
-
-  if (!response.ok) {
-    throw new Error(`audio request failed: ${response.status}`);
-  }
-
-  const audioBlob = await response.blob();
-  if (!audioBlob.size) {
-    throw new Error("audio blob is empty");
-  }
-
-  return URL.createObjectURL(audioBlob);
-}
-
-function getAudioToken(url) {
-  try {
-    const resolvedUrl = new URL(url, window.location.origin);
-    return resolvedUrl.searchParams.get("token");
-  } catch (error) {
-    return null;
-  }
-}
-
-async function ensureAudioTokenReady(url) {
-  const token = getAudioToken(url);
-  if (!token) {
-    return;
-  }
-
-  const { response, data } = await fetchJson("/voice/status", {}, 8000);
-  if (!response.ok) {
-    throw new Error("voice status failed");
-  }
-
-  if (data.current_token && data.current_token !== token) {
-    throw new Error("audio superseded");
-  }
-
-  if (!data.audio_ready) {
-    throw new Error("audio not ready");
-  }
-}
-
-function isSupersededAudioError(error) {
-  return error instanceof Error && error.message === "audio superseded";
-}
-
-async function fetchJson(url, options = {}, timeoutMs = 30000) {
-  const controller = new AbortController();
-  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      cache: "no-store",
-      ...options,
-      signal: controller.signal,
-    });
-    const text = await response.text();
-    const data = text ? JSON.parse(text) : {};
-    return { response, data };
-  } finally {
-    window.clearTimeout(timeoutId);
-  }
-}
-
-async function ensureChatAudioUrl(replyText, audioUrl) {
-  if (audioUrl) {
-    return audioUrl;
-  }
-  if (!replyText || !replyText.trim()) {
-    return null;
-  }
-
-  return requestSpeechAudioUrl(replyText.trim());
-}
-
-async function requestSpeechAudioUrl(text) {
-  const { response, data } = await fetchJson(
-    "/voice/speak",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    },
-    40000
-  );
-
-  if (!response.ok || data.status !== "ok" || !data.audio_url) {
-    throw new Error(data.error || "tts request failed");
-  }
-
-  return data.audio_url;
 }
 
 async function refreshVoiceDebugStatus() {
@@ -434,14 +482,123 @@ function getReadableErrorMessage(error, fallbackText) {
   return error instanceof Error && error.message ? error.message : fallbackText;
 }
 
+function formatHeartbeatStatus(lastHeartbeatAt, secondsSinceHeartbeat) {
+  if (!lastHeartbeatAt) {
+    return "-";
+  }
+
+  const formattedTime = formatDate(lastHeartbeatAt);
+  if (secondsSinceHeartbeat === null || secondsSinceHeartbeat === undefined) {
+    return formattedTime;
+  }
+
+  return `${formattedTime} (${secondsSinceHeartbeat} วินาทีก่อน)`;
+}
+
+function browserSupportsRecording() {
+  return Boolean(window.MediaRecorder && navigator.mediaDevices?.getUserMedia);
+}
+
+function browserSupportsSpeechRecognition() {
+  return Boolean(SpeechRecognitionConstructor);
+}
+
+function createSpeechRecognition() {
+  if (!SpeechRecognitionConstructor) {
+    return null;
+  }
+
+  const recognition = new SpeechRecognitionConstructor();
+  recognition.lang = "th-TH";
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+  return recognition;
+}
+
+function getSupportedRecordingMimeType() {
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/ogg;codecs=opus",
+    "audio/mp4",
+  ];
+
+  for (const candidate of candidates) {
+    if (window.MediaRecorder && MediaRecorder.isTypeSupported(candidate)) {
+      return candidate;
+    }
+  }
+
+  return "";
+}
+
+function cleanupMediaStream() {
+  if (state.mediaStream) {
+    for (const track of state.mediaStream.getTracks()) {
+      track.stop();
+    }
+  }
+
+  state.mediaStream = null;
+  state.mediaRecorder = null;
+  state.audioChunks = [];
+}
+
+async function handleChatResponse(data, options = {}) {
+  const {
+    appendUserMessage = true,
+    userMessage = "",
+    heardText = "",
+    refreshStatus = true,
+  } = options;
+
+  const userText = heardText || userMessage;
+  if (appendUserMessage && userText) {
+    appendMessage("user", userText);
+  }
+
+  if (heardText) {
+    showHeardText(heardText);
+  } else if (!userMessage) {
+    showHeardText("");
+  }
+
+  let resolvedAudioUrl = null;
+  try {
+    resolvedAudioUrl = await ensureChatAudioUrl(data.reply, data.audio_url || null);
+  } catch (audioError) {
+    resolvedAudioUrl = null;
+  }
+
+  appendMessage("assistant", data.reply, {
+    intent: data.intent,
+    source: data.source,
+    audioUrl: resolvedAudioUrl,
+  });
+
+  setPillState(chatStatus, "good", "ตอบแล้ว");
+
+  if (data.intent === "weather_query") {
+    weatherResult.textContent = data.reply;
+    weatherResult.classList.remove("muted");
+  }
+
+  if (refreshStatus) {
+    await refreshDashboardStatus();
+    await refreshVoiceDebugStatus();
+  }
+}
+
 async function sendChatMessage(message) {
   const trimmed = message.trim();
-  if (!trimmed || state.chatBusy) {
+  if (!trimmed || state.chatBusy || state.recording) {
     return;
   }
 
   appendMessage("user", trimmed);
   chatInput.value = "";
+  showHeardText("");
   setChatBusy(true);
 
   try {
@@ -459,27 +616,10 @@ async function sendChatMessage(message) {
       throw new Error(data.detail || "ส่งข้อความไม่สำเร็จ");
     }
 
-    let resolvedAudioUrl = null;
-    try {
-      resolvedAudioUrl = await ensureChatAudioUrl(data.reply, data.audio_url || null);
-    } catch (audioError) {
-      resolvedAudioUrl = null;
-    }
-
-    appendMessage("assistant", data.reply, {
-      intent: data.intent,
-      source: data.source,
-      audioUrl: resolvedAudioUrl,
+    await handleChatResponse(data, {
+      appendUserMessage: false,
+      userMessage: trimmed,
     });
-    setPillState(chatStatus, "good", "ตอบแล้ว");
-
-    if (data.intent === "weather_query") {
-      weatherResult.textContent = data.reply;
-      weatherResult.classList.remove("muted");
-    }
-
-    await refreshDashboardStatus();
-    await refreshVoiceDebugStatus();
   } catch (error) {
     const messageText = getReadableErrorMessage(
       error,
@@ -489,6 +629,269 @@ async function sendChatMessage(message) {
     setPillState(chatStatus, "bad", "เกิดข้อผิดพลาด");
   } finally {
     setChatBusy(false);
+  }
+}
+
+async function sendRecognizedText(transcript) {
+  const trimmed = transcript.trim();
+  if (!trimmed) {
+    setMicStatus("ยังจับคำพูดไม่ได้ชัด ลองพูดใหม่อีกครั้งได้", "busy");
+    return;
+  }
+
+  showHeardText(trimmed);
+  setMicStatus("ได้ยินเสียงแล้ว กำลังส่งเข้าระบบ...", "busy");
+  setChatBusy(true);
+
+  try {
+    const { response, data } = await fetchJson(
+      "/chat",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: trimmed }),
+      },
+      45000
+    );
+
+    if (!response.ok) {
+      throw new Error(data.detail || "ส่งข้อความเสียงไม่สำเร็จ");
+    }
+
+    await handleChatResponse(data, {
+      appendUserMessage: true,
+      heardText: trimmed,
+    });
+
+    setMicStatus("ตอบกลับด้วยเสียงแล้ว พร้อมฟังรอบถัดไป");
+  } catch (error) {
+    const messageText = getReadableErrorMessage(
+      error,
+      "เกิดปัญหาระหว่างส่งข้อความเสียง ลองใหม่อีกครั้งได้ไหม"
+    );
+    appendMessage("assistant", messageText, { source: "fallback" });
+    setPillState(chatStatus, "bad", "เกิดข้อผิดพลาด");
+    setMicStatus(messageText, "busy");
+  } finally {
+    setChatBusy(false);
+  }
+}
+
+async function sendVoiceRecording(audioBlob, mimeType) {
+  if (!audioBlob.size) {
+    setMicStatus("ไม่ได้รับข้อมูลเสียง ลองกดไมค์ใหม่อีกครั้ง", "busy");
+    return;
+  }
+
+  setChatBusy(true);
+  setMicStatus("กำลังแปลงเสียงเป็นข้อความ...", "busy");
+  showHeardText("");
+
+  const extension = mimeType.includes("ogg")
+    ? "ogg"
+    : mimeType.includes("mp4")
+      ? "m4a"
+      : "webm";
+  const formData = new FormData();
+  formData.append("audio", audioBlob, `voice-input.${extension}`);
+
+  try {
+    const { response, data } = await fetchJson(
+      "/voice/chat",
+      {
+        method: "POST",
+        body: formData,
+      },
+      120000
+    );
+
+    if (!response.ok) {
+      throw new Error(data.detail || "ส่งเสียงไม่สำเร็จ");
+    }
+
+    if (data.heard_text) {
+      setMicStatus("ได้ยินเสียงแล้ว กำลังตอบกลับ...", "busy");
+    } else {
+      setMicStatus("ยังจับข้อความไม่ได้ชัด ลองพูดใหม่อีกครั้งได้", "busy");
+    }
+
+    await handleChatResponse(data, {
+      appendUserMessage: Boolean(data.heard_text),
+      heardText: data.heard_text || "",
+    });
+
+    setMicStatus("ตอบกลับด้วยเสียงแล้ว พร้อมฟังรอบถัดไป");
+  } catch (error) {
+    const messageText = getReadableErrorMessage(
+      error,
+      "เกิดปัญหาระหว่างส่งเสียง ลองใหม่อีกครั้งได้ไหม"
+    );
+    appendMessage("assistant", messageText, { source: "fallback" });
+    setPillState(chatStatus, "bad", "เกิดข้อผิดพลาด");
+    setMicStatus(messageText, "busy");
+  } finally {
+    setChatBusy(false);
+  }
+}
+
+async function startBrowserSpeechRecognition() {
+  const recognition = createSpeechRecognition();
+  if (!recognition) {
+    return false;
+  }
+
+  try {
+    state.speechRecognition = recognition;
+    state.recording = true;
+    chatMicButton.textContent = "หยุดฟัง";
+    setMicStatus("กำลังฟังผ่านเบราว์เซอร์ พูดได้เลย", "live");
+    setChatBusy(false);
+
+    recognition.onresult = async (event) => {
+      const transcript = Array.from(event.results || [])
+        .map((result) => result[0]?.transcript || "")
+        .join(" ")
+        .trim();
+
+      state.recording = false;
+      state.speechRecognition = null;
+      chatMicButton.textContent = "ไมค์";
+      setChatBusy(false);
+      await sendRecognizedText(transcript);
+    };
+
+    recognition.onerror = (event) => {
+      state.recording = false;
+      state.speechRecognition = null;
+      chatMicButton.textContent = "ไมค์";
+      setChatBusy(false);
+
+      if (event.error === "no-speech") {
+        setMicStatus("ไม่ได้ยินเสียงชัดพอ ลองพูดใหม่อีกครั้งได้", "busy");
+        return;
+      }
+      if (event.error === "not-allowed") {
+        setMicStatus("เบราว์เซอร์ยังไม่ได้รับสิทธิ์ไมโครโฟน ลองอนุญาตก่อน", "busy");
+        return;
+      }
+
+      setMicStatus("เบราว์เซอร์ฟังเสียงไม่สำเร็จ จะสลับไปใช้อัปโหลดเสียงแทน", "busy");
+    };
+
+    recognition.onend = () => {
+      if (!state.recording) {
+        return;
+      }
+      state.recording = false;
+      state.speechRecognition = null;
+      chatMicButton.textContent = "ไมค์";
+      setChatBusy(false);
+      setMicStatus("หยุดฟังแล้ว ลองกดไมค์ใหม่อีกครั้งได้", "busy");
+    };
+
+    recognition.start();
+    return true;
+  } catch (error) {
+    state.recording = false;
+    state.speechRecognition = null;
+    chatMicButton.textContent = "ไมค์";
+    setChatBusy(false);
+    setMicStatus("เปิดโหมดฟังเสียงในเบราว์เซอร์ไม่สำเร็จ จะใช้อัปโหลดเสียงแทน", "busy");
+    return false;
+  }
+}
+
+async function startVoiceRecording() {
+  if (state.chatBusy || state.recording) {
+    return;
+  }
+
+  if (browserSupportsSpeechRecognition()) {
+    const startedBrowserRecognition = await startBrowserSpeechRecognition();
+    if (startedBrowserRecognition) {
+      return;
+    }
+  }
+
+  if (!browserSupportsRecording()) {
+    setMicStatus("เบราว์เซอร์นี้ยังไม่รองรับการอัดเสียงสำหรับเดโมนี้", "busy");
+    return;
+  }
+
+  const mimeType = getSupportedRecordingMimeType();
+  if (!mimeType) {
+    setMicStatus("เบราว์เซอร์นี้ยังไม่รองรับรูปแบบไฟล์เสียงที่ใช้งานได้", "busy");
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+    });
+
+    state.mediaStream = stream;
+    state.audioChunks = [];
+    state.mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+    state.mediaRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data && event.data.size > 0) {
+        state.audioChunks.push(event.data);
+      }
+    });
+
+    state.mediaRecorder.addEventListener("stop", async () => {
+      const recordedBlob = new Blob(state.audioChunks, { type: mimeType });
+      cleanupMediaStream();
+      state.recording = false;
+      chatMicButton.textContent = "ไมค์";
+      setChatBusy(false);
+      await sendVoiceRecording(recordedBlob, mimeType);
+    });
+
+    state.recording = true;
+    chatMicButton.textContent = "หยุดอัด";
+    setMicStatus("กำลังอัดเสียงอยู่ กดหยุดเมื่อพูดจบ", "live");
+    setChatBusy(false);
+    state.mediaRecorder.start();
+  } catch (error) {
+    cleanupMediaStream();
+    state.recording = false;
+    chatMicButton.textContent = "ไมค์";
+    setChatBusy(false);
+    setMicStatus(
+      getReadableErrorMessage(error, "เปิดไมโครโฟนไม่สำเร็จ ลองเช็ก permission ของเบราว์เซอร์"),
+      "busy"
+    );
+  }
+}
+
+function stopVoiceRecording() {
+  if (!state.recording) {
+    return;
+  }
+
+  if (state.speechRecognition) {
+    setMicStatus("หยุดฟังแล้ว กำลังสรุปคำพูด...", "busy");
+    state.speechRecognition.abort();
+    state.speechRecognition = null;
+    state.recording = false;
+    chatMicButton.textContent = "ไมค์";
+    setChatBusy(false);
+    return;
+  }
+
+  if (!state.mediaRecorder) {
+    return;
+  }
+
+  setMicStatus("หยุดอัดแล้ว กำลังเตรียมส่งเสียง...", "busy");
+
+  if (state.mediaRecorder.state !== "inactive") {
+    state.mediaRecorder.stop();
   }
 }
 
@@ -515,7 +918,7 @@ async function refreshDashboardStatus() {
         esp32Status = statusResult.data;
       }
     } catch (statusError) {
-      // Keep the dashboard fallback state from /dashboard/status.
+      // Keep the aggregate fallback state from /dashboard/status.
     }
 
     state.maxChatHistoryItems =
@@ -534,7 +937,9 @@ async function refreshDashboardStatus() {
       : "ยังไม่มีข้อมูลใหม่";
     sensorUpdated.textContent = formatDate(data.sensor.received_at || data.sensor.timestamp);
 
-    motionStatus.textContent = data.motion.motion_detected ? "พบการเคลื่อนไหว" : "ยังไม่พบการเคลื่อนไหว";
+    motionStatus.textContent = data.motion.motion_detected
+      ? "พบการเคลื่อนไหว"
+      : "ยังไม่พบการเคลื่อนไหว";
     motionLastDetected.textContent = formatDate(data.motion.last_motion_at);
     motionLastEvent.textContent = formatDate(data.motion.last_event_at);
     motionGreeting.textContent = data.motion.greeting_message || "-";
@@ -544,13 +949,12 @@ async function refreshDashboardStatus() {
       esp32Status.online ? "good" : "warn",
       esp32Status.online ? "ESP32 online" : "ESP32 offline"
     );
-    deviceLatestCommand.textContent = data.device.latest_command
-      ? `relay ch${data.device.latest_command.channel} -> ${data.device.latest_command.action}`
+    deviceLatestCommand.textContent = esp32Status.latest_command
+      ? `relay ch${esp32Status.latest_command.channel} -> ${esp32Status.latest_command.action}`
       : "-";
-    if (esp32Status.latest_command) {
-      deviceLatestCommand.textContent = `relay ch${esp32Status.latest_command.channel} -> ${esp32Status.latest_command.action}`;
-    }
-    devicePendingCount.textContent = String(esp32Status.pending_command_count ?? data.device.pending_command_count ?? 0);
+    devicePendingCount.textContent = String(
+      esp32Status.pending_command_count ?? data.device.pending_command_count ?? 0
+    );
     deviceLastSeen.textContent = formatHeartbeatStatus(
       esp32Status.last_seen_at,
       esp32Status.seconds_since_heartbeat
@@ -578,22 +982,18 @@ async function refreshDashboardStatus() {
   }
 }
 
-function formatHeartbeatStatus(lastHeartbeatAt, secondsSinceHeartbeat) {
-  if (!lastHeartbeatAt) {
-    return "-";
-  }
-
-  const formattedTime = formatDate(lastHeartbeatAt);
-  if (secondsSinceHeartbeat === null || secondsSinceHeartbeat === undefined) {
-    return formattedTime;
-  }
-
-  return `${formattedTime} (${secondsSinceHeartbeat} วินาทีก่อน)`;
-}
-
 chatForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   await sendChatMessage(chatInput.value);
+});
+
+chatMicButton.addEventListener("click", async () => {
+  if (state.recording) {
+    stopVoiceRecording();
+    return;
+  }
+
+  await startVoiceRecording();
 });
 
 quickActions.addEventListener("click", async (event) => {
@@ -650,10 +1050,7 @@ ttsForm.addEventListener("submit", async (event) => {
     await refreshDashboardStatus();
     await refreshVoiceDebugStatus();
   } catch (error) {
-    ttsStatusText.textContent = getReadableErrorMessage(
-      error,
-      "สร้างเสียงไม่สำเร็จ"
-    );
+    ttsStatusText.textContent = getReadableErrorMessage(error, "สร้างเสียงไม่สำเร็จ");
     await refreshVoiceDebugStatus();
   } finally {
     ttsSubmitButton.disabled = false;
@@ -670,7 +1067,7 @@ weatherForm.addEventListener("submit", async (event) => {
 });
 
 window.addEventListener("online", () => {
-  if (!state.chatBusy) {
+  if (!state.chatBusy && !state.recording) {
     setPillState(chatStatus, "neutral", "พร้อมใช้งาน");
   }
 });
@@ -680,6 +1077,11 @@ window.addEventListener("offline", () => {
 });
 
 window.addEventListener("beforeunload", () => {
+  if (state.speechRecognition) {
+    state.speechRecognition.abort();
+    state.speechRecognition = null;
+  }
+  cleanupMediaStream();
   for (const audioElement of document.querySelectorAll("audio")) {
     revokeAudioObjectUrl(audioElement);
   }
@@ -687,9 +1089,18 @@ window.addEventListener("beforeunload", () => {
 
 appendMessage(
   "assistant",
-  "พร้อมทดสอบแล้ว ลองกดปุ่มตัวอย่างหรือพิมพ์ข้อความภาษาไทยได้เลย",
+  "พร้อมทดสอบแล้ว ลองกดปุ่มตัวอย่าง พิมพ์ข้อความภาษาไทย หรือกดปุ่มไมค์เพื่อคุยด้วยเสียงได้เลย",
   { source: "placeholder" }
 );
+
+if (browserSupportsSpeechRecognition()) {
+  setMicStatus("ไมโครโฟนพร้อมใช้งาน โหมดฟังเสียงในเบราว์เซอร์จะถูกใช้ก่อน");
+} else if (browserSupportsRecording()) {
+  setMicStatus("ไมโครโฟนพร้อมใช้งานเมื่ออนุญาตจากเบราว์เซอร์");
+} else {
+  setMicStatus("เบราว์เซอร์นี้ยังไม่รองรับการอัดเสียงสำหรับเดโมนี้", "busy");
+  chatMicButton.disabled = true;
+}
 
 setPillState(chatStatus, "neutral", "พร้อมใช้งาน");
 setChatBusy(false);

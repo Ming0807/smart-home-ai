@@ -1,6 +1,23 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 
-from server.models.voice import SpeakRequest, SpeakResponse, VoiceStatusResponse
+from server.models.voice import (
+    SpeakRequest,
+    SpeakResponse,
+    VoiceChatResponse,
+    VoiceStatusResponse,
+)
+from server.services.chat_service import ChatService, get_chat_service
+from server.services.stt_service import STTService, get_stt_service
 from server.services.tts_service import TTSService, get_tts_service
 
 router = APIRouter(prefix="/voice", tags=["voice"])
@@ -28,6 +45,46 @@ def speak(
         text=result.text,
         provider=result.provider,
         error=result.error,
+    )
+
+
+@router.post(
+    "/chat",
+    response_model=VoiceChatResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def voice_chat(
+    background_tasks: BackgroundTasks,
+    audio: UploadFile = File(...),
+    chat_service: ChatService = Depends(get_chat_service),
+    stt_service: STTService = Depends(get_stt_service),
+) -> VoiceChatResponse:
+    stt_result = await stt_service.transcribe_upload(audio)
+    if not stt_result.ok:
+        fallback_response = chat_service.build_fallback_response(
+            reply="ตอนนี้ระบบฟังเสียงยังไม่พร้อม ลองพูดใหม่อีกครั้งหรือพิมพ์ข้อความแทนก่อนได้ไหม",
+            background_tasks=background_tasks,
+            force_audio=True,
+        )
+        return VoiceChatResponse(
+            heard_text="",
+            reply=fallback_response.reply,
+            intent=fallback_response.intent,
+            source=fallback_response.source,
+            audio_url=fallback_response.audio_url,
+        )
+
+    chat_response = chat_service.handle_message(
+        stt_result.text,
+        background_tasks=background_tasks,
+        force_audio=True,
+    )
+    return VoiceChatResponse(
+        heard_text=stt_result.text,
+        reply=chat_response.reply,
+        intent=chat_response.intent,
+        source=chat_response.source,
+        audio_url=chat_response.audio_url,
     )
 
 

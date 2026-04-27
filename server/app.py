@@ -13,6 +13,7 @@ from server.routes.esp32 import router as esp32_router
 from server.routes.health import router as health_router
 from server.routes.voice import router as voice_router
 from server.services.llm_manager import get_llm_manager
+from server.services.stt_service import get_stt_service
 from server.utils.observability import configure_logging
 
 logger = logging.getLogger(__name__)
@@ -48,14 +49,21 @@ def create_app() -> FastAPI:
 def _register_startup_tasks(app: FastAPI) -> None:
     @app.on_event("startup")
     async def startup() -> None:
-        if not get_settings().llm_warmup_on_start:
-            return
+        settings = get_settings()
 
-        def _warmup() -> None:
-            logger.info("Starting LLM warmup in background")
-            get_llm_manager().warmup()
+        if settings.llm_warmup_on_start:
+            def _warmup_llm() -> None:
+                logger.info("Starting LLM warmup in background")
+                get_llm_manager().warmup()
 
-        Thread(target=_warmup, daemon=True).start()
+            Thread(target=_warmup_llm, daemon=True).start()
+
+        if settings.stt_warmup_on_start:
+            def _warmup_stt() -> None:
+                logger.info("Starting STT warmup in background")
+                get_stt_service().warmup()
+
+            Thread(target=_warmup_stt, daemon=True).start()
 
 
 def _register_handlers(app: FastAPI) -> None:

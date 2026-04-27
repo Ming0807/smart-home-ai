@@ -57,6 +57,11 @@ class Settings(BaseModel):
     tts_output_file: str = Field(default="current_reply.mp3")
     tts_default_voice: str = Field(default="th-TH-PremwadeeNeural")
     tts_output_dir: str = Field(default="static")
+    stt_provider: str = Field(default="faster_whisper")
+    stt_model: str = Field(default="small")
+    stt_language: str = Field(default="th")
+    stt_timeout_seconds: float = Field(default=30.0)
+    stt_warmup_on_start: bool = Field(default=True)
     max_chat_history_items: int = Field(default=50)
 
 
@@ -176,5 +181,10 @@ def get_settings() -> Settings:
         tts_output_file=getenv("TTS_OUTPUT_FILE", "current_reply.mp3"),
         tts_default_voice=getenv("TTS_DEFAULT_VOICE", "th-TH-PremwadeeNeural"),
         tts_output_dir=getenv("TTS_OUTPUT_DIR", "static"),
+        stt_provider=getenv("STT_PROVIDER", "faster_whisper"),
+        stt_model=getenv("STT_MODEL", "small"),
+        stt_language=getenv("STT_LANGUAGE", "th"),
+        stt_timeout_seconds=_get_float_env("STT_TIMEOUT_SECONDS", 30.0),
+        stt_warmup_on_start=_get_bool_env("STT_WARMUP_ON_START", True),
         max_chat_history_items=_get_int_env("MAX_CHAT_HISTORY_ITEMS", 50),
     )
