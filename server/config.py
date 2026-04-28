@@ -21,6 +21,8 @@ class Settings(BaseModel):
     ollama_warmup_timeout_seconds: float = Field(default=75.0)
     chat_timeout_seconds: float = Field(default=30.0)
     llm_warmup_on_start: bool = Field(default=True)
+    llm_keep_awake_in_demo: bool = Field(default=True)
+    llm_keep_awake_interval_seconds: int = Field(default=240)
     llm_max_tokens: int = Field(default=120)
     llm_temperature: float = Field(default=0.2)
     llm_health_cache_ttl_seconds: int = Field(default=30)
@@ -153,6 +155,8 @@ def get_settings() -> Settings:
         ollama_warmup_timeout_seconds=_get_float_env("OLLAMA_WARMUP_TIMEOUT_SECONDS", 75.0),
         chat_timeout_seconds=_get_float_env("CHAT_TIMEOUT_SECONDS", 30.0),
         llm_warmup_on_start=_get_bool_env("LLM_WARMUP_ON_START", True),
+        llm_keep_awake_in_demo=_get_bool_env("LLM_KEEP_AWAKE_IN_DEMO", True),
+        llm_keep_awake_interval_seconds=_get_int_env("LLM_KEEP_AWAKE_INTERVAL_SECONDS", 240),
         llm_max_tokens=_get_int_env("LLM_MAX_TOKENS", 120),
         llm_temperature=_get_float_env("LLM_TEMPERATURE", 0.2),
         llm_health_cache_ttl_seconds=_get_int_env("LLM_HEALTH_CACHE_TTL_SECONDS", 30),

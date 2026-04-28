@@ -27,3 +27,5 @@ class LLMHealthResponse(BaseModel):
     model: str
     last_error: str | None = None
     latency_ms: float | None = None
+    keep_awake_enabled: bool = False
+    keep_awake_paused: bool = False

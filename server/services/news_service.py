@@ -49,6 +49,7 @@ class NewsQuery:
     category: str | None = None
     keywords: str | None = None
     label: str | None = None
+    required_any_terms: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -211,7 +212,10 @@ class NewsService:
         last_items: tuple[NewsItem, ...] = ()
         for variant in self._build_request_variants():
             payload = self._fetch_news_payload(news_query, variant)
-            items = self._normalize_items(payload)
+            items = self._filter_items_for_query(
+                news_query,
+                self._normalize_items(payload),
+            )
             if items:
                 return items
             last_items = items
@@ -253,6 +257,7 @@ class NewsService:
     def _normalize_items(self, payload: dict[str, Any]) -> tuple[NewsItem, ...]:
         raw_items = payload.get("news") or []
         normalized_items: list[NewsItem] = []
+        seen_titles: set[str] = set()
         for item in raw_items[: self._settings.news_max_items]:
             if not isinstance(item, dict):
                 continue
@@ -260,6 +265,10 @@ class NewsService:
             url = str(item.get("url") or "").strip()
             if not title or not url:
                 continue
+            normalized_title = _normalize(title)
+            if normalized_title in seen_titles:
+                continue
+            seen_titles.add(normalized_title)
 
             normalized_items.append(
                 NewsItem(
@@ -273,6 +282,24 @@ class NewsService:
         return tuple(normalized_items)
 
     @staticmethod
+    def _filter_items_for_query(
+        news_query: NewsQuery,
+        items: tuple[NewsItem, ...],
+    ) -> tuple[NewsItem, ...]:
+        if not news_query.required_any_terms:
+            return items
+
+        filtered_items: list[NewsItem] = []
+        normalized_terms = tuple(term.casefold() for term in news_query.required_any_terms)
+        for item in items:
+            haystack = " ".join(
+                (item.title, item.description, item.source)
+            ).casefold()
+            if any(term in haystack for term in normalized_terms):
+                filtered_items.append(item)
+        return tuple(filtered_items)
+
+    @staticmethod
     def _extract_source(item: dict[str, Any]) -> str:
         author = str(item.get("author") or "").strip()
         if author:
@@ -283,8 +310,9 @@ class NewsService:
         normalized_message = _normalize(message)
         if any(keyword in normalized_message for keyword in ("สหรัฐ", "อเมริกา", "usa", "us")) and "อิหร่าน" in normalized_message:
             return NewsQuery(
-                keywords="United States Iran",
+                keywords="Iran United States Middle East",
                 label="ข่าวสหรัฐกับอิหร่านล่าสุด",
+                required_any_terms=("iran", "อิหร่าน", "middle east", "ตะวันออกกลาง"),
             )
         if any(keyword in normalized_message for keyword in ("การเงิน", "เศรษฐกิจ", "หุ้น", "คริปโต", "set", "finance", "business")):
             return NewsQuery(
@@ -319,7 +347,7 @@ class NewsService:
         )
         return (
             f"{topic_label}ที่น่าสนใจมี {headline_count} เรื่อง: {headline_summary} "
-            "ถ้าอยากฟังต่อบอกได้เลยว่าเอาข้อไหน หรือบอกว่า ส่งข่าวเข้า LINE"
+            "ถ้าอยากฟังต่อ บอกเลขข้อที่สนใจได้เลย เช่น ข้อ 1 หรือ ข้อ 2"
         )
 
     @staticmethod

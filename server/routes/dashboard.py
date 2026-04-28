@@ -6,11 +6,13 @@ from server.models.dashboard import (
     AppSnapshot,
     DashboardStatusResponse,
     DeviceSnapshot,
+    LLMSnapshot,
     MotionSnapshot,
     SensorSnapshot,
     VoiceSnapshot,
 )
 from server.services.esp32_manager import Esp32Manager, get_esp32_manager
+from server.services.llm_manager import LLMManager, get_llm_manager
 from server.services.motion_manager import MotionManager, get_motion_manager
 from server.services.sensor_manager import SensorManager, get_sensor_manager
 
@@ -31,6 +33,7 @@ def dashboard_status(
     sensor_manager: SensorManager = Depends(get_sensor_manager),
     esp32_manager: Esp32Manager = Depends(get_esp32_manager),
     motion_manager: MotionManager = Depends(get_motion_manager),
+    llm_manager: LLMManager = Depends(get_llm_manager),
 ) -> DashboardStatusResponse:
     device_id = settings.default_esp32_device_id
     reading = sensor_manager.get_latest_reading(device_id)
@@ -41,6 +44,7 @@ def dashboard_status(
     latest_command = esp32_manager.get_latest_command(device_id)
     latest_motion_event = motion_manager.get_latest_event(device_id)
     latest_detected_motion = motion_manager.get_latest_detected_event(device_id)
+    llm_health = llm_manager.get_health_status()
 
     sensor_snapshot = SensorSnapshot(
         device_id=device_id,
@@ -84,11 +88,25 @@ def dashboard_status(
         default_voice=settings.tts_default_voice,
         output_file=settings.tts_output_file,
     )
+    llm_snapshot = LLMSnapshot(
+        status="ok" if llm_health.available else "degraded",
+        available=llm_health.available,
+        model_present=llm_health.model_present,
+        warmed_up=llm_health.warmed_up,
+        model=settings.ollama_model,
+        source=llm_health.source,
+        checked_at=llm_health.checked_at,
+        last_error=llm_health.last_error,
+        latency_ms=llm_health.last_latency_ms,
+        keep_awake_enabled=settings.demo_mode and settings.llm_keep_awake_in_demo,
+        keep_awake_paused=llm_manager.is_keep_awake_paused,
+    )
     return DashboardStatusResponse(
         sensor=sensor_snapshot,
         device=device_snapshot,
         motion=motion_snapshot,
         voice=voice_snapshot,
+        llm=llm_snapshot,
         app=AppSnapshot(
             demo_mode=settings.demo_mode,
             debug_logs=settings.debug_logs,

@@ -214,6 +214,15 @@ class IntentRouter:
         original_message: str,
         normalized_message: str,
     ) -> IntentMatch | None:
+        if any(
+            phrase in normalized_message
+            for phrase in (
+                "ถ้าอยากฟังต่อ",
+                "บอกได้เลยว่าเอาข้อไหน",
+                "เอาข้อไหนหรือบอกว่า",
+            )
+        ):
+            return None
         if not any(pattern.search(original_message.casefold()) for pattern in self._LINE_SEND_PATTERNS):
             return None
         if any(keyword in normalized_message for keyword in ("ข่าว", "ลิงก์", "ลิงค์", "link", "url")):

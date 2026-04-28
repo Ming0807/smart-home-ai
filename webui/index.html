@@ -108,6 +108,49 @@
         <section class="panel">
           <div class="panel-header">
             <div>
+              <p class="panel-title">AI Warmup Panel</p>
+              <p class="panel-subtitle">ตรวจสถานะ Ollama/Typhoon และปลุกโมเดลก่อนเริ่มเดโม</p>
+            </div>
+            <span id="llm-status-indicator" class="status-pill neutral">กำลังโหลด</span>
+          </div>
+
+          <div class="action-row">
+            <button id="llm-warmup-button" type="button">ปลุก AI</button>
+            <button id="llm-sleep-button" class="secondary-button" type="button">พัก AI</button>
+            <span id="llm-warmup-status" class="loading-text"></span>
+          </div>
+
+          <dl class="detail-list">
+            <div>
+              <dt>Model</dt>
+              <dd id="llm-model">-</dd>
+            </div>
+            <div>
+              <dt>Warm status</dt>
+              <dd id="llm-warmed">-</dd>
+            </div>
+            <div>
+              <dt>Keep awake</dt>
+              <dd id="llm-keep-awake">-</dd>
+            </div>
+            <div>
+              <dt>Latency ล่าสุด</dt>
+              <dd id="llm-latency">-</dd>
+            </div>
+            <div>
+              <dt>เช็กสถานะล่าสุด</dt>
+              <dd id="llm-checked">-</dd>
+            </div>
+            <div>
+              <dt>ข้อความระบบ</dt>
+              <dd id="llm-error">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
               <p class="panel-title">Sensor Panel</p>
               <p class="panel-subtitle">ดูข้อมูล DHT22 ล่าสุดจาก ESP32</p>
             </div>
@@ -259,6 +302,6 @@
       </main>
     </div>
 
-    <script src="/webui/app.js"></script>
+    <script src="/webui/app.js?v=voice-loop-20260428"></script>
   </body>
 </html>

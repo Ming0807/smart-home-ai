@@ -38,6 +38,17 @@ const voiceProvider = document.getElementById("voice-provider");
 const voiceName = document.getElementById("voice-name");
 const voiceOutputFile = document.getElementById("voice-output-file");
 
+const llmStatusIndicator = document.getElementById("llm-status-indicator");
+const llmWarmupButton = document.getElementById("llm-warmup-button");
+const llmSleepButton = document.getElementById("llm-sleep-button");
+const llmWarmupStatus = document.getElementById("llm-warmup-status");
+const llmModel = document.getElementById("llm-model");
+const llmWarmed = document.getElementById("llm-warmed");
+const llmKeepAwake = document.getElementById("llm-keep-awake");
+const llmLatency = document.getElementById("llm-latency");
+const llmChecked = document.getElementById("llm-checked");
+const llmError = document.getElementById("llm-error");
+
 const ttsForm = document.getElementById("tts-form");
 const ttsInput = document.getElementById("tts-input");
 const ttsSubmitButton = document.getElementById("tts-submit-button");
@@ -73,9 +84,17 @@ const VOICE_STATE_IDLE_WAKE = "IDLE_LISTENING_WAKE_WORD";
 const VOICE_STATE_ACTIVE = "ACTIVE_CONVERSATION";
 const ACTIVE_LISTEN_RETRY_LIMIT = 2;
 const ACTIVE_LISTEN_RETRY_DELAY_MS = 900;
-const POST_SPEAKING_COOLDOWN_MS = 1200;
+const POST_SPEAKING_COOLDOWN_MS = 1800;
 const WAKE_LISTEN_RESTART_DELAY_MS = 350;
-const ASSISTANT_ECHO_WINDOW_MS = 5000;
+const WAKE_LISTEN_WATCHDOG_MS = 15000;
+const VOICE_RECORD_MIN_MS = 900;
+const VOICE_RECORD_MAX_MS = 12000;
+const VOICE_NO_SPEECH_TIMEOUT_MS = 6500;
+const VOICE_SILENCE_STOP_MS = 1200;
+const VOICE_SPEECH_RMS_THRESHOLD = 0.012;
+const SPEECH_RECOGNITION_TURN_TIMEOUT_MS = 12000;
+const SPEECH_RECOGNITION_LOOP_RESTART_MS = 500;
+const ASSISTANT_ECHO_WINDOW_MS = 6000;
 const DUPLICATE_TRANSCRIPT_WINDOW_MS = 2000;
 const CHAT_REQUEST_TIMEOUT_MS = 70000;
 const CHAT_WAITING_HINT_DELAY_MS = 6000;
@@ -89,10 +108,19 @@ const state = {
   mediaRecorder: null,
   mediaStream: null,
   audioChunks: [],
+  audioContext: null,
+  audioAnalyser: null,
+  voiceRecordAnimationId: null,
+  voiceRecordTimeoutId: null,
+  speechRecognitionTimeoutId: null,
+  voiceLoopRestartTimerId: null,
+  discardCurrentRecording: false,
   maxChatHistoryItems: 50,
   keepMicOpen: false,
+  voiceRequestActive: false,
   stopRequested: false,
   autoListenTimerId: null,
+  wakeListenWatchdogId: null,
   pirTouched: false,
   voiceMode: "push",
   wakeListening: false,
@@ -207,6 +235,41 @@ function clearAutoListenTimer() {
   }
 }
 
+function clearWakeListenWatchdog() {
+  if (state.wakeListenWatchdogId !== null) {
+    window.clearTimeout(state.wakeListenWatchdogId);
+    state.wakeListenWatchdogId = null;
+  }
+}
+
+function scheduleWakeListenWatchdog() {
+  clearWakeListenWatchdog();
+  if (state.voiceMode !== "wake" || state.stopRequested) {
+    return;
+  }
+  state.wakeListenWatchdogId = window.setTimeout(() => {
+    state.wakeListenWatchdogId = null;
+    if (state.speechRecognition && state.recognitionMode === "loop") {
+      pauseSpeechRecognitionLoop();
+      restartSpeechRecognitionLoop(300);
+    }
+  }, WAKE_LISTEN_WATCHDOG_MS);
+}
+
+function clearSpeechRecognitionTimeout() {
+  if (state.speechRecognitionTimeoutId !== null) {
+    window.clearTimeout(state.speechRecognitionTimeoutId);
+    state.speechRecognitionTimeoutId = null;
+  }
+}
+
+function clearVoiceLoopRestartTimer() {
+  if (state.voiceLoopRestartTimerId !== null) {
+    window.clearTimeout(state.voiceLoopRestartTimerId);
+    state.voiceLoopRestartTimerId = null;
+  }
+}
+
 function clearChatWaitHints() {
   for (const timerId of state.chatWaitTimerIds) {
     window.clearTimeout(timerId);
@@ -258,12 +321,31 @@ function scheduleWakeWordResume(delayMs = WAKE_LISTEN_RESTART_DELAY_MS) {
     return;
   }
 
+  clearWakeListenWatchdog();
+  clearVoiceLoopRestartTimer();
+  state.conversationActive = false;
+  state.wakeListening = false;
+  state.recording = false;
   setVoiceLifecycleState(VOICE_STATE_IDLE_WAKE);
+  setKeepMicIndicator(false, "กำลังรอฟังคำว่า น้องฟ้า");
+  chatMicButton.textContent = "Start talking";
+  setChatBusy(false);
   clearAutoListenTimer();
   state.autoListenTimerId = window.setTimeout(() => {
     state.autoListenTimerId = null;
-    startWakeWordListening();
+    startSpeechRecognitionLoop();
   }, delayMs);
+}
+
+function keepWakeWordModeAlive(reason = "กลับไปรอฟังคำว่า น้องฟ้า", delayMs = WAKE_LISTEN_RESTART_DELAY_MS) {
+  if (state.voiceMode !== "wake" || state.stopRequested) {
+    return false;
+  }
+
+  state.conversationActive = false;
+  setKeepMicIndicator(false, reason);
+  scheduleWakeWordResume(delayMs);
+  return true;
 }
 
 function scheduleActiveConversationRetry(reason, delayMs = ACTIVE_LISTEN_RETRY_DELAY_MS) {
@@ -286,6 +368,7 @@ function scheduleActiveConversationRetry(reason, delayMs = ACTIVE_LISTEN_RETRY_D
 
   state.activeListenRetryCount += 1;
   setVoiceLifecycleState(VOICE_STATE_ACTIVE);
+  setKeepMicIndicator(true, reason);
   setMicStatus(reason, "live");
   clearAutoListenTimer();
   state.autoListenTimerId = window.setTimeout(() => {
@@ -309,6 +392,40 @@ function updateVoiceModeButtons() {
   chatMicButton.textContent = "Start talking";
 }
 
+function isMediaRecorderActive() {
+  return Boolean(state.mediaRecorder && state.mediaRecorder.state !== "inactive");
+}
+
+function hasActiveVoiceCapture() {
+  return Boolean(state.speechRecognition || isMediaRecorderActive());
+}
+
+function clearSpeechRecognitionIfCurrent(recognition) {
+  if (state.speechRecognition !== recognition) {
+    return;
+  }
+  state.speechRecognition = null;
+  state.recognitionMode = null;
+}
+
+function syncVoiceCaptureState() {
+  if (state.speechRecognition) {
+    state.recording = state.recognitionMode === "turn";
+    state.wakeListening = state.recognitionMode === "wake" || state.recognitionMode === "loop";
+    return;
+  }
+
+  if (isMediaRecorderActive()) {
+    state.recording = true;
+    state.wakeListening = false;
+    return;
+  }
+
+  state.recording = false;
+  state.wakeListening = false;
+  state.recognitionMode = null;
+}
+
 function getChatActionButtons() {
   return [
     chatSendButton,
@@ -325,23 +442,26 @@ function getChatActionButtons() {
 }
 
 function setChatBusy(isBusy) {
+  syncVoiceCaptureState();
   state.chatBusy = isBusy;
+  const captureActive = hasActiveVoiceCapture();
   const controlsDisabled = isBusy || state.recording;
+  const canStopVoice =
+    captureActive ||
+    state.wakeListening ||
+    state.conversationActive ||
+    (state.voiceMode === "wake" && state.voiceState !== VOICE_STATE_STOPPED && !state.stopRequested);
 
   chatInput.disabled = controlsDisabled;
   pirSimToggle.disabled = isBusy;
 
   for (const button of getChatActionButtons()) {
-    if ((button === chatMicButton || button === chatStopButton) && (state.recording || state.wakeListening)) {
+    if ((button === chatMicButton || button === chatStopButton) && canStopVoice) {
       button.disabled = false;
       continue;
     }
     if (button === chatStopButton) {
-      button.disabled =
-        !state.recording &&
-        !state.wakeListening &&
-        !state.conversationActive &&
-        state.voiceState === VOICE_STATE_STOPPED;
+      button.disabled = !canStopVoice;
       continue;
     }
     button.disabled = controlsDisabled;
@@ -350,12 +470,18 @@ function setChatBusy(isBusy) {
   chatLoading.hidden = !isBusy;
 
   if (isBusy) {
+    if (state.voiceRequestActive) {
+      chatMicButton.textContent = "กำลังตอบ...";
+    }
     setPillState(chatStatus, "warn", "กำลังประมวลผล");
   } else if (state.recording || state.wakeListening || state.voiceState === VOICE_STATE_IDLE_WAKE) {
+    chatMicButton.textContent = state.recording && captureActive ? "Stop" : "Start talking";
     setPillState(chatStatus, "warn", "กำลังฟังเสียง");
   } else if (!navigator.onLine) {
+    chatMicButton.textContent = "Start talking";
     setPillState(chatStatus, "bad", "ออฟไลน์");
   } else {
+    chatMicButton.textContent = "Start talking";
     setPillState(chatStatus, "neutral", "พร้อมใช้งาน");
   }
 }
@@ -758,6 +884,7 @@ function updateAssistantEntryText(entry, text) {
 async function finalizeAssistantEntry(entry, data) {
   entry.wrapper.classList.remove("streaming");
   entry.body.textContent = data.reply || "";
+  state.lastAssistantReplyText = data.reply || "";
   appendMessageMeta(entry.wrapper, {
     intent: data.intent,
     source: data.source,
@@ -829,6 +956,247 @@ function createSpeechRecognition(mode) {
   return recognition;
 }
 
+function collectSpeechResultText(event) {
+  const finalParts = [];
+  const interimParts = [];
+
+  for (let index = event.resultIndex || 0; index < event.results.length; index += 1) {
+    const result = event.results[index];
+    const text = result[0]?.transcript || "";
+    if (!text) {
+      continue;
+    }
+    if (result.isFinal) {
+      finalParts.push(text);
+    } else {
+      interimParts.push(text);
+    }
+  }
+
+  return {
+    finalText: finalParts.join(" ").trim(),
+    interimText: interimParts.join(" ").trim(),
+  };
+}
+
+function shouldKeepSpeechLoopRunning() {
+  return (
+    state.voiceMode === "wake" &&
+    !state.stopRequested &&
+    !state.chatBusy &&
+    !state.voiceRequestActive
+  );
+}
+
+function detachSpeechRecognition(recognition) {
+  recognition.onresult = null;
+  recognition.onerror = null;
+  recognition.onend = null;
+  recognition.onnomatch = null;
+  recognition.onspeechend = null;
+}
+
+function pauseSpeechRecognitionLoop() {
+  clearSpeechRecognitionTimeout();
+  clearVoiceLoopRestartTimer();
+
+  const recognition = state.speechRecognition;
+  if (recognition) {
+    detachSpeechRecognition(recognition);
+    try {
+      recognition.abort();
+    } catch (error) {
+      // Chrome may already have closed this recognition cycle.
+    }
+  }
+
+  state.speechRecognition = null;
+  state.recognitionMode = null;
+  state.recording = false;
+  state.wakeListening = false;
+  chatMicButton.textContent = "Start talking";
+}
+
+function restartSpeechRecognitionLoop(delayMs = SPEECH_RECOGNITION_LOOP_RESTART_MS) {
+  if (!shouldKeepSpeechLoopRunning()) {
+    return false;
+  }
+
+  clearVoiceLoopRestartTimer();
+  state.voiceLoopRestartTimerId = window.setTimeout(() => {
+    state.voiceLoopRestartTimerId = null;
+    startSpeechRecognitionLoop();
+  }, delayMs);
+  return true;
+}
+
+async function handleSpeechLoopTranscript(transcript) {
+  const text = transcript.trim();
+  if (!text || state.chatBusy || state.voiceRequestActive) {
+    return;
+  }
+
+  if (isDuplicateTranscript(text)) {
+    setMicStatus("ได้ยินข้อความเดิมซ้ำ กำลังรอฟังต่อ...", "live");
+    return;
+  }
+
+  if (isLikelyAssistantEcho(text)) {
+    setMicStatus("ตัดเสียงสะท้อนของ AI แล้ว รอฟังต่อ...", "live");
+    return;
+  }
+
+  if (!state.conversationActive) {
+    const wakeMatch = detectWakePhrase(text);
+    if (!wakeMatch) {
+      setVoiceLifecycleState(VOICE_STATE_IDLE_WAKE);
+      setMicStatus("กำลังรอคำว่า น้องฟ้า", "live");
+      return;
+    }
+
+    state.conversationActive = true;
+    setVoiceLifecycleState(VOICE_STATE_ACTIVE);
+    setKeepMicIndicator(true, "ได้ยินคำเรียกแล้ว พูดต่อได้เลย");
+    voiceTurnStatus.textContent = "ได้ยินคำว่า น้องฟ้า แล้ว";
+
+    const remaining = wakeMatch.remaining.trim();
+    if (!remaining) {
+      showHeardText("น้องฟ้า");
+      setMicStatus("กำลังฟังต่อ พูดคำถามได้เลย", "live");
+      return;
+    }
+
+    rememberHandledTranscript(text);
+    await sendVoiceText(remaining);
+    return;
+  }
+
+  rememberHandledTranscript(text);
+  await sendVoiceText(text);
+}
+
+function startSpeechRecognitionLoop() {
+  if (state.voiceMode !== "wake" || state.stopRequested) {
+    return false;
+  }
+  if (!browserSupportsSpeechRecognition()) {
+    setMicStatus("Wake Word Mode ต้องใช้ Chrome หรือ Edge ที่รองรับ speech recognition", "busy");
+    setVoiceLifecycleState(VOICE_STATE_STOPPED);
+    return false;
+  }
+  if (state.chatBusy || state.voiceRequestActive) {
+    return false;
+  }
+  if (state.speechRecognition && state.recognitionMode === "loop") {
+    state.wakeListening = !state.conversationActive;
+    if (state.conversationActive) {
+      setVoiceLifecycleState(VOICE_STATE_ACTIVE);
+      setMicStatus("กำลังฟังต่อ พูดได้เลย", "live");
+    } else {
+      setVoiceLifecycleState(VOICE_STATE_IDLE_WAKE);
+      setMicStatus("กำลังรอคำว่า น้องฟ้า", "live");
+    }
+    setChatBusy(false);
+    return true;
+  }
+
+  pauseSpeechRecognitionLoop();
+
+  const recognition = createSpeechRecognition("loop");
+  if (!recognition) {
+    return false;
+  }
+
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+
+  state.speechRecognition = recognition;
+  state.recognitionMode = "loop";
+  state.recording = false;
+  state.wakeListening = !state.conversationActive;
+  chatMicButton.textContent = "Start talking";
+
+  if (state.conversationActive) {
+    setVoiceLifecycleState(VOICE_STATE_ACTIVE);
+    setMicStatus("กำลังฟังต่อ พูดได้เลย", "live");
+  } else {
+    setVoiceLifecycleState(VOICE_STATE_IDLE_WAKE);
+    setMicStatus("กำลังรอคำว่า น้องฟ้า", "live");
+  }
+  setChatBusy(false);
+
+  recognition.onresult = (event) => {
+    if (state.speechRecognition !== recognition) {
+      return;
+    }
+
+    const { finalText, interimText } = collectSpeechResultText(event);
+    if (interimText) {
+      showHeardText(interimText);
+    }
+    if (!finalText) {
+      return;
+    }
+
+    showHeardText(finalText);
+    void handleSpeechLoopTranscript(finalText);
+  };
+
+  recognition.onerror = (event) => {
+    if (state.speechRecognition !== recognition) {
+      return;
+    }
+
+    const errorName = event?.error || "";
+    detachSpeechRecognition(recognition);
+    clearSpeechRecognitionIfCurrent(recognition);
+    state.recording = false;
+    state.wakeListening = false;
+    setChatBusy(false);
+
+    if (errorName === "not-allowed" || errorName === "service-not-allowed") {
+      state.stopRequested = true;
+      state.conversationActive = false;
+      setVoiceLifecycleState(VOICE_STATE_STOPPED);
+      setMicStatus("เบราว์เซอร์ยังไม่อนุญาตไมค์ ต้องกดอนุญาตก่อน", "busy");
+      return;
+    }
+
+    setMicStatus("ไมค์สะดุดนิดหน่อย กำลังเปิดฟังใหม่...", "live");
+    restartSpeechRecognitionLoop(700);
+  };
+
+  recognition.onend = () => {
+    if (state.speechRecognition !== recognition) {
+      return;
+    }
+
+    detachSpeechRecognition(recognition);
+    clearSpeechRecognitionIfCurrent(recognition);
+    state.recording = false;
+    state.wakeListening = false;
+    if (shouldKeepSpeechLoopRunning()) {
+      restartSpeechRecognitionLoop();
+    }
+  };
+
+  try {
+    recognition.start();
+    scheduleWakeListenWatchdog();
+    return true;
+  } catch (error) {
+    detachSpeechRecognition(recognition);
+    clearSpeechRecognitionIfCurrent(recognition);
+    state.recording = false;
+    state.wakeListening = false;
+    setChatBusy(false);
+    setMicStatus("เปิดลูปฟังเสียงไม่สำเร็จ กำลังลองใหม่...", "busy");
+    restartSpeechRecognitionLoop(900);
+    return false;
+  }
+}
+
 function getSupportedRecordingMimeType() {
   const candidates = [
     "audio/webm;codecs=opus",
@@ -846,7 +1214,24 @@ function getSupportedRecordingMimeType() {
   return "";
 }
 
+function clearVoiceRecordingMonitors() {
+  if (state.voiceRecordAnimationId !== null) {
+    window.cancelAnimationFrame(state.voiceRecordAnimationId);
+    state.voiceRecordAnimationId = null;
+  }
+  if (state.voiceRecordTimeoutId !== null) {
+    window.clearTimeout(state.voiceRecordTimeoutId);
+    state.voiceRecordTimeoutId = null;
+  }
+  if (state.audioContext) {
+    state.audioContext.close().catch(() => {});
+  }
+  state.audioContext = null;
+  state.audioAnalyser = null;
+}
+
 function cleanupMediaStream() {
+  clearVoiceRecordingMonitors();
   if (state.mediaStream) {
     for (const track of state.mediaStream.getTracks()) {
       track.stop();
@@ -908,6 +1293,99 @@ function formatHeartbeatStatus(lastHeartbeatAt, secondsSinceHeartbeat) {
   return `${formattedTime} (${secondsSinceHeartbeat} วินาทีก่อน)`;
 }
 
+function formatLatencyMs(latencyMs) {
+  if (latencyMs === null || latencyMs === undefined || Number.isNaN(Number(latencyMs))) {
+    return "-";
+  }
+  return `${Math.round(Number(latencyMs))} ms`;
+}
+
+function updateLlmStatus(llm) {
+  if (!llm) {
+    setPillState(llmStatusIndicator, "warn", "ยังไม่มีข้อมูล AI");
+    llmModel.textContent = "-";
+    llmWarmed.textContent = "-";
+    llmKeepAwake.textContent = "-";
+    llmLatency.textContent = "-";
+    llmChecked.textContent = "-";
+    llmError.textContent = "-";
+    return;
+  }
+
+  if (llm.keep_awake_paused) {
+    setPillState(llmStatusIndicator, "neutral", "AI พักอยู่");
+  } else if (llm.available && llm.warmed_up) {
+    setPillState(llmStatusIndicator, "good", "AI พร้อมคุย");
+  } else if (llm.available) {
+    setPillState(llmStatusIndicator, "warn", "AI ยังไม่ warm");
+  } else {
+    setPillState(llmStatusIndicator, "bad", "AI degraded");
+  }
+
+  llmModel.textContent = llm.model || "-";
+  llmWarmed.textContent = llm.warmed_up ? "warm แล้ว" : "ยังไม่ warm";
+  llmKeepAwake.textContent = llm.keep_awake_enabled
+    ? llm.keep_awake_paused
+      ? "พักไว้จนกดปลุก AI"
+      : "เปิดอยู่"
+    : "ปิดอยู่";
+  llmLatency.textContent = formatLatencyMs(llm.latency_ms);
+  llmChecked.textContent = formatDate(llm.checked_at);
+  llmError.textContent = llm.last_error || (llm.available ? "พร้อมใช้งาน" : "ยังไม่พร้อม");
+}
+
+async function warmupLlm() {
+  llmWarmupButton.disabled = true;
+  llmWarmupStatus.textContent = "กำลังปลุก AI อาจใช้เวลานานเฉพาะรอบแรก...";
+  setPillState(llmStatusIndicator, "warn", "กำลัง warm");
+
+  try {
+    const { response, data } = await fetchJson(
+      "/health/llm/warmup",
+      { method: "POST" },
+      90000
+    );
+    if (!response.ok) {
+      throw new Error("LLM warmup failed");
+    }
+    updateLlmStatus(data);
+    llmWarmupStatus.textContent = data.available
+      ? "ปลุก AI สำเร็จ พร้อมเดโม"
+      : "ปลุก AI ไม่สำเร็จ ลองเช็ก Ollama และชื่อโมเดล";
+  } catch (error) {
+    llmWarmupStatus.textContent = getReadableErrorMessage(error, "ปลุก AI ไม่สำเร็จ");
+    setPillState(llmStatusIndicator, "bad", "AI warmup failed");
+  } finally {
+    llmWarmupButton.disabled = false;
+    await refreshDashboardStatus();
+  }
+}
+
+async function sleepLlm() {
+  llmSleepButton.disabled = true;
+  llmWarmupStatus.textContent = "กำลังพัก AI ตามคำสั่ง...";
+  setPillState(llmStatusIndicator, "neutral", "กำลังพัก");
+
+  try {
+    const { response, data } = await fetchJson(
+      "/health/llm/sleep",
+      { method: "POST" },
+      30000
+    );
+    if (!response.ok) {
+      throw new Error("LLM sleep failed");
+    }
+    updateLlmStatus(data);
+    llmWarmupStatus.textContent = "พัก AI แล้ว ถ้าจะเดโมต่อให้กดปลุก AI";
+  } catch (error) {
+    llmWarmupStatus.textContent = getReadableErrorMessage(error, "พัก AI ไม่สำเร็จ");
+    setPillState(llmStatusIndicator, "bad", "พัก AI ไม่สำเร็จ");
+  } finally {
+    llmSleepButton.disabled = false;
+    await refreshDashboardStatus();
+  }
+}
+
 async function waitForAssistantPlayback(entry) {
   if (!entry) {
     await sleep(400);
@@ -938,7 +1416,12 @@ async function waitForAssistantPlayback(entry) {
       audioElement.removeEventListener("error", finish);
       window.clearTimeout(timeoutId);
     };
-    const timeoutId = window.setTimeout(finish, 12000);
+    const textLength = (state.lastAssistantReplyText || "").length;
+    const estimatedSpeechMs = Math.min(45000, Math.max(12000, textLength * 150));
+    const durationMs = Number.isFinite(audioElement.duration)
+      ? Math.round(audioElement.duration * 1000) + 1500
+      : 0;
+    const timeoutId = window.setTimeout(finish, Math.max(estimatedSpeechMs, durationMs));
     audioElement.addEventListener("ended", finish, { once: true });
     audioElement.addEventListener("error", finish, { once: true });
   });
@@ -948,19 +1431,39 @@ async function waitForAssistantPlayback(entry) {
 function isLikelyAssistantEcho(transcript) {
   const normalizedTranscript = normalizeThaiText(transcript);
   const normalizedReply = normalizeThaiText(state.lastAssistantReplyText || "");
-  if (!normalizedTranscript || !normalizedReply) {
+  if (!normalizedTranscript) {
     return false;
   }
   if (Date.now() - state.lastAssistantPlaybackEndedAt > ASSISTANT_ECHO_WINDOW_MS) {
     return false;
   }
-  if (!normalizedReply.includes(normalizedTranscript)) {
-    return false;
+
+  const assistantActionHints = [
+    "ถ้าอยากฟังต่อ",
+    "บอกได้เลยว่าเอาข้อไหน",
+    "เอาข้อไหน",
+    "ส่งข่าวเข้าline",
+    "ส่งลิงก์ข่าว",
+    "ส่งลิงค์ข่าว"
+  ];
+  if (assistantActionHints.some((hint) => normalizedTranscript.includes(normalizeThaiText(hint)))) {
+    return true;
   }
 
-  const unitHintPattern =
-    /^([0-9]+([.,][0-9]+)?|[ก-๙a-z0-9]+)(กิโลเมตร|เมตร|นาที|ชั่วโมง|กม|km)?$/iu;
-  return normalizedTranscript.length <= 18 || unitHintPattern.test(normalizedTranscript);
+  if (normalizedReply) {
+    if (normalizedReply.includes(normalizedTranscript)) {
+      return true;
+    }
+    if (normalizedTranscript.length >= 18) {
+      const head = normalizedTranscript.slice(0, 18);
+      const tail = normalizedTranscript.slice(-18);
+      if (normalizedReply.includes(head) || normalizedReply.includes(tail)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 async function refreshDashboardStatus() {
@@ -994,6 +1497,7 @@ async function refreshDashboardStatus() {
         ? data.app.max_chat_history_items
         : state.maxChatHistoryItems;
     trimChatHistory();
+    updateLlmStatus(data.llm);
 
     sensorDeviceId.textContent = data.sensor.device_id || "-";
     sensorTemperature.textContent =
@@ -1082,6 +1586,7 @@ async function handleChatResponse(data, options = {}) {
     source: data.source,
     audioUrl: resolvedAudioUrl,
   });
+  state.lastAssistantReplyText = data.reply || "";
 
   setPillState(chatStatus, "good", "ตอบแล้ว");
 
@@ -1152,16 +1657,22 @@ async function handleStreamingChatMessage(message) {
 
 function stopAllVoiceCapture() {
   clearAutoListenTimer();
+  clearWakeListenWatchdog();
+  clearSpeechRecognitionTimeout();
+  clearVoiceLoopRestartTimer();
 
   if (state.speechRecognition) {
-    state.speechRecognition.onresult = null;
-    state.speechRecognition.onerror = null;
-    state.speechRecognition.onend = null;
-    state.speechRecognition.abort();
+    detachSpeechRecognition(state.speechRecognition);
+    try {
+      state.speechRecognition.abort();
+    } catch (error) {
+      // Chrome may already have closed this recognition cycle.
+    }
     state.speechRecognition = null;
   }
 
   if (state.mediaRecorder && state.mediaRecorder.state !== "inactive") {
+    state.discardCurrentRecording = true;
     state.mediaRecorder.stop();
   }
 
@@ -1170,6 +1681,93 @@ function stopAllVoiceCapture() {
   state.wakeListening = false;
   state.recognitionMode = null;
   chatMicButton.textContent = "Start talking";
+}
+
+function stopCurrentVoiceTurn(options = {}) {
+  if (isMediaRecorderActive()) {
+    const discard = Boolean(options.discard);
+    setMicStatus(discard ? "ยังไม่ได้ยินเสียงชัด กำลังลองฟังใหม่..." : "รับเสียงแล้ว กำลังส่งให้ AI...", "busy");
+    clearVoiceRecordingMonitors();
+    state.discardCurrentRecording = discard;
+    state.mediaRecorder.stop();
+    return true;
+  }
+
+  if (state.speechRecognition) {
+    try {
+      state.speechRecognition.stop();
+      setMicStatus("รับเสียงแล้ว กำลังประมวลผล...", "busy");
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+function setupAutoStopRecording(stream) {
+  const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+  const recorder = state.mediaRecorder;
+  if (!AudioContextConstructor || !recorder) {
+    state.voiceRecordTimeoutId = window.setTimeout(stopCurrentVoiceTurn, VOICE_RECORD_MAX_MS);
+    return;
+  }
+
+  const audioContext = new AudioContextConstructor();
+  const source = audioContext.createMediaStreamSource(stream);
+  const analyser = audioContext.createAnalyser();
+  analyser.fftSize = 1024;
+  source.connect(analyser);
+  state.audioContext = audioContext;
+  state.audioAnalyser = analyser;
+  void audioContext.resume?.().catch(() => {});
+
+  const samples = new Uint8Array(analyser.fftSize);
+  const startedAt = performance.now();
+  let heardSpeech = false;
+  let lastVoiceAt = startedAt;
+
+  const tick = () => {
+    if (!state.mediaRecorder || state.mediaRecorder.state !== "recording") {
+      return;
+    }
+
+    analyser.getByteTimeDomainData(samples);
+    let sumSquares = 0;
+    for (const sample of samples) {
+      const normalized = (sample - 128) / 128;
+      sumSquares += normalized * normalized;
+    }
+
+    const rms = Math.sqrt(sumSquares / samples.length);
+    const now = performance.now();
+    if (rms >= VOICE_SPEECH_RMS_THRESHOLD) {
+      heardSpeech = true;
+      lastVoiceAt = now;
+    }
+
+    const elapsedMs = now - startedAt;
+    const canStop = elapsedMs >= VOICE_RECORD_MIN_MS;
+    const silenceReached = heardSpeech && now - lastVoiceAt >= VOICE_SILENCE_STOP_MS;
+    const noSpeechReached = !heardSpeech && elapsedMs >= VOICE_NO_SPEECH_TIMEOUT_MS;
+    const maxReached = elapsedMs >= VOICE_RECORD_MAX_MS;
+
+    if (canStop && noSpeechReached) {
+      stopCurrentVoiceTurn({ discard: true });
+      return;
+    }
+
+    if (canStop && (silenceReached || maxReached)) {
+      stopCurrentVoiceTurn();
+      return;
+    }
+
+    state.voiceRecordAnimationId = window.requestAnimationFrame(tick);
+  };
+
+  state.voiceRecordTimeoutId = window.setTimeout(stopCurrentVoiceTurn, VOICE_RECORD_MAX_MS + 500);
+  state.voiceRecordAnimationId = window.requestAnimationFrame(tick);
 }
 
 async function maybeContinueListening(assistantEntry) {
@@ -1188,6 +1786,10 @@ async function maybeContinueListening(assistantEntry) {
     state.conversationActive = true;
     setVoiceLifecycleState(VOICE_STATE_ACTIVE);
     setMicStatus("รอเสียงตกค้างสั้น ๆ แล้วจะฟังต่อ...", "live");
+    if (state.voiceMode === "wake") {
+      restartSpeechRecognitionLoop(POST_SPEAKING_COOLDOWN_MS);
+      return;
+    }
     state.autoListenTimerId = window.setTimeout(() => {
       state.autoListenTimerId = null;
       startActiveConversationTurn();
@@ -1252,14 +1854,18 @@ async function sendChatMessage(message) {
     return;
   }
 
+  const shouldResumeWakeAfterText = state.voiceMode === "wake" && !state.stopRequested;
   appendMessage("user", trimmed);
   chatInput.value = "";
   showHeardText("");
   setChatBusy(true);
-  state.stopRequested = true;
+  state.stopRequested = !shouldResumeWakeAfterText;
   state.conversationActive = false;
   setKeepMicIndicator(false, "โหมดแชตข้อความปิด loop เสียงไว้ก่อน");
   stopAllVoiceCapture();
+  if (shouldResumeWakeAfterText) {
+    state.stopRequested = false;
+  }
   startChatWaitHints();
 
   try {
@@ -1278,8 +1884,8 @@ async function sendChatMessage(message) {
     clearChatWaitHints();
     setChatLoadingText("AI กำลังตอบ...");
     setChatBusy(false);
-    if (state.voiceMode === "wake" && !state.stopRequested) {
-      startWakeWordListening();
+    if (shouldResumeWakeAfterText && !state.stopRequested) {
+      keepWakeWordModeAlive("พิมพ์แชตเสร็จแล้ว กลับไปรอฟังคำว่า น้องฟ้า", 300);
     } else {
       setVoiceLifecycleState(
         state.voiceMode === "wake" && !state.stopRequested ? VOICE_STATE_IDLE_WAKE : VOICE_STATE_STOPPED
@@ -1293,17 +1899,27 @@ async function sendVoiceText(message) {
   if (!trimmed || state.chatBusy) {
     return;
   }
+  if (isLikelyAssistantEcho(trimmed)) {
+    scheduleActiveConversationRetry("ได้ยินเหมือนเป็นเสียงตอบกลับของระบบ กำลังฟังใหม่...");
+    return;
+  }
 
+  state.voiceRequestActive = true;
+  if (state.recognitionMode === "loop") {
+    pauseSpeechRecognitionLoop();
+  }
   clearAutoListenTimer();
   setChatBusy(true);
   setVoiceSessionState("processing");
-  setMicStatus("กำลังส่งข้อความเสียงเข้า voice chat...", "busy");
+  setChatLoadingText("รับคำสั่งแล้ว AI กำลังตอบ...");
+  setMicStatus("รับคำพูดแล้ว กำลังให้ AI ตอบ...", "busy");
   showHeardText(trimmed);
 
   const formData = new FormData();
   formData.append("message", trimmed);
   formData.append("pir_state", String(currentPirState()));
 
+  let handledResponse = false;
   try {
     const { response, data } = await fetchJson(
       "/voice/chat",
@@ -1319,6 +1935,7 @@ async function sendVoiceText(message) {
     }
 
     await handleVoiceTurnResponse(data);
+    handledResponse = true;
     setMicStatus("ตอบกลับด้วยเสียงแล้ว", "busy");
   } catch (error) {
     const messageText = getReadableErrorMessage(error, "เกิดปัญหาระหว่างส่งข้อความเสียง ลองใหม่อีกครั้งได้ไหม");
@@ -1328,8 +1945,12 @@ async function sendVoiceText(message) {
     state.conversationActive = false;
     setMicStatus(messageText, "busy");
   } finally {
+    state.voiceRequestActive = false;
     setChatBusy(false);
-    if (!state.recording && !state.wakeListening && !state.conversationActive) {
+    if (!handledResponse && !state.recording && !state.wakeListening && !state.conversationActive) {
+      if (keepWakeWordModeAlive("เกิดปัญหารอบนี้ แต่ยังรอฟัง น้องฟ้า ต่อ", 700)) {
+        return;
+      }
       setVoiceLifecycleState(state.voiceMode === "wake" ? VOICE_STATE_IDLE_WAKE : VOICE_STATE_STOPPED);
     }
   }
@@ -1338,11 +1959,16 @@ async function sendVoiceText(message) {
 async function sendVoiceRecording(audioBlob, mimeType) {
   if (!audioBlob.size) {
     setMicStatus("ไม่ได้รับข้อมูลเสียง ลองกด Start talking ใหม่อีกครั้ง", "busy");
+    if (scheduleActiveConversationRetry("ไม่ได้รับข้อมูลเสียง กำลังเปิดไมค์ลองใหม่...")) {
+      return;
+    }
     return;
   }
 
+  state.voiceRequestActive = true;
   setChatBusy(true);
   setVoiceSessionState("processing");
+  setChatLoadingText("รับเสียงแล้ว AI กำลังตอบ...");
   setMicStatus("กำลังแปลงเสียงเป็นข้อความ...", "busy");
   showHeardText("");
 
@@ -1351,6 +1977,7 @@ async function sendVoiceRecording(audioBlob, mimeType) {
   formData.append("audio", audioBlob, `voice-input.${extension}`);
   formData.append("pir_state", String(currentPirState()));
 
+  let handledResponse = false;
   try {
     const { response, data } = await fetchJson(
       "/voice/chat",
@@ -1366,6 +1993,7 @@ async function sendVoiceRecording(audioBlob, mimeType) {
     }
 
     await handleVoiceTurnResponse(data);
+    handledResponse = true;
     setMicStatus("ตอบกลับด้วยเสียงแล้ว", "busy");
   } catch (error) {
     const messageText = getReadableErrorMessage(error, "เกิดปัญหาระหว่างส่งเสียง ลองใหม่อีกครั้งได้ไหม");
@@ -1375,8 +2003,12 @@ async function sendVoiceRecording(audioBlob, mimeType) {
     state.conversationActive = false;
     setMicStatus(messageText, "busy");
   } finally {
+    state.voiceRequestActive = false;
     setChatBusy(false);
-    if (!state.recording && !state.wakeListening && !state.conversationActive) {
+    if (!handledResponse && !state.recording && !state.wakeListening && !state.conversationActive) {
+      if (keepWakeWordModeAlive("เกิดปัญหารอบนี้ แต่ยังรอฟัง น้องฟ้า ต่อ", 700)) {
+        return;
+      }
       setVoiceLifecycleState(state.voiceMode === "wake" ? VOICE_STATE_IDLE_WAKE : VOICE_STATE_STOPPED);
     }
   }
@@ -1393,6 +2025,18 @@ async function startTurnRecognition() {
   }
 
   try {
+    let turnFinished = false;
+    const clearTurnRecognition = () => {
+      clearSpeechRecognitionTimeout();
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      recognition.onnomatch = null;
+      recognition.onspeechend = null;
+      state.recording = false;
+      clearSpeechRecognitionIfCurrent(recognition);
+    };
+
     state.speechRecognition = recognition;
     state.recording = true;
     state.wakeListening = false;
@@ -1400,19 +2044,41 @@ async function startTurnRecognition() {
     setVoiceLifecycleState(VOICE_STATE_ACTIVE);
     setMicStatus("กำลังฟังคำสั่งหรือคำถามอยู่ พูดได้เลย", "live");
     setChatBusy(false);
+    state.speechRecognitionTimeoutId = window.setTimeout(() => {
+      if (turnFinished || state.speechRecognition !== recognition) {
+        return;
+      }
+      turnFinished = true;
+      clearTurnRecognition();
+      try {
+        recognition.abort();
+      } catch (error) {
+        // Browser may already have closed this recognition turn.
+      }
+      chatMicButton.textContent = "Start talking";
+      setChatBusy(false);
+      if (scheduleActiveConversationRetry("ไมค์ค้างนานเกินไป กำลังเปิดไมค์ใหม่ให้...")) {
+        return;
+      }
+      setVoiceLifecycleState(state.voiceMode === "wake" ? VOICE_STATE_IDLE_WAKE : VOICE_STATE_STOPPED);
+      setMicStatus("ไมค์รอบนี้ไม่ส่งผลลัพธ์ กลับไปรอฟังคำว่า น้องฟ้า", "busy");
+    }, SPEECH_RECOGNITION_TURN_TIMEOUT_MS);
 
     recognition.onresult = async (event) => {
+      if (turnFinished) {
+        return;
+      }
+      turnFinished = true;
       const transcript = Array.from(event.results || [])
         .map((result) => result[0]?.transcript || "")
         .join(" ")
         .trim();
 
-      state.recording = false;
-      state.speechRecognition = null;
-      chatMicButton.textContent = "Start talking";
-      setChatBusy(false);
+      clearTurnRecognition();
 
       if (!transcript) {
+        chatMicButton.textContent = "Start talking";
+        setChatBusy(false);
         if (scheduleActiveConversationRetry("ยังจับคำพูดไม่ได้ชัด กำลังลองฟังอีกครั้ง...")) {
           return;
         }
@@ -1421,11 +2087,15 @@ async function startTurnRecognition() {
       }
 
       if (isDuplicateTranscript(transcript)) {
+        chatMicButton.textContent = "Start talking";
+        setChatBusy(false);
         scheduleActiveConversationRetry("ได้ยินข้อความเดิมซ้ำ กำลังฟังใหม่อีกครั้ง...");
         return;
       }
 
       if (isLikelyAssistantEcho(transcript)) {
+        chatMicButton.textContent = "Start talking";
+        setChatBusy(false);
         scheduleActiveConversationRetry("ได้ยินเหมือนเป็นเสียงตอบกลับของระบบ กำลังฟังใหม่...");
         return;
       }
@@ -1435,12 +2105,30 @@ async function startTurnRecognition() {
       }
 
       resetActiveListenRetries();
+      chatMicButton.textContent = "กำลังตอบ...";
       await sendVoiceText(transcript);
     };
 
+    recognition.onnomatch = () => {
+      if (turnFinished) {
+        return;
+      }
+      turnFinished = true;
+      clearTurnRecognition();
+      chatMicButton.textContent = "Start talking";
+      setChatBusy(false);
+      if (scheduleActiveConversationRetry("ยังแปลงเสียงเป็นข้อความไม่ได้ กำลังเปิดไมค์ลองใหม่...")) {
+        return;
+      }
+      setMicStatus("ยังแปลงเสียงเป็นข้อความไม่ได้ ลองพูดอีกครั้งได้", "busy");
+    };
+
     recognition.onerror = () => {
-      state.recording = false;
-      state.speechRecognition = null;
+      if (turnFinished) {
+        return;
+      }
+      turnFinished = true;
+      clearTurnRecognition();
       chatMicButton.textContent = "Start talking";
       setChatBusy(false);
       if (scheduleActiveConversationRetry("ฟังเสียงสะดุดนิดหน่อย กำลังเปิดไมค์ใหม่...")) {
@@ -1457,11 +2145,11 @@ async function startTurnRecognition() {
     };
 
     recognition.onend = () => {
-      if (!state.recording) {
+      if (turnFinished) {
         return;
       }
-      state.recording = false;
-      state.speechRecognition = null;
+      turnFinished = true;
+      clearTurnRecognition();
       chatMicButton.textContent = "Start talking";
       setChatBusy(false);
       if (scheduleActiveConversationRetry("ยังไม่ได้ยินคำถามชัด ๆ กำลังเปิดไมค์ต่อให้อีกครั้ง...")) {
@@ -1484,100 +2172,19 @@ async function startTurnRecognition() {
 }
 
 function startWakeWordListening() {
-  if (
-    state.voiceMode !== "wake" ||
-    state.chatBusy ||
-    state.recording ||
-    state.wakeListening ||
-    state.speechRecognition
-  ) {
-    return;
-  }
-  if (!browserSupportsSpeechRecognition()) {
-    setMicStatus("Wake Word Mode ต้องใช้ Chrome หรือ Edge ที่รองรับ speech recognition", "busy");
-    setVoiceLifecycleState(VOICE_STATE_STOPPED);
-    return;
-  }
-
-  const recognition = createSpeechRecognition("wake");
-  if (!recognition) {
-    return;
-  }
-
-  state.speechRecognition = recognition;
-  state.wakeListening = true;
-  state.recording = false;
-  state.conversationActive = false;
-  state.stopRequested = false;
-  setVoiceLifecycleState(VOICE_STATE_IDLE_WAKE);
-  setMicStatus("กำลังฟัง wake word 'น้องฟ้า' อยู่", "live");
-  setChatBusy(false);
-
-  recognition.onresult = async (event) => {
-    const transcript = Array.from(event.results || [])
-      .map((result) => result[0]?.transcript || "")
-      .join(" ")
-      .trim();
-
-    state.wakeListening = false;
-    state.speechRecognition = null;
-
-    if (isDuplicateTranscript(transcript)) {
-      scheduleWakeWordResume(250);
-      return;
-    }
-
-    const wakeMatch = detectWakePhrase(transcript);
-    if (!wakeMatch) {
-      if (state.voiceMode === "wake" && !state.stopRequested) {
-        scheduleWakeWordResume(250);
-      }
-      return;
-    }
-
-    state.conversationActive = true;
-    setVoiceLifecycleState(VOICE_STATE_ACTIVE);
-    if (wakeMatch.remaining) {
-      rememberHandledTranscript(transcript);
-      await sendVoiceText(wakeMatch.remaining);
-      return;
-    }
-
-    voiceTurnStatus.textContent = "ได้ยินคำเรียกแล้ว กำลังฟัง...";
-    setMicStatus("ได้ยิน 'น้องฟ้า' แล้ว พูดต่อได้เลย", "live");
-    state.autoListenTimerId = window.setTimeout(() => {
-      state.autoListenTimerId = null;
-      startActiveConversationTurn();
-    }, 250);
-  };
-
-  recognition.onerror = () => {
-    state.wakeListening = false;
-    state.speechRecognition = null;
-    if (state.voiceMode === "wake" && !state.stopRequested) {
-      scheduleWakeWordResume(800);
-    } else {
-      setVoiceLifecycleState(VOICE_STATE_STOPPED);
-    }
-  };
-
-  recognition.onend = () => {
-    if (!state.wakeListening) {
-      return;
-    }
-    state.wakeListening = false;
-    state.speechRecognition = null;
-    if (state.voiceMode === "wake" && !state.stopRequested && !state.chatBusy && !state.conversationActive) {
-      scheduleWakeWordResume(250);
-    }
-  };
-
-  recognition.start();
+  return startSpeechRecognitionLoop();
 }
 
 async function startActiveConversationTurn() {
   if (state.chatBusy || state.recording || state.stopRequested) {
     return;
+  }
+
+  if (state.voiceMode === "wake") {
+    state.stopRequested = false;
+    state.conversationActive = true;
+    setVoiceLifecycleState(VOICE_STATE_ACTIVE);
+    return startSpeechRecognitionLoop();
   }
 
   state.stopRequested = false;
@@ -1619,10 +2226,11 @@ async function startActiveConversationTurn() {
     state.mediaStream = stream;
     state.audioChunks = [];
     state.mediaRecorder = new MediaRecorder(stream, { mimeType });
+    state.discardCurrentRecording = false;
     state.recording = true;
     chatMicButton.textContent = "Stop";
     setVoiceLifecycleState(VOICE_STATE_ACTIVE);
-    setMicStatus("กำลังอัดเสียงอยู่ กด Stop เมื่อพูดจบ", "live");
+    setMicStatus("กำลังฟังอยู่ พูดได้เลย ระบบจะส่งให้ AI เมื่อพูดจบ", "live");
 
     state.mediaRecorder.addEventListener("dataavailable", (event) => {
       if (event.data && event.data.size > 0) {
@@ -1631,16 +2239,25 @@ async function startActiveConversationTurn() {
     });
 
     state.mediaRecorder.addEventListener("stop", async () => {
+      const shouldDiscard = state.discardCurrentRecording;
+      state.discardCurrentRecording = false;
       const recordedBlob = new Blob(state.audioChunks, { type: mimeType });
       cleanupMediaStream();
       state.recording = false;
       chatMicButton.textContent = "Start talking";
       setChatBusy(false);
+      if (shouldDiscard) {
+        if (!state.stopRequested && state.conversationActive) {
+          scheduleActiveConversationRetry("ยังไม่ได้ยินเสียงชัด กำลังเปิดไมค์ลองใหม่...");
+        }
+        return;
+      }
       await sendVoiceRecording(recordedBlob, mimeType);
     });
 
-    setChatBusy(false);
     state.mediaRecorder.start();
+    setupAutoStopRecording(stream);
+    setChatBusy(false);
   } catch (error) {
     cleanupMediaStream();
     state.recording = false;
@@ -1674,6 +2291,7 @@ function stopVoiceInteraction() {
   resetActiveListenRetries();
   setKeepMicIndicator(false, "หยุดโหมดเสียงแล้ว");
   clearAutoListenTimer();
+  clearWakeListenWatchdog();
   stopAllVoiceCapture();
   setVoiceLifecycleState(VOICE_STATE_STOPPED);
   setMicStatus("ปิดไมค์แล้ว กด Start talking หรือเปิด Wake Word ใหม่ได้", "busy");
@@ -1681,7 +2299,13 @@ function stopVoiceInteraction() {
 
 function setVoiceMode(mode) {
   if (mode === state.voiceMode) {
-    if (mode === "wake" && state.voiceState === VOICE_STATE_STOPPED) {
+    if (
+      mode === "wake" &&
+      !state.chatBusy &&
+      !state.recording &&
+      !state.wakeListening &&
+      !state.speechRecognition
+    ) {
       state.stopRequested = false;
       startWakeWordListening();
     }
@@ -1722,6 +2346,9 @@ chatForm.addEventListener("submit", async (event) => {
 
 chatMicButton.addEventListener("click", async () => {
   if (state.recording) {
+    if (stopCurrentVoiceTurn()) {
+      return;
+    }
     stopVoiceInteraction();
     return;
   }
@@ -1765,6 +2392,8 @@ pirSimToggle.addEventListener("change", () => {
 
 sensorRefreshButton.addEventListener("click", refreshDashboardStatus);
 motionRefreshButton.addEventListener("click", refreshDashboardStatus);
+llmWarmupButton.addEventListener("click", warmupLlm);
+llmSleepButton.addEventListener("click", sleepLlm);
 refreshAllButton.addEventListener("click", async () => {
   await refreshDashboardStatus();
   await refreshVoiceDebugStatus();
@@ -1837,6 +2466,9 @@ window.addEventListener("offline", () => {
 
 window.addEventListener("beforeunload", () => {
   clearAutoListenTimer();
+  clearWakeListenWatchdog();
+  clearSpeechRecognitionTimeout();
+  clearVoiceLoopRestartTimer();
   stopAllVoiceCapture();
   for (const audioElement of document.querySelectorAll("audio")) {
     revokeAudioObjectUrl(audioElement);

@@ -1,5 +1,6 @@
 import logging
 from threading import Thread
+from time import sleep
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -57,6 +58,22 @@ def _register_startup_tasks(app: FastAPI) -> None:
                 get_llm_manager().warmup()
 
             Thread(target=_warmup_llm, daemon=True).start()
+
+        if settings.demo_mode and settings.llm_keep_awake_in_demo:
+            def _keep_llm_awake() -> None:
+                interval_seconds = max(60, settings.llm_keep_awake_interval_seconds)
+                logger.info(
+                    "Starting LLM keep-awake loop every %s seconds",
+                    interval_seconds,
+                )
+                while True:
+                    sleep(interval_seconds)
+                    try:
+                        get_llm_manager().keep_awake_once()
+                    except Exception:
+                        logger.exception("LLM keep-awake tick failed")
+
+            Thread(target=_keep_llm_awake, daemon=True).start()
 
         if settings.stt_warmup_on_start:
             def _warmup_stt() -> None:

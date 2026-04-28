@@ -67,6 +67,7 @@ class LLMManager:
         self._last_error: str | None = None
         self._last_latency_ms: float | None = None
         self._warmed_up = False
+        self._keep_awake_paused = False
 
     def generate_reply(self, message: str, stream: bool = False) -> LLMResponse:
         if stream:
@@ -98,12 +99,17 @@ class LLMManager:
         if not system_prompt.strip():
             return self._fallback("empty system prompt")
 
+        self._resume_keep_awake()
+
         health_status = self.get_health_status()
         if not health_status.available:
-            return self._fallback(
-                health_status.last_error or "ollama unavailable",
-                mark_unavailable=False,
-            )
+            logger.info("LLM not available, attempting auto-warmup before reply")
+            health_status = self.warmup()
+            if not health_status.available:
+                return self._fallback(
+                    health_status.last_error or "ollama unavailable",
+                    mark_unavailable=False,
+                )
 
         timer = start_timer()
         try:
@@ -120,6 +126,7 @@ class LLMManager:
             )
             response.raise_for_status()
             reply = self._parse_chat_response(response)
+            self._warmed_up = True
             return LLMResponse(
                 reply=reply,
                 model=self._settings.ollama_model,
@@ -149,9 +156,14 @@ class LLMManager:
 
     def stream_reply(self, message: str) -> Iterator[str]:
         """Yield streamed response chunks from Ollama for general chat."""
+        self._resume_keep_awake()
+
         health_status = self.get_health_status()
         if not health_status.available:
-            raise RuntimeError(health_status.last_error or "ollama unavailable")
+            logger.info("LLM not available, attempting auto-warmup before stream")
+            health_status = self.warmup()
+            if not health_status.available:
+                raise RuntimeError(health_status.last_error or "ollama unavailable")
 
         timer = start_timer()
         try:
@@ -180,6 +192,9 @@ class LLMManager:
             )
 
     def warmup(self) -> LLMHealthStatus:
+        with self._lock:
+            self._keep_awake_paused = False
+
         health_status = self.check_health(force_refresh=True)
         if not health_status.available:
             return health_status
@@ -215,6 +230,51 @@ class LLMManager:
 
         return self.check_health(force_refresh=True)
 
+    def sleep(self) -> LLMHealthStatus:
+        with self._lock:
+            self._keep_awake_paused = True
+            self._warmed_up = False
+
+        timer = start_timer()
+        try:
+            response = self._session.post(
+                self._generate_url,
+                json={
+                    "model": self._settings.ollama_model,
+                    "prompt": "",
+                    "stream": False,
+                    "keep_alive": 0,
+                },
+                timeout=min(self._request_timeout_seconds, 15.0),
+            )
+            response.raise_for_status()
+            self._last_error = None
+        except RequestException as exc:
+            error = self._format_request_error(exc)
+            self._set_error(error, mark_unavailable=False)
+            logger.warning("LLM sleep request failed: %s", error)
+        finally:
+            self._last_latency_ms = timer.elapsed_ms
+            log_timing(
+                logger,
+                self._settings,
+                "llm.sleep",
+                timer.elapsed_ms,
+                model=self._settings.ollama_model,
+            )
+
+        return self.check_health(force_refresh=True)
+
+    def keep_awake_once(self) -> LLMHealthStatus:
+        if self.is_keep_awake_paused:
+            return self.get_health_status()
+        return self.warmup()
+
+    @property
+    def is_keep_awake_paused(self) -> bool:
+        with self._lock:
+            return self._keep_awake_paused
+
     def get_health_status(self) -> LLMHealthStatus:
         return self.check_health(force_refresh=False)
 
@@ -231,12 +291,16 @@ class LLMManager:
                         last_error=self._health_cache.last_error,
                         last_latency_ms=self._health_cache.last_latency_ms,
                     )
+            previous_available = (
+                self._health_cache.available if self._health_cache is not None else False
+            )
 
         timer = start_timer()
         available = False
         model_present = False
         checked_at = self._now()
         last_error: str | None = None
+        check_failed = False
         try:
             response = self._session.get(
                 self._tags_url,
@@ -256,10 +320,18 @@ class LLMManager:
                 last_error = f"model not found: {self._settings.ollama_model}"
         except Timeout:
             last_error = "ollama health timeout"
+            check_failed = True
         except RequestException as exc:
             last_error = self._format_request_error(exc)
+            check_failed = True
         except (TypeError, ValueError, KeyError) as exc:
             last_error = f"invalid ollama health response: {exc.__class__.__name__}"
+            check_failed = True
+
+        # Preserve available status on transient failures (Ollama busy generating)
+        if check_failed and previous_available:
+            available = True
+            model_present = True
 
         health_status = LLMHealthStatus(
             available=available,
@@ -271,11 +343,13 @@ class LLMManager:
             last_latency_ms=timer.elapsed_ms,
         )
 
+        cache_ttl = (
+            60 if check_failed
+            else self._settings.llm_health_cache_ttl_seconds
+        )
         with self._lock:
             self._health_cache = health_status
-            self._health_expires_at = self._now() + timedelta(
-                seconds=self._settings.llm_health_cache_ttl_seconds,
-            )
+            self._health_expires_at = self._now() + timedelta(seconds=cache_ttl)
         log_timing(
             logger,
             self._settings,
@@ -289,6 +363,10 @@ class LLMManager:
     @property
     def _chat_url(self) -> str:
         return f"{self._settings.ollama_base_url.rstrip('/')}/api/chat"
+
+    @property
+    def _generate_url(self) -> str:
+        return f"{self._settings.ollama_base_url.rstrip('/')}/api/generate"
 
     @property
     def _tags_url(self) -> str:
@@ -308,6 +386,15 @@ class LLMManager:
             self._settings.ollama_timeout_seconds,
         )
 
+    @property
+    def _parsed_keep_alive(self) -> str | int:
+        """Parse keep_alive: convert pure numeric strings to int for Ollama."""
+        raw = self._settings.ollama_keep_alive
+        try:
+            return int(raw)
+        except (ValueError, TypeError):
+            return raw
+
     def _build_payload(
         self,
         message: str,
@@ -323,7 +410,7 @@ class LLMManager:
                 {"role": "user", "content": message},
             ],
             "stream": stream,
-            "keep_alive": self._settings.ollama_keep_alive,
+            "keep_alive": self._parsed_keep_alive,
             "options": {
                 "temperature": (
                     self._settings.llm_temperature if temperature is None else temperature
@@ -340,7 +427,7 @@ class LLMManager:
                 {"role": "user", "content": "พร้อมไหม"},
             ],
             "stream": False,
-            "keep_alive": self._settings.ollama_keep_alive,
+            "keep_alive": self._parsed_keep_alive,
             "options": {
                 "temperature": 0,
                 "num_predict": 8,
@@ -452,13 +539,20 @@ class LLMManager:
                 self._health_cache = LLMHealthStatus(
                     available=False,
                     model_present=self._health_cache.model_present,
-                    warmed_up=False,
+                    warmed_up=self._health_cache.warmed_up,
                     source="live",
                     checked_at=self._now(),
                     last_error=error,
                     last_latency_ms=self._last_latency_ms,
                 )
                 self._health_expires_at = self._now() + timedelta(seconds=5)
+
+    def _resume_keep_awake(self) -> None:
+        """Unpause keep-awake loop when a real request comes in."""
+        if self._keep_awake_paused:
+            with self._lock:
+                self._keep_awake_paused = False
+            logger.info("Keep-awake auto-resumed due to incoming request")
 
     @staticmethod
     def _now() -> datetime:

@@ -1,6 +1,6 @@
 from server.config import Settings, get_settings
 from server.models.health import HealthResponse, LLMHealthResponse, ReadyResponse
-from server.services.llm_manager import LLMManager, get_llm_manager
+from server.services.llm_manager import LLMHealthStatus, LLMManager, get_llm_manager
 
 
 class HealthService:
@@ -29,6 +29,20 @@ class HealthService:
 
     def get_llm_health(self) -> LLMHealthResponse:
         llm_health = self._llm_manager.get_health_status()
+        return self._build_llm_health_response(llm_health)
+
+    def warmup_llm(self) -> LLMHealthResponse:
+        llm_health = self._llm_manager.warmup()
+        return self._build_llm_health_response(llm_health)
+
+    def sleep_llm(self) -> LLMHealthResponse:
+        llm_health = self._llm_manager.sleep()
+        return self._build_llm_health_response(llm_health)
+
+    def _build_llm_health_response(
+        self,
+        llm_health: LLMHealthStatus,
+    ) -> LLMHealthResponse:
         return LLMHealthResponse(
             status="ok" if llm_health.available else "degraded",
             available=llm_health.available,
@@ -39,6 +53,10 @@ class HealthService:
             model=self._settings.ollama_model,
             last_error=llm_health.last_error,
             latency_ms=llm_health.last_latency_ms,
+            keep_awake_enabled=(
+                self._settings.demo_mode and self._settings.llm_keep_awake_in_demo
+            ),
+            keep_awake_paused=self._llm_manager.is_keep_awake_paused,
         )
 
 

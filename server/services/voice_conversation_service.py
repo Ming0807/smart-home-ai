@@ -15,6 +15,7 @@ from server.services.intent_router import IntentRouter, get_intent_router
 from server.services.llm_manager import DEFAULT_FALLBACK_REPLY, LLMManager, get_llm_manager
 from server.services.smalltalk_service import SmallTalkService, get_smalltalk_service
 from server.services.tts_service import TTSService, get_tts_service
+from server.utils.reply_cleaner import clean_reply_text
 
 EXIT_WORDS: tuple[str, ...] = (
     "ขอบคุณ",
@@ -181,7 +182,7 @@ class VoiceConversationService:
         if parsed is not None:
             return parsed
 
-        fallback_reply = raw_response.reply.strip() or DEFAULT_FALLBACK_REPLY
+        fallback_reply = clean_reply_text(raw_response.reply, fallback=DEFAULT_FALLBACK_REPLY)
         return VoiceControlDecision(
             reply=fallback_reply,
             action="none",
@@ -258,7 +259,7 @@ class VoiceConversationService:
         if payload is None:
             return None
 
-        reply = str(payload.get("reply", "")).strip()
+        reply = clean_reply_text(str(payload.get("reply", "")), fallback="")
         action = str(payload.get("action", "none")).strip().lower()
         keep_mic_open = payload.get("keep_mic_open")
 

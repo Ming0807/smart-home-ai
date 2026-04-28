@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -39,6 +40,20 @@ class VoiceSnapshot(BaseModel):
     output_file: str
 
 
+class LLMSnapshot(BaseModel):
+    status: Literal["ok", "degraded"]
+    available: bool
+    model_present: bool
+    warmed_up: bool
+    model: str
+    source: Literal["live", "cache"]
+    checked_at: datetime | None = None
+    last_error: str | None = None
+    latency_ms: float | None = None
+    keep_awake_enabled: bool = False
+    keep_awake_paused: bool = False
+
+
 class AppSnapshot(BaseModel):
     demo_mode: bool
     debug_logs: bool
@@ -50,4 +65,5 @@ class DashboardStatusResponse(BaseModel):
     device: DeviceSnapshot
     motion: MotionSnapshot
     voice: VoiceSnapshot
+    llm: LLMSnapshot
     app: AppSnapshot

@@ -31,6 +31,7 @@ from server.services.smalltalk_service import SmallTalkService, get_smalltalk_se
 from server.services.tts_service import TTSService, get_tts_service
 from server.services.weather_service import WeatherService, get_weather_service
 from server.utils.observability import log_timing, start_timer
+from server.utils.reply_cleaner import clean_reply_text
 
 logger = logging.getLogger(__name__)
 
@@ -388,13 +389,14 @@ class ChatService:
         force_audio: bool,
         suppress_audio: bool,
     ) -> ChatResponse:
+        clean_reply = clean_reply_text(reply, fallback=DEFAULT_FALLBACK_REPLY)
         return ChatResponse(
-            reply=reply,
+            reply=clean_reply,
             intent=intent,
             source=source,
             audio_url=self._schedule_audio_generation(
                 background_tasks=background_tasks,
-                reply=reply,
+                reply=clean_reply,
                 force_audio=force_audio,
                 suppress_audio=suppress_audio,
             ),
