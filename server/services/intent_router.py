@@ -67,12 +67,20 @@ class IntentRouter:
         re.compile(r"(เส้นทางไป|เดินทางไป).+", re.IGNORECASE),
         re.compile(r"(how\s+long\s+to|route\s+to|directions).+", re.IGNORECASE),
     )
+    _LINE_SEND_PATTERNS = (
+        re.compile(r"ส่ง.*(ไลน์|line)", re.IGNORECASE),
+        re.compile(r"(ไลน์|line).*ส่ง", re.IGNORECASE),
+    )
 
     def __init__(self, rules: Sequence[KeywordRule] | None = None) -> None:
         self._rules = tuple(rules or DEFAULT_RULES)
 
     def classify(self, message: str) -> IntentMatch:
         normalized_message = self._normalize(message)
+
+        line_send_match = self._match_line_send(message, normalized_message)
+        if line_send_match is not None:
+            return line_send_match
 
         news_detail_match = self._match_news_detail(message, normalized_message)
         if news_detail_match is not None:
@@ -200,6 +208,17 @@ class IntentRouter:
         if "คน" in normalized_message and "ไหม" in normalized_message:
             return IntentMatch(intent="sensor_query", matched_keyword="motion_people")
         return None
+
+    def _match_line_send(
+        self,
+        original_message: str,
+        normalized_message: str,
+    ) -> IntentMatch | None:
+        if not any(pattern.search(original_message.casefold()) for pattern in self._LINE_SEND_PATTERNS):
+            return None
+        if any(keyword in normalized_message for keyword in ("ข่าว", "ลิงก์", "ลิงค์", "link", "url")):
+            return IntentMatch(intent="line_send_request", matched_keyword="line_news")
+        return IntentMatch(intent="line_send_request", matched_keyword="line")
 
     @staticmethod
     def _normalize(text: str) -> str:

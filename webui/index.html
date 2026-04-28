@@ -45,12 +45,25 @@
             <button type="button" data-message="ฝนจะตกไหม">ฝนจะตกไหม</button>
             <button type="button" data-message="ข่าววันนี้">ข่าววันนี้</button>
             <button type="button" data-message="ข่าว AI ล่าสุด">ข่าว AI ล่าสุด</button>
+            <button type="button" data-message="ข่าวการเงินล่าสุด">ข่าวการเงิน</button>
+            <button type="button" data-message="ข่าวการเมืองไทยล่าสุด">การเมืองไทย</button>
+            <button type="button" data-message="ส่งข่าวเข้า LINE">ส่งข่าวเข้า LINE</button>
             <button type="button" data-message="ในยะลารถติดไหม">ในยะลารถติดไหม</button>
             <button type="button" data-message="ไปสนามบินตอนนี้รถติดไหม">ไปสนามบินตอนนี้รถติดไหม</button>
             <button type="button" data-message="ไปสนามบินใช้เวลากี่นาที">ไปสนามบินใช้เวลากี่นาที</button>
             <button type="button" data-message="ไปตลาดใช้เวลากี่นาที">ไปตลาดใช้เวลากี่นาที</button>
             <button type="button" data-message="ไปโรงพยาบาลยะลา">ไปโรงพยาบาลยะลา</button>
             <button type="button" data-message="มีคนเดินผ่านไหม">มีคนเดินผ่านไหม</button>
+          </div>
+
+          <div class="voice-mode-toolbar">
+            <div class="mode-switch" id="voice-mode-switch">
+              <button id="voice-mode-push" class="mode-button active" type="button">Push-to-Talk Mode</button>
+              <button id="voice-mode-wake" class="mode-button" type="button">Wake Word Mode</button>
+            </div>
+            <p class="debug-text voice-mode-hint">
+              Wake phrase: <strong>น้องฟ้า</strong>
+            </p>
           </div>
 
           <div id="chat-history" class="chat-history" aria-live="polite"></div>
@@ -64,7 +77,7 @@
             ></textarea>
             <div class="chat-form-actions">
               <span id="chat-loading" class="loading-text" hidden>AI กำลังตอบ...</span>
-              <button id="chat-mic-button" class="secondary-button" type="button">ไมค์</button>
+              <button id="chat-mic-button" class="secondary-button" type="button">Start talking</button>
               <button id="chat-send-button" type="submit">ส่งข้อความ</button>
             </div>
 
@@ -73,7 +86,7 @@
                 <input id="pir-sim-toggle" type="checkbox" checked />
                 <span>จำลอง PIR มีคนอยู่</span>
               </label>
-              <span id="mic-state-indicator" class="status-pill neutral">Closed</span>
+              <span id="mic-state-indicator" class="status-pill neutral">Idle</span>
               <span id="keep-mic-indicator" class="status-pill neutral">keep_mic_open: false</span>
               <button id="chat-stop-button" class="secondary-button" type="button">หยุด</button>
             </div>

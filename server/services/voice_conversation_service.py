@@ -13,6 +13,7 @@ from server.models.voice import MicAction, VoiceChatData
 from server.services.chat_service import ChatService, get_chat_service
 from server.services.intent_router import IntentRouter, get_intent_router
 from server.services.llm_manager import DEFAULT_FALLBACK_REPLY, LLMManager, get_llm_manager
+from server.services.smalltalk_service import SmallTalkService, get_smalltalk_service
 from server.services.tts_service import TTSService, get_tts_service
 
 EXIT_WORDS: tuple[str, ...] = (
@@ -55,12 +56,14 @@ class VoiceConversationService:
         chat_service: ChatService,
         intent_router: IntentRouter,
         llm_manager: LLMManager,
+        smalltalk_service: SmallTalkService,
         tts_service: TTSService,
     ) -> None:
         self._settings = settings
         self._chat_service = chat_service
         self._intent_router = intent_router
         self._llm_manager = llm_manager
+        self._smalltalk_service = smalltalk_service
         self._tts_service = tts_service
 
     def handle_turn(
@@ -94,6 +97,23 @@ class VoiceConversationService:
 
         intent = self._intent_router.classify(cleaned_text).intent
         if intent == "general_chat":
+            smalltalk_reply = self._smalltalk_service.get_reply(cleaned_text)
+            if smalltalk_reply is not None:
+                keep_mic_open = self._apply_keep_mic_open_override(
+                    ai_keep_mic_open=smalltalk_reply.keep_mic_open,
+                    pir_state=pir_state,
+                    is_exit_turn=False,
+                )
+                return self._build_response(
+                    heard_text=cleaned_text,
+                    reply=smalltalk_reply.reply,
+                    intent="general_chat",
+                    source="rule_based",
+                    action="none",
+                    keep_mic_open=keep_mic_open,
+                    background_tasks=background_tasks,
+                )
+
             decision = self._handle_general_chat(cleaned_text)
             keep_mic_open = self._apply_keep_mic_open_override(
                 ai_keep_mic_open=decision.keep_mic_open,
@@ -288,6 +308,7 @@ _voice_conversation_service = VoiceConversationService(
     chat_service=get_chat_service(),
     intent_router=get_intent_router(),
     llm_manager=get_llm_manager(),
+    smalltalk_service=get_smalltalk_service(),
     tts_service=get_tts_service(),
 )
 

@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field, field_validator
 
 IntentName = Literal[
     "device_control",
+    "line_send_request",
     "navigation_query",
     "news_detail_query",
     "news_query",
@@ -16,6 +17,8 @@ IntentName = Literal[
 ResponseSource = Literal[
     "ollama",
     "fallback",
+    "line",
+    "rule_based",
     "placeholder",
     "device_control",
     "motion_sensor",

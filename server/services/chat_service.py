@@ -11,6 +11,7 @@ from server.services.device_control import (
     get_device_control_service,
 )
 from server.services.intent_router import IntentRouter, get_intent_router
+from server.services.line_service import LineService, get_line_service
 from server.services.llm_manager import LLMManager, get_llm_manager
 from server.services.navigation_service import (
     NavigationService,
@@ -23,6 +24,7 @@ from server.services.system_status_service import (
     get_system_status_service,
 )
 from server.services.traffic_service import TrafficService, get_traffic_service
+from server.services.smalltalk_service import SmallTalkService, get_smalltalk_service
 from server.services.tts_service import TTSService, get_tts_service
 from server.services.weather_service import WeatherService, get_weather_service
 from server.utils.observability import log_timing, start_timer
@@ -37,11 +39,13 @@ class ChatService:
         self,
         settings: Settings,
         intent_router: IntentRouter,
+        line_service: LineService,
         llm_manager: LLMManager,
         device_control_service: DeviceControlService,
         navigation_service: NavigationService,
         news_service: NewsService,
         sensor_manager: SensorManager,
+        smalltalk_service: SmallTalkService,
         system_status_service: SystemStatusService,
         traffic_service: TrafficService,
         tts_service: TTSService,
@@ -49,11 +53,13 @@ class ChatService:
     ) -> None:
         self._settings = settings
         self._intent_router = intent_router
+        self._line_service = line_service
         self._llm_manager = llm_manager
         self._device_control_service = device_control_service
         self._navigation_service = navigation_service
         self._news_service = news_service
         self._sensor_manager = sensor_manager
+        self._smalltalk_service = smalltalk_service
         self._system_status_service = system_status_service
         self._traffic_service = traffic_service
         self._tts_service = tts_service
@@ -113,6 +119,45 @@ class ChatService:
                     reply=news_answer.reply,
                     intent="news_query",
                     source=news_answer.source,
+                    background_tasks=background_tasks,
+                    force_audio=force_audio,
+                    suppress_audio=suppress_audio,
+                )
+
+            if intent_match.intent == "line_send_request":
+                news_selection = self._news_service.select_recent_news_for_line(message)
+                if news_selection is None:
+                    line_reply = "ยังไม่มีรายการข่าวล่าสุดให้ส่งเข้า LINE ลองถามข่าวก่อน เช่น วันนี้มีข่าวอะไรบ้าง"
+                    source = "fallback"
+                    return self._build_response(
+                        reply=line_reply,
+                        intent="line_send_request",
+                        source="fallback",
+                        background_tasks=background_tasks,
+                        force_audio=force_audio,
+                        suppress_audio=suppress_audio,
+                    )
+                if not news_selection.items:
+                    line_reply = "เลขข่าวที่เลือกไม่อยู่ในรายการล่าสุด ลองเลือกข้อที่เห็นในรายการข่าวอีกครั้งนะ"
+                    source = "fallback"
+                    return self._build_response(
+                        reply=line_reply,
+                        intent="line_send_request",
+                        source="fallback",
+                        background_tasks=background_tasks,
+                        force_audio=force_audio,
+                        suppress_audio=suppress_audio,
+                    )
+
+                line_result = self._line_service.send_news_links(
+                    label=news_selection.label,
+                    items=news_selection.items,
+                )
+                source = line_result.source
+                return self._build_response(
+                    reply=line_result.reply,
+                    intent="line_send_request",
+                    source=line_result.source,
                     background_tasks=background_tasks,
                     force_audio=force_audio,
                     suppress_audio=suppress_audio,
@@ -187,6 +232,18 @@ class ChatService:
                     reply=placeholder_response.reply,
                     intent=placeholder_response.intent,
                     source="placeholder",
+                    background_tasks=background_tasks,
+                    force_audio=force_audio,
+                    suppress_audio=suppress_audio,
+                )
+
+            smalltalk_reply = self._smalltalk_service.get_reply(message)
+            if smalltalk_reply is not None:
+                source = "rule_based"
+                return self._build_response(
+                    reply=smalltalk_reply.reply,
+                    intent="general_chat",
+                    source="rule_based",
                     background_tasks=background_tasks,
                     force_audio=force_audio,
                     suppress_audio=suppress_audio,
@@ -275,11 +332,13 @@ class ChatService:
 _chat_service = ChatService(
     settings=get_settings(),
     intent_router=get_intent_router(),
+    line_service=get_line_service(),
     llm_manager=get_llm_manager(),
     device_control_service=get_device_control_service(),
     navigation_service=get_navigation_service(),
     news_service=get_news_service(),
     sensor_manager=get_sensor_manager(),
+    smalltalk_service=get_smalltalk_service(),
     system_status_service=get_system_status_service(),
     traffic_service=get_traffic_service(),
     tts_service=get_tts_service(),

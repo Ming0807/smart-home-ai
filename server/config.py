@@ -38,6 +38,12 @@ class Settings(BaseModel):
     news_cache_ttl_seconds: int = Field(default=600)
     news_timeout_seconds: float = Field(default=5.0)
     news_max_items: int = Field(default=5)
+    line_enabled: bool = Field(default=False)
+    line_channel_id: str = Field(default="")
+    line_channel_secret: str = Field(default="")
+    line_channel_access_token: str = Field(default="")
+    line_target_id: str = Field(default="")
+    line_timeout_seconds: float = Field(default=5.0)
     nav_provider: str = Field(default="openrouteservice")
     openrouteservice_api_key: str = Field(default="")
     nav_default_origin: str = Field(default="Yala")
@@ -162,6 +168,12 @@ def get_settings() -> Settings:
         news_cache_ttl_seconds=_get_int_env("NEWS_CACHE_TTL_SECONDS", 600),
         news_timeout_seconds=_get_float_env("NEWS_TIMEOUT_SECONDS", 5.0),
         news_max_items=_get_int_env("NEWS_MAX_ITEMS", 5),
+        line_enabled=_get_bool_env("LINE_ENABLED", False),
+        line_channel_id=getenv("LINE_CHANNEL_ID", ""),
+        line_channel_secret=getenv("LINE_CHANNEL_SECRET", ""),
+        line_channel_access_token=getenv("LINE_CHANNEL_ACCESS_TOKEN", ""),
+        line_target_id=getenv("LINE_TARGET_ID", ""),
+        line_timeout_seconds=_get_float_env("LINE_TIMEOUT_SECONDS", 5.0),
         nav_provider=getenv("NAV_PROVIDER", "openrouteservice"),
         openrouteservice_api_key=getenv("OPENROUTESERVICE_API_KEY", ""),
         nav_default_origin=getenv("NAV_DEFAULT_ORIGIN", "Yala"),

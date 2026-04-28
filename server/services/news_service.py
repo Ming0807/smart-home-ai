@@ -64,6 +64,13 @@ class RecentNewsState:
     updated_at: datetime
 
 
+@dataclass(frozen=True)
+class RecentNewsSelection:
+    items: tuple[NewsItem, ...]
+    label: str
+    requested_index: int | None = None
+
+
 class NewsService:
     """Fetch and summarize news for concise Thai replies."""
 
@@ -132,6 +139,32 @@ class NewsService:
             reply=self._build_detail_reply(requested_index, item),
             source="currents_api",
             items=(item,),
+        )
+
+    def select_recent_news_for_line(self, message: str) -> RecentNewsSelection | None:
+        recent_news = self._get_recent_news()
+        if recent_news is None:
+            return None
+
+        requested_index = self._extract_requested_index(message)
+        if requested_index is not None:
+            if requested_index < 1 or requested_index > len(recent_news.items):
+                return RecentNewsSelection(
+                    items=(),
+                    label=recent_news.label,
+                    requested_index=requested_index,
+                )
+            item = recent_news.items[requested_index - 1]
+            return RecentNewsSelection(
+                items=(item,),
+                label=f"{recent_news.label} ข้อ {requested_index}",
+                requested_index=requested_index,
+            )
+
+        return RecentNewsSelection(
+            items=recent_news.items[: self._settings.news_max_items],
+            label=recent_news.label,
+            requested_index=None,
         )
 
     def get_news(self, news_query: NewsQuery) -> tuple[NewsItem, ...] | None:
@@ -248,6 +281,21 @@ class NewsService:
 
     def _build_query(self, message: str) -> NewsQuery:
         normalized_message = _normalize(message)
+        if any(keyword in normalized_message for keyword in ("สหรัฐ", "อเมริกา", "usa", "us")) and "อิหร่าน" in normalized_message:
+            return NewsQuery(
+                keywords="United States Iran",
+                label="ข่าวสหรัฐกับอิหร่านล่าสุด",
+            )
+        if any(keyword in normalized_message for keyword in ("การเงิน", "เศรษฐกิจ", "หุ้น", "คริปโต", "set", "finance", "business")):
+            return NewsQuery(
+                category="business",
+                label="ข่าวการเงินและเศรษฐกิจล่าสุด",
+            )
+        if any(keyword in normalized_message for keyword in ("การเมืองไทย", "รัฐบาล", "สภา", "นายก", "พรรคการเมือง")):
+            return NewsQuery(
+                keywords="Thailand politics",
+                label="ข่าวการเมืองไทยล่าสุด",
+            )
         if "ai" in normalized_message:
             return NewsQuery(
                 keywords="AI",
@@ -271,7 +319,7 @@ class NewsService:
         )
         return (
             f"{topic_label}ที่น่าสนใจมี {headline_count} เรื่อง: {headline_summary} "
-            "ถ้าอยากฟังต่อ บอกได้เลยว่าเอาข้อไหน"
+            "ถ้าอยากฟังต่อบอกได้เลยว่าเอาข้อไหน หรือบอกว่า ส่งข่าวเข้า LINE"
         )
 
     @staticmethod
