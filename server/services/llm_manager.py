@@ -21,7 +21,7 @@ DEFAULT_SYSTEM_PROMPT = (
     "คุณคือผู้ช่วย AI บ้านอัจฉริยะที่คุยภาษาไทยอย่างเป็นธรรมชาติ "
     "ตอบให้สั้น ชัดเจน เป็นมิตร และอย่าอ้างว่าควบคุมอุปกรณ์จริงจนกว่าระบบจะรองรับ"
 )
-DEFAULT_FALLBACK_REPLY = "ตอนนี้ระบบตอบช้ากว่าปกตินิดนึง ลองใหม่อีกครั้งได้ไหม"
+DEFAULT_FALLBACK_REPLY = "ตอนนี้โมเดลหลักยังตอบไม่ทัน ลองถามใหม่อีกครั้งหรือถามให้สั้นลงนิดหนึ่งได้ไหม"
 
 
 @dataclass(frozen=True)
@@ -100,7 +100,10 @@ class LLMManager:
 
         health_status = self.get_health_status()
         if not health_status.available:
-            return self._fallback(health_status.last_error or "ollama unavailable")
+            return self._fallback(
+                health_status.last_error or "ollama unavailable",
+                mark_unavailable=False,
+            )
 
         timer = start_timer()
         try:
@@ -123,19 +126,16 @@ class LLMManager:
                 source="ollama",
             )
         except Timeout:
-            self._set_error("ollama timeout")
             logger.warning("Ollama chat request timed out")
-            return self._fallback("ollama timeout")
+            return self._fallback("ollama timeout", mark_unavailable=False)
         except RequestException as exc:
             formatted_error = self._format_request_error(exc)
-            self._set_error(formatted_error)
             logger.warning("Ollama chat request failed: %s", formatted_error)
-            return self._fallback("ollama unavailable")
+            return self._fallback(formatted_error, mark_unavailable=True)
         except (KeyError, TypeError, ValueError) as exc:
             error = f"invalid ollama response: {exc.__class__.__name__}"
-            self._set_error(error)
             logger.warning("Invalid Ollama chat response: %s", exc.__class__.__name__)
-            return self._fallback("invalid ollama response")
+            return self._fallback(error, mark_unavailable=False)
         finally:
             self._last_latency_ms = timer.elapsed_ms
             log_timing(
@@ -148,21 +148,36 @@ class LLMManager:
             )
 
     def stream_reply(self, message: str) -> Iterator[str]:
-        """Yield streamed response chunks for future UI work."""
-        with self._session.post(
-            self._chat_url,
-            json=self._build_payload(message=message, stream=True),
-            timeout=self._request_timeout_seconds,
-            stream=True,
-        ) as response:
-            response.raise_for_status()
-            for line in response.iter_lines(decode_unicode=True):
-                if not line:
-                    continue
-                chunk = json.loads(line)
-                content = chunk.get("message", {}).get("content", "")
-                if content:
-                    yield content
+        """Yield streamed response chunks from Ollama for general chat."""
+        health_status = self.get_health_status()
+        if not health_status.available:
+            raise RuntimeError(health_status.last_error or "ollama unavailable")
+
+        timer = start_timer()
+        try:
+            with self._session.post(
+                self._chat_url,
+                json=self._build_payload(message=message, stream=True),
+                timeout=self._request_timeout_seconds,
+                stream=True,
+            ) as response:
+                response.raise_for_status()
+                for line in response.iter_lines(decode_unicode=True):
+                    if not line:
+                        continue
+                    chunk = json.loads(line)
+                    content = chunk.get("message", {}).get("content", "")
+                    if content:
+                        yield content
+        finally:
+            self._last_latency_ms = timer.elapsed_ms
+            log_timing(
+                logger,
+                self._settings,
+                "llm.chat.stream",
+                timer.elapsed_ms,
+                model=self._settings.ollama_model,
+            )
 
     def warmup(self) -> LLMHealthStatus:
         health_status = self.check_health(force_refresh=True)
@@ -174,7 +189,7 @@ class LLMManager:
             response = self._session.post(
                 self._chat_url,
                 json=self._build_warmup_payload(),
-                timeout=min(self._request_timeout_seconds, 15.0),
+                timeout=self._warmup_timeout_seconds,
             )
             response.raise_for_status()
             self._parse_chat_response(response)
@@ -286,6 +301,13 @@ class LLMManager:
             self._settings.ollama_timeout_seconds,
         )
 
+    @property
+    def _warmup_timeout_seconds(self) -> float:
+        return min(
+            self._settings.ollama_warmup_timeout_seconds,
+            self._settings.ollama_timeout_seconds,
+        )
+
     def _build_payload(
         self,
         message: str,
@@ -301,6 +323,7 @@ class LLMManager:
                 {"role": "user", "content": message},
             ],
             "stream": stream,
+            "keep_alive": self._settings.ollama_keep_alive,
             "options": {
                 "temperature": (
                     self._settings.llm_temperature if temperature is None else temperature
@@ -317,6 +340,7 @@ class LLMManager:
                 {"role": "user", "content": "พร้อมไหม"},
             ],
             "stream": False,
+            "keep_alive": self._settings.ollama_keep_alive,
             "options": {
                 "temperature": 0,
                 "num_predict": 8,
@@ -395,18 +419,34 @@ class LLMManager:
         body = response.text[:500].replace("\n", " ")
         return f"{exc.__class__.__name__} status={response.status_code} body={body}"
 
-    def _fallback(self, error: str) -> LLMResponse:
-        self._set_error(error)
+    def _fallback(self, error: str, mark_unavailable: bool = True) -> LLMResponse:
+        self._set_error(error, mark_unavailable=mark_unavailable)
         return LLMResponse(
-            reply=DEFAULT_FALLBACK_REPLY,
+            reply=self._fallback_reply_for_error(error),
             model=self._settings.ollama_model,
             source="fallback",
             fallback=True,
             error=error,
         )
 
-    def _set_error(self, error: str) -> None:
+    @staticmethod
+    def _fallback_reply_for_error(error: str) -> str:
+        normalized_error = error.casefold()
+        if "timeout" in normalized_error:
+            return (
+                "ข้อนี้โมเดลหลักใช้เวลาคิดนานเกินไปนิดหนึ่ง "
+                "ลองถามให้สั้นลงหรือกดถามซ้ำอีกครั้งได้ไหม"
+            )
+        if "model not found" in normalized_error:
+            return "ยังไม่พบโมเดลที่ตั้งค่าไว้ใน Ollama ลองเช็กชื่อโมเดลก่อนนะ"
+        if "connection" in normalized_error or "unavailable" in normalized_error:
+            return "ตอนนี้ยังเชื่อมต่อโมเดลหลักไม่ได้ ลองเช็กว่า Ollama เปิดอยู่แล้วถามใหม่อีกครั้งนะ"
+        return DEFAULT_FALLBACK_REPLY
+
+    def _set_error(self, error: str, mark_unavailable: bool = True) -> None:
         self._last_error = error
+        if not mark_unavailable:
+            return
         with self._lock:
             if self._health_cache is not None:
                 self._health_cache = LLMHealthStatus(

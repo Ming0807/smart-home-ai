@@ -17,6 +17,8 @@ class Settings(BaseModel):
     ollama_base_url: str = Field(default="http://localhost:11434")
     ollama_model: str = Field(default="scb10x/llama3.1-typhoon2-8b-instruct:latest")
     ollama_timeout_seconds: float = Field(default=120.0)
+    ollama_keep_alive: str = Field(default="30m")
+    ollama_warmup_timeout_seconds: float = Field(default=75.0)
     chat_timeout_seconds: float = Field(default=30.0)
     llm_warmup_on_start: bool = Field(default=True)
     llm_max_tokens: int = Field(default=120)
@@ -147,6 +149,8 @@ def get_settings() -> Settings:
             "scb10x/llama3.1-typhoon2-8b-instruct:latest",
         ),
         ollama_timeout_seconds=_get_float_env("OLLAMA_TIMEOUT_SECONDS", 120.0),
+        ollama_keep_alive=getenv("OLLAMA_KEEP_ALIVE", "30m"),
+        ollama_warmup_timeout_seconds=_get_float_env("OLLAMA_WARMUP_TIMEOUT_SECONDS", 75.0),
         chat_timeout_seconds=_get_float_env("CHAT_TIMEOUT_SECONDS", 30.0),
         llm_warmup_on_start=_get_bool_env("LLM_WARMUP_ON_START", True),
         llm_max_tokens=_get_int_env("LLM_MAX_TOKENS", 120),

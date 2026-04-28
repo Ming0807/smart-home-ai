@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
 import logging
+from collections.abc import Iterator
 
 from fastapi import BackgroundTasks
 
 from server.config import Settings, get_settings
 from server.models.chat import ChatResponse
+from server.services.llm_manager import DEFAULT_FALLBACK_REPLY
 from server.services.device_control import (
     DeviceControlService,
     get_device_control_service,
@@ -274,6 +277,92 @@ class ChatService:
                 status=status_text,
             )
 
+    def stream_message(
+        self,
+        message: str,
+        background_tasks: BackgroundTasks,
+    ) -> Iterator[str]:
+        """Stream a chat response as SSE, using LLM streaming only for general chat."""
+        intent_match = self._intent_router.classify(message)
+
+        if intent_match.intent != "general_chat":
+            response = self.handle_message(message, background_tasks=background_tasks)
+            yield self._sse_event("done", response.model_dump())
+            return
+
+        smalltalk_reply = self._smalltalk_service.get_reply(message)
+        if smalltalk_reply is not None:
+            response = self._build_response(
+                reply=smalltalk_reply.reply,
+                intent="general_chat",
+                source="rule_based",
+                background_tasks=background_tasks,
+                force_audio=False,
+                suppress_audio=False,
+            )
+            yield self._sse_event("done", response.model_dump())
+            return
+
+        reply_parts: list[str] = []
+        yield self._sse_event(
+            "status",
+            {"message": "กำลังคิดคำตอบจากโมเดลหลัก"},
+        )
+
+        try:
+            for chunk in self._llm_manager.stream_reply(message):
+                reply_parts.append(chunk)
+                yield self._sse_event("chunk", {"text": chunk})
+        except Exception as exc:
+            logger.warning("LLM stream failed: %s", exc.__class__.__name__)
+            if reply_parts:
+                reply = "".join(reply_parts).strip()
+                response = self._build_response(
+                    reply=reply,
+                    intent="general_chat",
+                    source="ollama",
+                    background_tasks=background_tasks,
+                    force_audio=False,
+                    suppress_audio=False,
+                )
+                yield self._sse_event("done", response.model_dump())
+                return
+
+            fallback_reply = DEFAULT_FALLBACK_REPLY
+            response = self._build_response(
+                reply=fallback_reply,
+                intent="general_chat",
+                source="fallback",
+                background_tasks=background_tasks,
+                force_audio=False,
+                suppress_audio=False,
+            )
+            yield self._sse_event("done", response.model_dump())
+            return
+
+        reply = "".join(reply_parts).strip()
+        if not reply:
+            response = self._build_response(
+                reply=DEFAULT_FALLBACK_REPLY,
+                intent="general_chat",
+                source="fallback",
+                background_tasks=background_tasks,
+                force_audio=False,
+                suppress_audio=False,
+            )
+            yield self._sse_event("done", response.model_dump())
+            return
+
+        response = self._build_response(
+            reply=reply,
+            intent="general_chat",
+            source="ollama",
+            background_tasks=background_tasks,
+            force_audio=False,
+            suppress_audio=False,
+        )
+        yield self._sse_event("done", response.model_dump())
+
     def build_fallback_response(
         self,
         reply: str,
@@ -327,6 +416,11 @@ class ChatService:
         token, audio_url = self._tts_service.create_pending_audio_url()
         background_tasks.add_task(self._tts_service.synthesize, reply, token)
         return audio_url
+
+    @staticmethod
+    def _sse_event(event: str, payload: dict[str, object]) -> str:
+        data = json.dumps(payload, ensure_ascii=False)
+        return f"event: {event}\ndata: {data}\n\n"
 
 
 _chat_service = ChatService(

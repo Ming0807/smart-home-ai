@@ -77,6 +77,9 @@ const POST_SPEAKING_COOLDOWN_MS = 1200;
 const WAKE_LISTEN_RESTART_DELAY_MS = 350;
 const ASSISTANT_ECHO_WINDOW_MS = 5000;
 const DUPLICATE_TRANSCRIPT_WINDOW_MS = 2000;
+const CHAT_REQUEST_TIMEOUT_MS = 70000;
+const CHAT_WAITING_HINT_DELAY_MS = 6000;
+const CHAT_LONG_WAIT_HINT_DELAY_MS = 18000;
 
 const state = {
   chatBusy: false,
@@ -100,6 +103,7 @@ const state = {
   lastAssistantPlaybackEndedAt: 0,
   lastHandledTranscript: "",
   lastHandledTranscriptAt: 0,
+  chatWaitTimerIds: [],
 };
 
 function formatDate(value) {
@@ -201,6 +205,32 @@ function clearAutoListenTimer() {
     window.clearTimeout(state.autoListenTimerId);
     state.autoListenTimerId = null;
   }
+}
+
+function clearChatWaitHints() {
+  for (const timerId of state.chatWaitTimerIds) {
+    window.clearTimeout(timerId);
+  }
+  state.chatWaitTimerIds = [];
+}
+
+function setChatLoadingText(text) {
+  chatLoading.textContent = text;
+}
+
+function startChatWaitHints() {
+  clearChatWaitHints();
+  setChatLoadingText("AI กำลังตอบ...");
+  state.chatWaitTimerIds = [
+    window.setTimeout(() => {
+      setChatLoadingText("กำลังคิดคำตอบจากโมเดลหลัก รอสักครู่นะ...");
+      setPillState(chatStatus, "warn", "กำลังคิด");
+    }, CHAT_WAITING_HINT_DELAY_MS),
+    window.setTimeout(() => {
+      setChatLoadingText("ยังคิดอยู่ ข้อความรอนี้จะไม่สร้างเสียงจนกว่าคำตอบจริงจะมา");
+      setPillState(chatStatus, "warn", "LLM กำลังทำงาน");
+    }, CHAT_LONG_WAIT_HINT_DELAY_MS),
+  ];
 }
 
 function resetActiveListenRetries() {
@@ -376,6 +406,98 @@ async function fetchJson(url, options = {}, timeoutMs = 30000) {
   }
 }
 
+function parseSseBlock(block) {
+  let event = "message";
+  const dataLines = [];
+
+  for (const line of block.split(/\r?\n/)) {
+    if (line.startsWith("event:")) {
+      event = line.slice(6).trim();
+      continue;
+    }
+    if (line.startsWith("data:")) {
+      dataLines.push(line.slice(5).trimStart());
+    }
+  }
+
+  const dataText = dataLines.join("\n").trim();
+  return {
+    event,
+    data: dataText ? JSON.parse(dataText) : {},
+  };
+}
+
+async function fetchChatStream(message, handlers = {}) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), CHAT_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch("/chat/stream", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
+      body: JSON.stringify({ message }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || "stream request failed");
+    }
+    if (!response.body) {
+      throw new Error("streaming is not supported by this browser");
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let finalData = null;
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      buffer += decoder.decode(value, { stream: true });
+      const blocks = buffer.split(/\r?\n\r?\n/);
+      buffer = blocks.pop() || "";
+
+      for (const block of blocks) {
+        if (!block.trim()) {
+          continue;
+        }
+        const parsed = parseSseBlock(block);
+        if (parsed.event === "chunk") {
+          handlers.onChunk?.(parsed.data.text || "");
+        } else if (parsed.event === "status") {
+          handlers.onStatus?.(parsed.data.message || "");
+        } else if (parsed.event === "done") {
+          finalData = parsed.data;
+          handlers.onDone?.(parsed.data);
+        }
+      }
+    }
+
+    if (buffer.trim()) {
+      const parsed = parseSseBlock(buffer);
+      if (parsed.event === "done") {
+        finalData = parsed.data;
+      }
+    }
+
+    if (!finalData) {
+      throw new Error("stream ended without final response");
+    }
+    return finalData;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 async function requestSpeechAudioUrl(text) {
   const { response, data } = await fetchJson(
     "/voice/speak",
@@ -515,6 +637,76 @@ async function loadAudioWithRetry(
   }
 }
 
+function appendMessageMeta(wrapper, meta = {}) {
+  const existingMeta = wrapper.querySelector(".message-meta");
+  if (existingMeta) {
+    existingMeta.remove();
+  }
+
+  if (!meta.intent && !meta.source && !meta.action && typeof meta.keepMicOpen !== "boolean") {
+    return;
+  }
+
+  const metaRow = document.createElement("div");
+  metaRow.className = "message-meta";
+
+  for (const [key, value] of [
+    ["intent", meta.intent],
+    ["source", meta.source],
+    ["action", meta.action],
+  ]) {
+    if (!value) {
+      continue;
+    }
+    const badge = document.createElement("span");
+    badge.className = "badge";
+    badge.textContent = `${key}: ${value}`;
+    metaRow.appendChild(badge);
+  }
+
+  if (typeof meta.keepMicOpen === "boolean") {
+    const keepBadge = document.createElement("span");
+    keepBadge.className = "badge";
+    keepBadge.textContent = `keep_mic_open: ${meta.keepMicOpen ? "true" : "false"}`;
+    metaRow.appendChild(keepBadge);
+  }
+
+  wrapper.appendChild(metaRow);
+}
+
+function attachMessageAudio(wrapper, text, audioUrl) {
+  for (const audioElement of wrapper.querySelectorAll("audio")) {
+    revokeAudioObjectUrl(audioElement);
+    audioElement.remove();
+  }
+  for (const audioStatus of wrapper.querySelectorAll(".audio-status")) {
+    audioStatus.remove();
+  }
+
+  if (!audioUrl) {
+    return {
+      audioElement: null,
+      audioPromise: Promise.resolve(),
+    };
+  }
+
+  const audioElement = document.createElement("audio");
+  audioElement.controls = true;
+  audioElement.preload = "metadata";
+
+  const audioStatus = document.createElement("p");
+  audioStatus.className = "audio-status";
+  audioStatus.textContent = "กำลังเตรียมเสียง...";
+
+  wrapper.append(audioElement, audioStatus);
+  const audioPromise = loadAudioWithRetry(audioElement, audioUrl, true, audioStatus, 0, text);
+  return { audioElement, audioPromise };
+}
+
+function scrollChatToBottom() {
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
 function appendMessage(role, text, meta = {}) {
   const wrapper = document.createElement("article");
   wrapper.className = `message ${role}`;
@@ -540,54 +732,51 @@ function appendMessage(role, text, meta = {}) {
   body.textContent = text;
 
   wrapper.append(header, body);
+  appendMessageMeta(wrapper, meta);
 
-  if (meta.intent || meta.source || meta.action) {
-    const metaRow = document.createElement("div");
-    metaRow.className = "message-meta";
-
-    for (const [key, value] of [
-      ["intent", meta.intent],
-      ["source", meta.source],
-      ["action", meta.action],
-    ]) {
-      if (!value) {
-        continue;
-      }
-      const badge = document.createElement("span");
-      badge.className = "badge";
-      badge.textContent = `${key}: ${value}`;
-      metaRow.appendChild(badge);
-    }
-
-    if (typeof meta.keepMicOpen === "boolean") {
-      const keepBadge = document.createElement("span");
-      keepBadge.className = "badge";
-      keepBadge.textContent = `keep_mic_open: ${meta.keepMicOpen ? "true" : "false"}`;
-      metaRow.appendChild(keepBadge);
-    }
-
-    wrapper.appendChild(metaRow);
-  }
-
-  let audioElement = null;
-  let audioPromise = Promise.resolve();
-  if (meta.audioUrl) {
-    audioElement = document.createElement("audio");
-    audioElement.controls = true;
-    audioElement.preload = "metadata";
-
-    const audioStatus = document.createElement("p");
-    audioStatus.className = "audio-status";
-    audioStatus.textContent = "กำลังเตรียมเสียง...";
-
-    wrapper.append(audioElement, audioStatus);
-    audioPromise = loadAudioWithRetry(audioElement, meta.audioUrl, true, audioStatus, 0, text);
-  }
+  const { audioElement, audioPromise } = attachMessageAudio(wrapper, text, meta.audioUrl || null);
 
   chatHistory.appendChild(wrapper);
   trimChatHistory();
-  chatHistory.scrollTop = chatHistory.scrollHeight;
-  return { wrapper, audioElement, audioPromise };
+  scrollChatToBottom();
+  return { wrapper, body, audioElement, audioPromise };
+}
+
+function appendStreamingAssistantMessage() {
+  const entry = appendMessage("assistant", "กำลังเริ่มตอบจากโมเดลหลัก...", {
+    source: "ollama",
+  });
+  entry.wrapper.classList.add("streaming");
+  return entry;
+}
+
+function updateAssistantEntryText(entry, text) {
+  entry.body.textContent = text || "กำลังคิดคำตอบจากโมเดลหลัก...";
+  scrollChatToBottom();
+}
+
+async function finalizeAssistantEntry(entry, data) {
+  entry.wrapper.classList.remove("streaming");
+  entry.body.textContent = data.reply || "";
+  appendMessageMeta(entry.wrapper, {
+    intent: data.intent,
+    source: data.source,
+    action: data.action,
+    keepMicOpen: data.keep_mic_open,
+  });
+
+  let resolvedAudioUrl = null;
+  try {
+    resolvedAudioUrl = await ensureChatAudioUrl(data.reply, data.audio_url || null);
+  } catch (audioError) {
+    resolvedAudioUrl = null;
+  }
+
+  const audioState = attachMessageAudio(entry.wrapper, data.reply || "", resolvedAudioUrl);
+  entry.audioElement = audioState.audioElement;
+  entry.audioPromise = audioState.audioPromise;
+  scrollChatToBottom();
+  return entry;
 }
 
 function normalizeVoicePayload(payload) {
@@ -909,6 +1098,58 @@ async function handleChatResponse(data, options = {}) {
   return assistantEntry;
 }
 
+async function requestClassicChatMessage(message) {
+  const { response, data } = await fetchJson(
+    "/chat",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message }),
+    },
+    CHAT_REQUEST_TIMEOUT_MS
+  );
+
+  if (!response.ok) {
+    throw new Error(data.detail || "ส่งข้อความไม่สำเร็จ");
+  }
+  return data;
+}
+
+async function handleStreamingChatMessage(message) {
+  let streamedText = "";
+  let assistantEntry = null;
+
+  try {
+    assistantEntry = appendStreamingAssistantMessage();
+    const finalData = await fetchChatStream(message, {
+      onStatus: (statusText) => {
+        if (statusText) {
+          setChatLoadingText(statusText);
+        }
+      },
+      onChunk: (chunk) => {
+        streamedText += chunk;
+        updateAssistantEntryText(assistantEntry, streamedText);
+      },
+    });
+
+    await finalizeAssistantEntry(assistantEntry, finalData);
+    setPillState(chatStatus, "good", "ตอบแล้ว");
+    if (finalData.intent === "weather_query") {
+      weatherResult.textContent = finalData.reply;
+      weatherResult.classList.remove("muted");
+    }
+    await refreshDashboardStatus();
+    await refreshVoiceDebugStatus();
+    return assistantEntry;
+  } catch (error) {
+    if (assistantEntry) {
+      assistantEntry.wrapper.remove();
+    }
+    throw error;
+  }
+}
+
 function stopAllVoiceCapture() {
   clearAutoListenTimer();
 
@@ -1019,29 +1260,23 @@ async function sendChatMessage(message) {
   state.conversationActive = false;
   setKeepMicIndicator(false, "โหมดแชตข้อความปิด loop เสียงไว้ก่อน");
   stopAllVoiceCapture();
+  startChatWaitHints();
 
   try {
-    const { response, data } = await fetchJson(
-      "/chat",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed }),
-      },
-      45000
-    );
-
-    if (!response.ok) {
-      throw new Error(data.detail || "ส่งข้อความไม่สำเร็จ");
+    try {
+      await handleStreamingChatMessage(trimmed);
+    } catch (streamError) {
+      const data = await requestClassicChatMessage(trimmed);
+      await handleChatResponse(data, { appendUserMessage: false, userMessage: trimmed });
     }
-
-    await handleChatResponse(data, { appendUserMessage: false, userMessage: trimmed });
   } catch (error) {
     appendMessage("assistant", getReadableErrorMessage(error, "เกิดปัญหาระหว่างส่งข้อความ ลองใหม่อีกครั้งได้ไหม"), {
       source: "fallback",
     });
     setPillState(chatStatus, "bad", "เกิดข้อผิดพลาด");
   } finally {
+    clearChatWaitHints();
+    setChatLoadingText("AI กำลังตอบ...");
     setChatBusy(false);
     if (state.voiceMode === "wake" && !state.stopRequested) {
       startWakeWordListening();

@@ -15,6 +15,7 @@ IntentName = Literal[
     "general_chat",
 ]
 ResponseSource = Literal[
+    "cache",
     "ollama",
     "fallback",
     "line",
