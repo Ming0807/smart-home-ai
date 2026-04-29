@@ -16,6 +16,9 @@ const keepMicIndicator = document.getElementById("keep-mic-indicator");
 const pirSimToggle = document.getElementById("pir-sim-toggle");
 const voiceModePushButton = document.getElementById("voice-mode-push");
 const voiceModeWakeButton = document.getElementById("voice-mode-wake");
+const chatModeFastButton = document.getElementById("chat-mode-fast");
+const chatModeThinkingButton = document.getElementById("chat-mode-thinking");
+const chatResponseModeLabel = document.getElementById("chat-response-mode-label");
 
 const sensorTemperature = document.getElementById("sensor-temperature");
 const sensorHumidity = document.getElementById("sensor-humidity");
@@ -99,6 +102,19 @@ const DUPLICATE_TRANSCRIPT_WINDOW_MS = 2000;
 const CHAT_REQUEST_TIMEOUT_MS = 70000;
 const CHAT_WAITING_HINT_DELAY_MS = 6000;
 const CHAT_LONG_WAIT_HINT_DELAY_MS = 18000;
+const CHAT_MODE_FAST = "fast";
+const CHAT_MODE_THINKING = "thinking";
+const THINKING_TRIGGER_PREFIX = "คิดก่อนตอบ";
+const THINKING_TRIGGER_PHRASES = [
+  "คิดก่อนตอบ",
+  "คิดก่อน",
+  "วิเคราะห์ก่อน",
+  "ขอคิดละเอียด",
+  "คิดให้ละเอียด",
+  "ขอวิเคราะห์",
+  "deep think",
+  "think carefully",
+];
 
 const state = {
   chatBusy: false,
@@ -116,6 +132,7 @@ const state = {
   voiceLoopRestartTimerId: null,
   discardCurrentRecording: false,
   maxChatHistoryItems: 50,
+  chatResponseMode: CHAT_MODE_FAST,
   keepMicOpen: false,
   voiceRequestActive: false,
   stopRequested: false,
@@ -281,16 +298,24 @@ function setChatLoadingText(text) {
   chatLoading.textContent = text;
 }
 
-function startChatWaitHints() {
+function startChatWaitHints(isThinkingMode = false) {
   clearChatWaitHints();
-  setChatLoadingText("AI กำลังตอบ...");
+  setChatLoadingText(isThinkingMode ? "AI กำลังคิดก่อนตอบ..." : "AI กำลังตอบ...");
   state.chatWaitTimerIds = [
     window.setTimeout(() => {
-      setChatLoadingText("กำลังคิดคำตอบจากโมเดลหลัก รอสักครู่นะ...");
-      setPillState(chatStatus, "warn", "กำลังคิด");
+      setChatLoadingText(
+        isThinkingMode
+          ? "โหมดคิดก่อนตอบอาจใช้เวลานานกว่าปกติ รอสักครู่นะ..."
+          : "กำลังคิดคำตอบจากโมเดลหลัก รอสักครู่นะ..."
+      );
+      setPillState(chatStatus, "warn", isThinkingMode ? "คิดละเอียด" : "กำลังคิด");
     }, CHAT_WAITING_HINT_DELAY_MS),
     window.setTimeout(() => {
-      setChatLoadingText("ยังคิดอยู่ ข้อความรอนี้จะไม่สร้างเสียงจนกว่าคำตอบจริงจะมา");
+      setChatLoadingText(
+        isThinkingMode
+          ? "ยังคิดละเอียดอยู่ ระบบจะสร้างเสียงหลังคำตอบจริงมาถึงเท่านั้น"
+          : "ยังคิดอยู่ ข้อความรอนี้จะไม่สร้างเสียงจนกว่าคำตอบจริงจะมา"
+      );
       setPillState(chatStatus, "warn", "LLM กำลังทำงาน");
     }, CHAT_LONG_WAIT_HINT_DELAY_MS),
   ];
@@ -392,6 +417,50 @@ function updateVoiceModeButtons() {
   chatMicButton.textContent = "Start talking";
 }
 
+function normalizeModeTriggerText(text) {
+  return text.toLocaleLowerCase().replace(/\s+/g, "");
+}
+
+function messageHasThinkingTrigger(message) {
+  const normalizedMessage = normalizeModeTriggerText(message);
+  return THINKING_TRIGGER_PHRASES.some((phrase) =>
+    normalizedMessage.includes(normalizeModeTriggerText(phrase))
+  );
+}
+
+function shouldUseThinkingModeForMessage(message) {
+  return state.chatResponseMode === CHAT_MODE_THINKING || messageHasThinkingTrigger(message);
+}
+
+function buildChatApiMessage(message) {
+  if (state.chatResponseMode !== CHAT_MODE_THINKING || messageHasThinkingTrigger(message)) {
+    return message;
+  }
+  return `${THINKING_TRIGGER_PREFIX} ${message}`;
+}
+
+function updateChatResponseModeButtons() {
+  chatModeFastButton.classList.toggle("active", state.chatResponseMode === CHAT_MODE_FAST);
+  chatModeThinkingButton.classList.toggle(
+    "active",
+    state.chatResponseMode === CHAT_MODE_THINKING
+  );
+
+  if (state.chatResponseMode === CHAT_MODE_THINKING) {
+    setPillState(chatResponseModeLabel, "warn", "โหมดคิดก่อนตอบ");
+    return;
+  }
+  setPillState(chatResponseModeLabel, "neutral", "โหมดตอบเร็ว");
+}
+
+function setChatResponseMode(mode) {
+  if (state.chatBusy || state.recording) {
+    return;
+  }
+  state.chatResponseMode = mode === CHAT_MODE_THINKING ? CHAT_MODE_THINKING : CHAT_MODE_FAST;
+  updateChatResponseModeButtons();
+}
+
 function isMediaRecorderActive() {
   return Boolean(state.mediaRecorder && state.mediaRecorder.state !== "inactive");
 }
@@ -436,6 +505,8 @@ function getChatActionButtons() {
     relayOffButton,
     voiceModePushButton,
     voiceModeWakeButton,
+    chatModeFastButton,
+    chatModeThinkingButton,
     ...quickActions.querySelectorAll("button[data-message]"),
     ...exitQuickActions.querySelectorAll("button[data-exit-message]"),
   ];
@@ -769,7 +840,13 @@ function appendMessageMeta(wrapper, meta = {}) {
     existingMeta.remove();
   }
 
-  if (!meta.intent && !meta.source && !meta.action && typeof meta.keepMicOpen !== "boolean") {
+  if (
+    !meta.intent &&
+    !meta.source &&
+    !meta.action &&
+    !meta.mode &&
+    typeof meta.keepMicOpen !== "boolean"
+  ) {
     return;
   }
 
@@ -780,6 +857,7 @@ function appendMessageMeta(wrapper, meta = {}) {
     ["intent", meta.intent],
     ["source", meta.source],
     ["action", meta.action],
+    ["mode", meta.mode],
   ]) {
     if (!value) {
       continue;
@@ -1854,8 +1932,12 @@ async function sendChatMessage(message) {
     return;
   }
 
+  const apiMessage = buildChatApiMessage(trimmed);
+  const isThinkingMode = shouldUseThinkingModeForMessage(trimmed);
   const shouldResumeWakeAfterText = state.voiceMode === "wake" && !state.stopRequested;
-  appendMessage("user", trimmed);
+  appendMessage("user", trimmed, {
+    mode: isThinkingMode ? CHAT_MODE_THINKING : CHAT_MODE_FAST,
+  });
   chatInput.value = "";
   showHeardText("");
   setChatBusy(true);
@@ -1866,13 +1948,13 @@ async function sendChatMessage(message) {
   if (shouldResumeWakeAfterText) {
     state.stopRequested = false;
   }
-  startChatWaitHints();
+  startChatWaitHints(isThinkingMode);
 
   try {
     try {
-      await handleStreamingChatMessage(trimmed);
+      await handleStreamingChatMessage(apiMessage);
     } catch (streamError) {
-      const data = await requestClassicChatMessage(trimmed);
+      const data = await requestClassicChatMessage(apiMessage);
       await handleChatResponse(data, { appendUserMessage: false, userMessage: trimmed });
     }
   } catch (error) {
@@ -2367,6 +2449,14 @@ voiceModeWakeButton.addEventListener("click", () => {
   setVoiceMode("wake");
 });
 
+chatModeFastButton.addEventListener("click", () => {
+  setChatResponseMode(CHAT_MODE_FAST);
+});
+
+chatModeThinkingButton.addEventListener("click", () => {
+  setChatResponseMode(CHAT_MODE_THINKING);
+});
+
 quickActions.addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-message]");
   if (!button || button.disabled) {
@@ -2492,6 +2582,7 @@ if (browserSupportsSpeechRecognition()) {
 }
 
 updateVoiceModeButtons();
+updateChatResponseModeButtons();
 setVoiceLifecycleState(VOICE_STATE_STOPPED);
 setKeepMicIndicator(false, "Push-to-Talk Mode พร้อมแล้ว");
 setPillState(chatStatus, "neutral", "พร้อมใช้งาน");

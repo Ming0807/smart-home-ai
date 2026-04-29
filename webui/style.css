@@ -293,7 +293,8 @@ button:active,
   flex-wrap: wrap;
 }
 
-.voice-mode-toolbar {
+.voice-mode-toolbar,
+.response-mode-toolbar {
   display: flex;
   justify-content: space-between;
   gap: 12px;

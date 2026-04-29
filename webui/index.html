@@ -66,6 +66,14 @@
             </p>
           </div>
 
+          <div class="response-mode-toolbar">
+            <div class="mode-switch" id="chat-response-mode-switch">
+              <button id="chat-mode-fast" class="mode-button active" type="button">ตอบเร็ว</button>
+              <button id="chat-mode-thinking" class="mode-button" type="button">คิดก่อนตอบ</button>
+            </div>
+            <span id="chat-response-mode-label" class="status-pill neutral">โหมดตอบเร็ว</span>
+          </div>
+
           <div id="chat-history" class="chat-history" aria-live="polite"></div>
 
           <form id="chat-form" class="chat-form">
@@ -302,6 +310,6 @@
       </main>
     </div>
 
-    <script src="/webui/app.js?v=voice-loop-20260428"></script>
+    <script src="/webui/app.js?v=thinking-mode-20260429"></script>
   </body>
 </html>

@@ -98,7 +98,12 @@ class VoiceConversationService:
 
         intent = self._intent_router.classify(cleaned_text).intent
         if intent == "general_chat":
-            smalltalk_reply = self._smalltalk_service.get_reply(cleaned_text)
+            prefer_deep_thinking = self._llm_manager.is_thinking_request(cleaned_text)
+            smalltalk_reply = (
+                None
+                if prefer_deep_thinking
+                else self._smalltalk_service.get_reply(cleaned_text)
+            )
             if smalltalk_reply is not None:
                 keep_mic_open = self._apply_keep_mic_open_override(
                     ai_keep_mic_open=smalltalk_reply.keep_mic_open,
@@ -171,10 +176,23 @@ class VoiceConversationService:
         )
 
     def _handle_general_chat(self, message: str) -> VoiceControlDecision:
+        if self._llm_manager.is_thinking_request(message):
+            raw_response = self._llm_manager.generate_reply(message)
+            fallback_reply = clean_reply_text(
+                raw_response.reply,
+                fallback=DEFAULT_FALLBACK_REPLY,
+            )
+            return VoiceControlDecision(
+                reply=fallback_reply,
+                action="none",
+                keep_mic_open=True,
+                source=raw_response.source,
+            )
+
         raw_response = self._llm_manager.generate_custom_reply(
             message=self._build_general_chat_input(message),
             system_prompt=self._load_voice_control_prompt(),
-            max_tokens=min(self._settings.llm_max_tokens, 96),
+            max_tokens=min(self._settings.llm_max_tokens, 48),
             temperature=min(self._settings.llm_temperature, 0.2),
             log_mode="voice_control",
         )

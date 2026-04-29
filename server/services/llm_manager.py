@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -22,6 +23,29 @@ DEFAULT_SYSTEM_PROMPT = (
     "ตอบให้สั้น ชัดเจน เป็นมิตร และอย่าอ้างว่าควบคุมอุปกรณ์จริงจนกว่าระบบจะรองรับ"
 )
 DEFAULT_FALLBACK_REPLY = "ตอนนี้โมเดลหลักยังตอบไม่ทัน ลองถามใหม่อีกครั้งหรือถามให้สั้นลงนิดหนึ่งได้ไหม"
+GENERAL_CHAT_DEMO_RULES = (
+    "\n\nกติกาเดโมสำหรับคำถามทั่วไป:"
+    "\n- ตอบภาษาไทยเป็น 1 ประโยคสั้น ๆ ไม่เกิน 25 คำ"
+    "\n- ห้ามใช้ bullet, markdown, หรือลิสต์ยาว"
+    "\n- ตอบให้จบในตัวเอง ไม่ต้องถามต่อท้าย"
+)
+THINKING_TRIGGER_PHRASES = (
+    "คิดก่อนตอบ",
+    "คิดก่อน",
+    "วิเคราะห์ก่อน",
+    "ขอคิดละเอียด",
+    "คิดให้ละเอียด",
+    "ขอวิเคราะห์",
+    "deep think",
+    "think carefully",
+)
+DEEP_THINK_GENERAL_RULES = (
+    "\n\nโหมดคิดก่อนตอบ:"
+    "\n- คิดอย่างรอบคอบภายใน แต่ตอบเฉพาะคำตอบสุดท้ายเท่านั้น"
+    "\n- ห้ามแสดงขั้นตอนคิดหรือข้อความ JSON"
+    "\n- ตอบภาษาไทยชัดเจน กระชับ และเป็นธรรมชาติ"
+    "\n- ถ้าคำถามซับซ้อน ให้ตอบเป็นย่อหน้าสั้น ๆ ไม่เกิน 4 ประโยค"
+)
 
 
 @dataclass(frozen=True)
@@ -61,6 +85,7 @@ class LLMManager:
         self._settings = settings
         self._session = session or requests.Session()
         self._lock = Lock()
+        self._ollama_request_lock = Lock()
         self._health_cache: LLMHealthStatus | None = None
         self._health_expires_at: datetime | None = None
         self._response_cache: dict[str, CachedLLMResponse] = {}
@@ -73,18 +98,40 @@ class LLMManager:
         if stream:
             return self._fallback("streaming responses are not enabled yet")
 
-        cached_response = self._get_cached_response(message)
-        if cached_response is not None:
-            return cached_response
+        use_thinking = self.is_thinking_request(message)
+        prepared_message = (
+            self.strip_thinking_trigger(message) if use_thinking else message
+        )
+
+        if not use_thinking:
+            cached_response = self._get_cached_response(message)
+            if cached_response is not None:
+                return cached_response
 
         llm_response = self.generate_custom_reply(
-            message=message,
-            system_prompt=self._load_system_prompt(),
-            max_tokens=self._settings.llm_max_tokens,
-            temperature=self._settings.llm_temperature,
-            log_mode="default",
+            message=prepared_message,
+            system_prompt=(
+                self._load_deep_think_general_prompt()
+                if use_thinking
+                else self._load_general_chat_prompt()
+            ),
+            max_tokens=(
+                self._settings.llm_thinking_max_tokens
+                if use_thinking
+                else min(
+                    self._settings.llm_max_tokens,
+                    self._settings.llm_general_max_tokens,
+                )
+            ),
+            temperature=(
+                min(self._settings.llm_temperature, 0.15)
+                if use_thinking
+                else min(self._settings.llm_temperature, 0.2)
+            ),
+            log_mode="thinking" if use_thinking else "default",
+            think=use_thinking,
         )
-        if llm_response.source == "ollama":
+        if not use_thinking and llm_response.source == "ollama":
             self._set_cached_response(message, llm_response)
         return llm_response
 
@@ -95,6 +142,7 @@ class LLMManager:
         max_tokens: int | None = None,
         temperature: float | None = None,
         log_mode: str = "custom",
+        think: bool | None = None,
     ) -> LLMResponse:
         if not system_prompt.strip():
             return self._fallback("empty system prompt")
@@ -112,6 +160,7 @@ class LLMManager:
                 )
 
         timer = start_timer()
+        self._acquire_ollama_request(blocking=True, purpose=f"chat:{log_mode}")
         try:
             response = self._session.post(
                 self._chat_url,
@@ -121,6 +170,7 @@ class LLMManager:
                     system_prompt=system_prompt,
                     max_tokens=max_tokens,
                     temperature=temperature,
+                    think=think,
                 ),
                 timeout=self._request_timeout_seconds,
             )
@@ -145,6 +195,7 @@ class LLMManager:
             return self._fallback(error, mark_unavailable=False)
         finally:
             self._last_latency_ms = timer.elapsed_ms
+            self._release_ollama_request()
             log_timing(
                 logger,
                 self._settings,
@@ -166,6 +217,7 @@ class LLMManager:
                 raise RuntimeError(health_status.last_error or "ollama unavailable")
 
         timer = start_timer()
+        self._acquire_ollama_request(blocking=True, purpose="chat.stream")
         try:
             with self._session.post(
                 self._chat_url,
@@ -183,6 +235,7 @@ class LLMManager:
                         yield content
         finally:
             self._last_latency_ms = timer.elapsed_ms
+            self._release_ollama_request()
             log_timing(
                 logger,
                 self._settings,
@@ -191,13 +244,16 @@ class LLMManager:
                 model=self._settings.ollama_model,
             )
 
-    def warmup(self) -> LLMHealthStatus:
+    def warmup(self, blocking: bool = True) -> LLMHealthStatus:
         with self._lock:
             self._keep_awake_paused = False
 
         health_status = self.check_health(force_refresh=True)
         if not health_status.available:
             return health_status
+
+        if not self._acquire_ollama_request(blocking=blocking, purpose="warmup"):
+            return self.get_health_status()
 
         timer = start_timer()
         try:
@@ -210,6 +266,9 @@ class LLMManager:
             self._parse_chat_response(response)
             self._warmed_up = True
             self._last_error = None
+        except Timeout:
+            logger.warning("LLM warmup timed out (Ollama might be busy)")
+            self._set_error("warmup timeout", mark_unavailable=False)
         except (RequestException, KeyError, TypeError, ValueError) as exc:
             error = (
                 self._format_request_error(exc)
@@ -220,6 +279,7 @@ class LLMManager:
             logger.warning("LLM warmup failed: %s", error)
         finally:
             self._last_latency_ms = timer.elapsed_ms
+            self._release_ollama_request()
             log_timing(
                 logger,
                 self._settings,
@@ -236,6 +296,7 @@ class LLMManager:
             self._warmed_up = False
 
         timer = start_timer()
+        self._acquire_ollama_request(blocking=True, purpose="sleep")
         try:
             response = self._session.post(
                 self._generate_url,
@@ -255,6 +316,7 @@ class LLMManager:
             logger.warning("LLM sleep request failed: %s", error)
         finally:
             self._last_latency_ms = timer.elapsed_ms
+            self._release_ollama_request()
             log_timing(
                 logger,
                 self._settings,
@@ -268,7 +330,47 @@ class LLMManager:
     def keep_awake_once(self) -> LLMHealthStatus:
         if self.is_keep_awake_paused:
             return self.get_health_status()
-        return self.warmup()
+        return self.touch_keep_alive(blocking=False)
+
+    def touch_keep_alive(self, blocking: bool = True) -> LLMHealthStatus:
+        if not self._acquire_ollama_request(blocking=blocking, purpose="keep_alive"):
+            return self.get_health_status()
+
+        timer = start_timer()
+        try:
+            response = self._session.post(
+                self._generate_url,
+                json={
+                    "model": self._settings.ollama_model,
+                    "prompt": "",
+                    "stream": False,
+                    "keep_alive": self._parsed_keep_alive,
+                    "options": {"num_predict": 0},
+                },
+                timeout=min(self._request_timeout_seconds, 15.0),
+            )
+            response.raise_for_status()
+            self._warmed_up = True
+            self._last_error = None
+        except Timeout:
+            logger.warning("LLM keep-alive touch timed out")
+            self._set_error("keep-alive timeout", mark_unavailable=False)
+        except RequestException as exc:
+            error = self._format_request_error(exc)
+            self._set_error(error, mark_unavailable=False)
+            logger.warning("LLM keep-alive touch failed: %s", error)
+        finally:
+            self._last_latency_ms = timer.elapsed_ms
+            self._release_ollama_request()
+            log_timing(
+                logger,
+                self._settings,
+                "llm.keep_alive",
+                timer.elapsed_ms,
+                model=self._settings.ollama_model,
+            )
+
+        return self.check_health(force_refresh=True)
 
     @property
     def is_keep_awake_paused(self) -> bool:
@@ -360,6 +462,18 @@ class LLMManager:
         )
         return health_status
 
+    def _acquire_ollama_request(self, blocking: bool, purpose: str) -> bool:
+        acquired = self._ollama_request_lock.acquire(blocking=blocking)
+        if not acquired:
+            logger.info(
+                "Skipping LLM %s because another Ollama request is active",
+                purpose,
+            )
+        return acquired
+
+    def _release_ollama_request(self) -> None:
+        self._ollama_request_lock.release()
+
     @property
     def _chat_url(self) -> str:
         return f"{self._settings.ollama_base_url.rstrip('/')}/api/chat"
@@ -395,6 +509,19 @@ class LLMManager:
         except (ValueError, TypeError):
             return raw
 
+    @property
+    def _is_gemma_model(self) -> bool:
+        return self._settings.ollama_model.casefold().startswith("gemma")
+
+    def _with_model_specific_options(
+        self,
+        payload: dict[str, Any],
+        think: bool | None = None,
+    ) -> dict[str, Any]:
+        if self._is_gemma_model:
+            payload["think"] = False if think is None else think
+        return payload
+
     def _build_payload(
         self,
         message: str,
@@ -402,37 +529,55 @@ class LLMManager:
         system_prompt: str | None = None,
         max_tokens: int | None = None,
         temperature: float | None = None,
+        think: bool | None = None,
     ) -> dict[str, Any]:
-        return {
-            "model": self._settings.ollama_model,
-            "messages": [
-                {"role": "system", "content": system_prompt or self._load_system_prompt()},
-                {"role": "user", "content": message},
-            ],
-            "stream": stream,
-            "keep_alive": self._parsed_keep_alive,
-            "options": {
-                "temperature": (
-                    self._settings.llm_temperature if temperature is None else temperature
-                ),
-                "num_predict": self._settings.llm_max_tokens if max_tokens is None else max_tokens,
+        return self._with_model_specific_options(
+            {
+                "model": self._settings.ollama_model,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": system_prompt or self._load_system_prompt(),
+                    },
+                    {"role": "user", "content": message},
+                ],
+                "stream": stream,
+                "keep_alive": self._parsed_keep_alive,
+                "options": {
+                    "temperature": (
+                        self._settings.llm_temperature
+                        if temperature is None
+                        else temperature
+                    ),
+                    "num_predict": (
+                        self._settings.llm_max_tokens
+                        if max_tokens is None
+                        else max_tokens
+                    ),
+                    "num_ctx": self._settings.llm_num_ctx,
+                },
             },
-        }
+            think=think,
+        )
 
     def _build_warmup_payload(self) -> dict[str, Any]:
-        return {
-            "model": self._settings.ollama_model,
-            "messages": [
-                {"role": "system", "content": "ตอบสั้นมากเพื่อ warmup model"},
-                {"role": "user", "content": "พร้อมไหม"},
-            ],
-            "stream": False,
-            "keep_alive": self._parsed_keep_alive,
-            "options": {
-                "temperature": 0,
-                "num_predict": 8,
+        return self._with_model_specific_options(
+            {
+                "model": self._settings.ollama_model,
+                "messages": [
+                    {"role": "system", "content": self._load_general_chat_prompt()},
+                    {"role": "user", "content": "พร้อมไหม"},
+                ],
+                "stream": False,
+                "keep_alive": self._parsed_keep_alive,
+                "options": {
+                    "temperature": 0,
+                    "num_predict": 8,
+                    "num_ctx": self._settings.llm_num_ctx,
+                },
             },
-        }
+            think=False,
+        )
 
     def _load_system_prompt(self) -> str:
         prompt_path = self._resolve_prompt_path(self._settings.system_prompt_path)
@@ -441,6 +586,12 @@ class LLMManager:
         except OSError:
             return DEFAULT_SYSTEM_PROMPT
         return prompt or DEFAULT_SYSTEM_PROMPT
+
+    def _load_general_chat_prompt(self) -> str:
+        return f"{self._load_system_prompt()}{GENERAL_CHAT_DEMO_RULES}"
+
+    def _load_deep_think_general_prompt(self) -> str:
+        return f"{self._load_system_prompt()}{DEEP_THINK_GENERAL_RULES}"
 
     @staticmethod
     def _resolve_prompt_path(prompt_path: str) -> Path:
@@ -461,6 +612,31 @@ class LLMManager:
     @staticmethod
     def _normalize_message(message: str) -> str:
         return " ".join(message.casefold().split())
+
+    @classmethod
+    def is_thinking_request(cls, message: str) -> bool:
+        normalized_message = cls._normalize_for_trigger(message)
+        return any(
+            cls._normalize_for_trigger(phrase) in normalized_message
+            for phrase in THINKING_TRIGGER_PHRASES
+        )
+
+    @classmethod
+    def strip_thinking_trigger(cls, message: str) -> str:
+        cleaned_message = message
+        for phrase in sorted(THINKING_TRIGGER_PHRASES, key=len, reverse=True):
+            cleaned_message = re.sub(
+                re.escape(phrase),
+                " ",
+                cleaned_message,
+                flags=re.IGNORECASE,
+            )
+        cleaned_message = " ".join(cleaned_message.split())
+        return cleaned_message or message
+
+    @staticmethod
+    def _normalize_for_trigger(text: str) -> str:
+        return "".join(text.casefold().split())
 
     def _get_cached_response(self, message: str) -> LLMResponse | None:
         normalized_message = self._normalize_message(message)
