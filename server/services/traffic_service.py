@@ -23,6 +23,20 @@ logger = logging.getLogger(__name__)
 TOMTOM_ROUTE_URL = "https://api.tomtom.com/routing/1/calculateRoute"
 TOMTOM_FLOW_SEGMENT_URL = "https://api.tomtom.com/traffic/services/4/flowSegmentData/absolute"
 TRAFFIC_FALLBACK_REPLY = "ตอนนี้ยังเช็กข้อมูลการจราจรสดไม่ได้ ลองใหม่อีกครั้งได้ไหม"
+AREA_TRAFFIC_LOCATION_ALIASES = (
+    "กรุงเทพมหานคร",
+    "กรุงเทพฯ",
+    "กรุงเทพ",
+    "bangkok",
+    "bkk",
+    "ยะลา",
+    "รามัน",
+    "หาดใหญ่",
+    "สนามบินหาดใหญ่",
+    "สนามบิน",
+    "ตลาด",
+    "โรงพยาบาล",
+)
 
 
 @dataclass(frozen=True)
@@ -303,7 +317,7 @@ class TrafficService:
 
     def _detect_location_text(self, message: str) -> str:
         normalized_message = _normalize(message)
-        for candidate in ("ยะลา", "รามัน", "หาดใหญ่", "ตลาด", "สนามบิน", "โรงพยาบาล"):
+        for candidate in AREA_TRAFFIC_LOCATION_ALIASES:
             if _normalize(candidate) in normalized_message:
                 return candidate
         return self._settings.traffic_default_location

@@ -67,6 +67,51 @@ class NavigationQuery:
 
 _DEMO_PLACE_ALIASES: tuple[tuple[str, PlaceResolution], ...] = (
     (
+        "กรุงเทพฯ",
+        PlaceResolution(
+            query_text="Bangkok, Thailand",
+            display_name="กรุงเทพฯ",
+            latitude=13.7563,
+            longitude=100.5018,
+        ),
+    ),
+    (
+        "กรุงเทพมหานคร",
+        PlaceResolution(
+            query_text="Bangkok, Thailand",
+            display_name="กรุงเทพฯ",
+            latitude=13.7563,
+            longitude=100.5018,
+        ),
+    ),
+    (
+        "กรุงเทพ",
+        PlaceResolution(
+            query_text="Bangkok, Thailand",
+            display_name="กรุงเทพฯ",
+            latitude=13.7563,
+            longitude=100.5018,
+        ),
+    ),
+    (
+        "bangkok",
+        PlaceResolution(
+            query_text="Bangkok, Thailand",
+            display_name="กรุงเทพฯ",
+            latitude=13.7563,
+            longitude=100.5018,
+        ),
+    ),
+    (
+        "bkk",
+        PlaceResolution(
+            query_text="Bangkok, Thailand",
+            display_name="กรุงเทพฯ",
+            latitude=13.7563,
+            longitude=100.5018,
+        ),
+    ),
+    (
         "รามัน",
         PlaceResolution(
             query_text="Raman, Yala, Thailand",
