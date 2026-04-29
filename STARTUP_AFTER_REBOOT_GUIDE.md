@@ -1,5 +1,61 @@
 # Startup Guide After Reboot
 
+## Recommended Quick Start (อัปเดตล่าสุด)
+
+ตอนนี้วิธีที่แนะนำที่สุดหลังเปิดเครื่องใหม่คือใช้ script เดียว:
+
+```powershell
+cd D:\smart-home-ai
+.\run_all.bat
+```
+
+หรือถ้าต้องการเรียก PowerShell โดยตรง:
+
+```powershell
+cd D:\smart-home-ai
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start_demo.ps1
+```
+
+script นี้จะช่วยทำงานสำคัญให้ครบ:
+
+1. เช็คหรือเปิด Ollama ที่ `http://127.0.0.1:11434`
+2. ใช้ path โมเดล `D:\Ollama_Models`
+3. เช็คโมเดลจาก `OLLAMA_MODEL` ใน `.env`
+4. ปิด FastAPI/uvicorn เก่าที่ค้างอยู่บน port 8000
+5. เปิด server แบบไม่ใช้ `--reload` เพื่อให้เดโมนิ่งกว่า
+6. รอ `/health`
+7. สั่ง warmup โมเดลผ่าน `/health/llm/warmup`
+8. เช็คสถานะรวมด้วย `check_demo_status.ps1`
+9. เปิด Dashboard ที่ `http://127.0.0.1:8000/`
+
+ถ้าต้องการเช็คสถานะอย่างเดียวโดยไม่เปิด/ปิดอะไร:
+
+```powershell
+cd D:\smart-home-ai
+powershell -NoProfile -ExecutionPolicy Bypass -File .\check_demo_status.ps1
+```
+
+ถ้าต้องการปิด server เดโมหลังใช้งานเสร็จ:
+
+```powershell
+cd D:\smart-home-ai
+powershell -NoProfile -ExecutionPolicy Bypass -File .\stop_demo.ps1
+```
+
+ถ้าต้องการปิดทั้ง server และ Ollama:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\stop_demo.ps1 -StopOllama
+```
+
+ถ้าต้องการเปิด server โดยไม่ปิด server เก่าก่อน:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start_demo.ps1 -NoServerRestart
+```
+
+หมายเหตุสำหรับเดโม: ไม่แนะนำให้ใช้ `uvicorn --reload` ตอนนำเสนอ เพราะอาจเกิด parent/child process ซ้อน ทำให้วัด latency ยากและบางครั้งเหมือนระบบหลับเอง
+
 คู่มือนี้ใช้สำหรับกรณีปิดเครื่องแล้วเปิดใหม่ แล้วต้องการให้ระบบ `AI Smart Home Thai Assistant` กลับมาทำงานเหมือนเดิมแบบเป็นขั้นตอน
 
 เอกสารนี้ตั้งใจเขียนให้ทำตามได้ทีละข้อ โดยไม่ต้องเดา
@@ -592,4 +648,3 @@ http://127.0.0.1:8000/docs
 3. เปิด `http://127.0.0.1:8000/`
 4. เช็ก `/esp32/status`
 5. ถ้าบอร์ด offline ให้เช็ก `SERVER_BASE_URL` ใน `esp32/config.py`
-
