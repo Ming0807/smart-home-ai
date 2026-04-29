@@ -19,6 +19,7 @@ const voiceModeWakeButton = document.getElementById("voice-mode-wake");
 const chatModeFastButton = document.getElementById("chat-mode-fast");
 const chatModeThinkingButton = document.getElementById("chat-mode-thinking");
 const chatResponseModeLabel = document.getElementById("chat-response-mode-label");
+const thinkingTestActions = document.getElementById("thinking-test-actions");
 
 const sensorTemperature = document.getElementById("sensor-temperature");
 const sensorHumidity = document.getElementById("sensor-humidity");
@@ -115,6 +116,14 @@ const THINKING_TRIGGER_PHRASES = [
   "deep think",
   "think carefully",
 ];
+const REAL_THINKING_TRIGGER_PHRASES = [
+  "คิดลึกจริง",
+  "คิดแบบลึกจริง",
+  "ใช้ thinking จริง",
+  "เปิด thinking จริง",
+  "real thinking",
+  "deep think true",
+];
 
 const state = {
   chatBusy: false,
@@ -174,6 +183,16 @@ function sleep(ms) {
 function setPillState(element, tone, text) {
   element.className = `status-pill ${tone}`;
   element.textContent = text;
+}
+
+function formatChatLatencyMs(latencyMs) {
+  if (!Number.isFinite(latencyMs)) {
+    return null;
+  }
+  if (latencyMs < 1000) {
+    return `${Math.round(latencyMs)}ms`;
+  }
+  return `${(latencyMs / 1000).toFixed(1)}s`;
 }
 
 function setMicStatus(message, tone = "neutral") {
@@ -305,15 +324,15 @@ function startChatWaitHints(isThinkingMode = false) {
     window.setTimeout(() => {
       setChatLoadingText(
         isThinkingMode
-          ? "โหมดคิดก่อนตอบอาจใช้เวลานานกว่าปกติ รอสักครู่นะ..."
+          ? "โหมดคิดก่อนตอบเร็วกำลังวิเคราะห์ รอสักครู่นะ..."
           : "กำลังคิดคำตอบจากโมเดลหลัก รอสักครู่นะ..."
       );
-      setPillState(chatStatus, "warn", isThinkingMode ? "คิดละเอียด" : "กำลังคิด");
+      setPillState(chatStatus, "warn", isThinkingMode ? "วิเคราะห์เร็ว" : "กำลังคิด");
     }, CHAT_WAITING_HINT_DELAY_MS),
     window.setTimeout(() => {
       setChatLoadingText(
         isThinkingMode
-          ? "ยังคิดละเอียดอยู่ ระบบจะสร้างเสียงหลังคำตอบจริงมาถึงเท่านั้น"
+          ? "ยังวิเคราะห์อยู่ ระบบจะสร้างเสียงหลังคำตอบจริงมาถึงเท่านั้น"
           : "ยังคิดอยู่ ข้อความรอนี้จะไม่สร้างเสียงจนกว่าคำตอบจริงจะมา"
       );
       setPillState(chatStatus, "warn", "LLM กำลังทำงาน");
@@ -423,7 +442,8 @@ function normalizeModeTriggerText(text) {
 
 function messageHasThinkingTrigger(message) {
   const normalizedMessage = normalizeModeTriggerText(message);
-  return THINKING_TRIGGER_PHRASES.some((phrase) =>
+  const triggerPhrases = [...THINKING_TRIGGER_PHRASES, ...REAL_THINKING_TRIGGER_PHRASES];
+  return triggerPhrases.some((phrase) =>
     normalizedMessage.includes(normalizeModeTriggerText(phrase))
   );
 }
@@ -447,7 +467,7 @@ function updateChatResponseModeButtons() {
   );
 
   if (state.chatResponseMode === CHAT_MODE_THINKING) {
-    setPillState(chatResponseModeLabel, "warn", "โหมดคิดก่อนตอบ");
+    setPillState(chatResponseModeLabel, "warn", "โหมดคิดก่อนตอบเร็ว");
     return;
   }
   setPillState(chatResponseModeLabel, "neutral", "โหมดตอบเร็ว");
@@ -508,6 +528,7 @@ function getChatActionButtons() {
     chatModeFastButton,
     chatModeThinkingButton,
     ...quickActions.querySelectorAll("button[data-message]"),
+    ...thinkingTestActions.querySelectorAll("button[data-test-message]"),
     ...exitQuickActions.querySelectorAll("button[data-exit-message]"),
   ];
 }
@@ -845,6 +866,7 @@ function appendMessageMeta(wrapper, meta = {}) {
     !meta.source &&
     !meta.action &&
     !meta.mode &&
+    typeof meta.latencyMs !== "number" &&
     typeof meta.keepMicOpen !== "boolean"
   ) {
     return;
@@ -866,6 +888,14 @@ function appendMessageMeta(wrapper, meta = {}) {
     badge.className = "badge";
     badge.textContent = `${key}: ${value}`;
     metaRow.appendChild(badge);
+  }
+
+  const formattedLatency = formatChatLatencyMs(meta.latencyMs);
+  if (formattedLatency) {
+    const latencyBadge = document.createElement("span");
+    latencyBadge.className = "badge";
+    latencyBadge.textContent = `latency: ${formattedLatency}`;
+    metaRow.appendChild(latencyBadge);
   }
 
   if (typeof meta.keepMicOpen === "boolean") {
@@ -959,7 +989,7 @@ function updateAssistantEntryText(entry, text) {
   scrollChatToBottom();
 }
 
-async function finalizeAssistantEntry(entry, data) {
+async function finalizeAssistantEntry(entry, data, options = {}) {
   entry.wrapper.classList.remove("streaming");
   entry.body.textContent = data.reply || "";
   state.lastAssistantReplyText = data.reply || "";
@@ -968,6 +998,7 @@ async function finalizeAssistantEntry(entry, data) {
     source: data.source,
     action: data.action,
     keepMicOpen: data.keep_mic_open,
+    latencyMs: options.latencyMs,
   });
 
   let resolvedAudioUrl = null;
@@ -1641,7 +1672,13 @@ async function ensureChatAudioUrl(replyText, audioUrl) {
 }
 
 async function handleChatResponse(data, options = {}) {
-  const { appendUserMessage = true, userMessage = "", heardText = "", refreshStatus = true } = options;
+  const {
+    appendUserMessage = true,
+    userMessage = "",
+    heardText = "",
+    refreshStatus = true,
+    latencyMs,
+  } = options;
   const userText = heardText || userMessage;
   if (appendUserMessage && userText) {
     appendMessage("user", userText);
@@ -1663,6 +1700,7 @@ async function handleChatResponse(data, options = {}) {
     intent: data.intent,
     source: data.source,
     audioUrl: resolvedAudioUrl,
+    latencyMs,
   });
   state.lastAssistantReplyText = data.reply || "";
 
@@ -1698,7 +1736,8 @@ async function requestClassicChatMessage(message) {
   return data;
 }
 
-async function handleStreamingChatMessage(message) {
+async function handleStreamingChatMessage(message, options = {}) {
+  const { latencyStartedAt = performance.now() } = options;
   let streamedText = "";
   let assistantEntry = null;
 
@@ -1716,7 +1755,9 @@ async function handleStreamingChatMessage(message) {
       },
     });
 
-    await finalizeAssistantEntry(assistantEntry, finalData);
+    await finalizeAssistantEntry(assistantEntry, finalData, {
+      latencyMs: performance.now() - latencyStartedAt,
+    });
     setPillState(chatStatus, "good", "ตอบแล้ว");
     if (finalData.intent === "weather_query") {
       weatherResult.textContent = finalData.reply;
@@ -1934,6 +1975,7 @@ async function sendChatMessage(message) {
 
   const apiMessage = buildChatApiMessage(trimmed);
   const isThinkingMode = shouldUseThinkingModeForMessage(trimmed);
+  const chatStartedAt = performance.now();
   const shouldResumeWakeAfterText = state.voiceMode === "wake" && !state.stopRequested;
   appendMessage("user", trimmed, {
     mode: isThinkingMode ? CHAT_MODE_THINKING : CHAT_MODE_FAST,
@@ -1952,10 +1994,14 @@ async function sendChatMessage(message) {
 
   try {
     try {
-      await handleStreamingChatMessage(apiMessage);
+      await handleStreamingChatMessage(apiMessage, { latencyStartedAt: chatStartedAt });
     } catch (streamError) {
       const data = await requestClassicChatMessage(apiMessage);
-      await handleChatResponse(data, { appendUserMessage: false, userMessage: trimmed });
+      await handleChatResponse(data, {
+        appendUserMessage: false,
+        userMessage: trimmed,
+        latencyMs: performance.now() - chatStartedAt,
+      });
     }
   } catch (error) {
     appendMessage("assistant", getReadableErrorMessage(error, "เกิดปัญหาระหว่างส่งข้อความ ลองใหม่อีกครั้งได้ไหม"), {
@@ -2463,6 +2509,15 @@ quickActions.addEventListener("click", async (event) => {
     return;
   }
   await sendChatMessage(button.dataset.message || "");
+});
+
+thinkingTestActions.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-test-message]");
+  if (!button || button.disabled) {
+    return;
+  }
+  setChatResponseMode(button.dataset.testMode || CHAT_MODE_FAST);
+  await sendChatMessage(button.dataset.testMessage || "");
 });
 
 exitQuickActions.addEventListener("click", async (event) => {

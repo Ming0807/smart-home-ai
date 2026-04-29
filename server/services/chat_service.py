@@ -241,7 +241,10 @@ class ChatService:
                     suppress_audio=suppress_audio,
                 )
 
-            prefer_deep_thinking = self._llm_manager.is_thinking_request(message)
+            prefer_deep_thinking = (
+                self._llm_manager.is_thinking_request(message)
+                or self._llm_manager.is_real_thinking_request(message)
+            )
             smalltalk_reply = (
                 None if prefer_deep_thinking else self._smalltalk_service.get_reply(message)
             )
@@ -294,7 +297,10 @@ class ChatService:
             yield self._sse_event("done", response.model_dump())
             return
 
-        if self._llm_manager.is_thinking_request(message):
+        if (
+            self._llm_manager.is_thinking_request(message)
+            or self._llm_manager.is_real_thinking_request(message)
+        ):
             response = self.handle_message(message, background_tasks=background_tasks)
             yield self._sse_event("done", response.model_dump())
             return

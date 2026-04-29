@@ -19,15 +19,19 @@ from server.utils.observability import log_timing, start_timer
 logger = logging.getLogger(__name__)
 
 DEFAULT_SYSTEM_PROMPT = (
-    "คุณคือผู้ช่วย AI บ้านอัจฉริยะที่คุยภาษาไทยอย่างเป็นธรรมชาติ "
-    "ตอบให้สั้น ชัดเจน เป็นมิตร และอย่าอ้างว่าควบคุมอุปกรณ์จริงจนกว่าระบบจะรองรับ"
+    "You are Nong Fah, a Thai-speaking smart home and general assistant. "
+    "Answer in natural Thai, be concise, and never claim hardware success unless backend data confirms it."
 )
 DEFAULT_FALLBACK_REPLY = "ตอนนี้โมเดลหลักยังตอบไม่ทัน ลองถามใหม่อีกครั้งหรือถามให้สั้นลงนิดหนึ่งได้ไหม"
 GENERAL_CHAT_DEMO_RULES = (
-    "\n\nกติกาเดโมสำหรับคำถามทั่วไป:"
-    "\n- ตอบภาษาไทยเป็น 1 ประโยคสั้น ๆ ไม่เกิน 25 คำ"
-    "\n- ห้ามใช้ bullet, markdown, หรือลิสต์ยาว"
-    "\n- ตอบให้จบในตัวเอง ไม่ต้องถามต่อท้าย"
+    "\n\nGeneral chat demo rules:"
+    "\n- Answer the user's actual question directly in Thai."
+    "\n- If the user says 'this project', assume the Thai AI Smart Home Assistant demo."
+    "\n- If a broad question can be answered with reasonable assumptions, answer instead of asking for details."
+    "\n- Use 1 short sentence, ideally under 25 Thai words."
+    "\n- Do not use bullets, markdown, or long lists."
+    "\n- Do not say you are limited to smart-home topics."
+    "\n- Avoid follow-up questions unless truly needed."
 )
 THINKING_TRIGGER_PHRASES = (
     "คิดก่อนตอบ",
@@ -39,12 +43,41 @@ THINKING_TRIGGER_PHRASES = (
     "deep think",
     "think carefully",
 )
+REAL_THINKING_TRIGGER_PHRASES = (
+    "คิดลึกจริง",
+    "คิดแบบลึกจริง",
+    "ใช้ thinking จริง",
+    "เปิด thinking จริง",
+    "real thinking",
+    "deep think true",
+)
+PROJECT_CONTEXT_MARKERS = (
+    "โปรเจกต์นี้",
+    "โปรเจคนี้",
+    "เดโมนี้",
+    "ระบบนี้",
+)
+PROJECT_CONTEXT_NOTE = (
+    "\n\nContext: In this conversation, 'this project' means a Thai AI Smart Home "
+    "Assistant demo with local chat, ESP32 sensor data, relay control, weather, "
+    "news, navigation, Thai TTS, browser voice input, and wake-word mode."
+)
+DEMO_REASONING_GENERAL_RULES = (
+    "\n\nFast planning mode for demos:"
+    "\n- Do not use hidden thinking mode."
+    "\n- If the user says 'this project', assume the Thai AI Smart Home Assistant demo."
+    "\n- Make reasonable assumptions if the request is broad."
+    "\n- Answer only the final answer in natural Thai."
+    "\n- Use 2 short Thai sentences."
+    "\n- Do not use markdown, bullets, numbered lists, or headings."
+    "\n- Keep it short enough for text-to-speech."
+)
 DEEP_THINK_GENERAL_RULES = (
-    "\n\nโหมดคิดก่อนตอบ:"
-    "\n- คิดอย่างรอบคอบภายใน แต่ตอบเฉพาะคำตอบสุดท้ายเท่านั้น"
-    "\n- ห้ามแสดงขั้นตอนคิดหรือข้อความ JSON"
-    "\n- ตอบภาษาไทยชัดเจน กระชับ และเป็นธรรมชาติ"
-    "\n- ถ้าคำถามซับซ้อน ให้ตอบเป็นย่อหน้าสั้น ๆ ไม่เกิน 4 ประโยค"
+    "\n\nReal deep-thinking mode:"
+    "\n- Think carefully internally, but output only the final answer."
+    "\n- Do not show reasoning steps or JSON."
+    "\n- Answer clearly and naturally in Thai."
+    "\n- For complex questions, use a short paragraph with no more than 4 sentences."
 )
 
 
@@ -98,40 +131,41 @@ class LLMManager:
         if stream:
             return self._fallback("streaming responses are not enabled yet")
 
-        use_thinking = self.is_thinking_request(message)
+        use_reasoning = self.is_thinking_request(message)
+        use_real_thinking = self.is_real_thinking_request(message)
         prepared_message = (
-            self.strip_thinking_trigger(message) if use_thinking else message
+            self.strip_thinking_trigger(message)
+            if use_reasoning or use_real_thinking
+            else message
         )
+        prepared_message = self._with_project_context(prepared_message)
 
-        if not use_thinking:
+        if not use_reasoning and not use_real_thinking:
             cached_response = self._get_cached_response(message)
             if cached_response is not None:
                 return cached_response
 
         llm_response = self.generate_custom_reply(
             message=prepared_message,
-            system_prompt=(
-                self._load_deep_think_general_prompt()
-                if use_thinking
-                else self._load_general_chat_prompt()
+            system_prompt=self._select_general_prompt(
+                use_reasoning=use_reasoning,
+                use_real_thinking=use_real_thinking,
             ),
-            max_tokens=(
-                self._settings.llm_thinking_max_tokens
-                if use_thinking
-                else min(
-                    self._settings.llm_max_tokens,
-                    self._settings.llm_general_max_tokens,
-                )
+            max_tokens=self._select_max_tokens(
+                use_reasoning=use_reasoning,
+                use_real_thinking=use_real_thinking,
             ),
-            temperature=(
-                min(self._settings.llm_temperature, 0.15)
-                if use_thinking
-                else min(self._settings.llm_temperature, 0.2)
-            ),
-            log_mode="thinking" if use_thinking else "default",
-            think=use_thinking,
+            temperature=min(self._settings.llm_temperature, 0.15)
+            if use_reasoning or use_real_thinking
+            else min(self._settings.llm_temperature, 0.2),
+            log_mode="real_thinking"
+            if use_real_thinking
+            else "reasoning"
+            if use_reasoning
+            else "default",
+            think=True if use_real_thinking else False,
         )
-        if not use_thinking and llm_response.source == "ollama":
+        if not use_reasoning and not use_real_thinking and llm_response.source == "ollama":
             self._set_cached_response(message, llm_response)
         return llm_response
 
@@ -590,8 +624,36 @@ class LLMManager:
     def _load_general_chat_prompt(self) -> str:
         return f"{self._load_system_prompt()}{GENERAL_CHAT_DEMO_RULES}"
 
+    def _load_demo_reasoning_general_prompt(self) -> str:
+        return f"{self._load_system_prompt()}{DEMO_REASONING_GENERAL_RULES}"
+
     def _load_deep_think_general_prompt(self) -> str:
         return f"{self._load_system_prompt()}{DEEP_THINK_GENERAL_RULES}"
+
+    def _select_general_prompt(
+        self,
+        use_reasoning: bool,
+        use_real_thinking: bool,
+    ) -> str:
+        if use_real_thinking:
+            return self._load_deep_think_general_prompt()
+        if use_reasoning:
+            return self._load_demo_reasoning_general_prompt()
+        return self._load_general_chat_prompt()
+
+    def _select_max_tokens(
+        self,
+        use_reasoning: bool,
+        use_real_thinking: bool,
+    ) -> int:
+        if use_real_thinking:
+            return self._settings.llm_thinking_max_tokens
+        if use_reasoning:
+            return self._settings.llm_reasoning_max_tokens
+        return min(
+            self._settings.llm_max_tokens,
+            self._settings.llm_general_max_tokens,
+        )
 
     @staticmethod
     def _resolve_prompt_path(prompt_path: str) -> Path:
@@ -622,9 +684,18 @@ class LLMManager:
         )
 
     @classmethod
+    def is_real_thinking_request(cls, message: str) -> bool:
+        normalized_message = cls._normalize_for_trigger(message)
+        return any(
+            cls._normalize_for_trigger(phrase) in normalized_message
+            for phrase in REAL_THINKING_TRIGGER_PHRASES
+        )
+
+    @classmethod
     def strip_thinking_trigger(cls, message: str) -> str:
         cleaned_message = message
-        for phrase in sorted(THINKING_TRIGGER_PHRASES, key=len, reverse=True):
+        trigger_phrases = THINKING_TRIGGER_PHRASES + REAL_THINKING_TRIGGER_PHRASES
+        for phrase in sorted(trigger_phrases, key=len, reverse=True):
             cleaned_message = re.sub(
                 re.escape(phrase),
                 " ",
@@ -633,6 +704,16 @@ class LLMManager:
             )
         cleaned_message = " ".join(cleaned_message.split())
         return cleaned_message or message
+
+    @classmethod
+    def _with_project_context(cls, message: str) -> str:
+        normalized_message = cls._normalize_for_trigger(message)
+        if any(
+            cls._normalize_for_trigger(marker) in normalized_message
+            for marker in PROJECT_CONTEXT_MARKERS
+        ):
+            return f"{message}{PROJECT_CONTEXT_NOTE}"
+        return message
 
     @staticmethod
     def _normalize_for_trigger(text: str) -> str:

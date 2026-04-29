@@ -184,11 +184,24 @@ button:active,
   margin-bottom: 14px;
 }
 
-.quick-actions button {
+.quick-actions button,
+.thinking-test-actions button {
   background: rgba(77, 163, 255, 0.14);
   border-color: rgba(77, 163, 255, 0.3);
   color: var(--text);
   padding: 0.62rem 0.8rem;
+}
+
+.thinking-test-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: -4px 0 14px;
+}
+
+.thinking-test-actions button[data-test-mode="thinking"] {
+  background: rgba(224, 165, 44, 0.14);
+  border-color: rgba(224, 165, 44, 0.3);
 }
 
 .chat-history {

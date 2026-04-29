@@ -98,7 +98,10 @@ class VoiceConversationService:
 
         intent = self._intent_router.classify(cleaned_text).intent
         if intent == "general_chat":
-            prefer_deep_thinking = self._llm_manager.is_thinking_request(cleaned_text)
+            prefer_deep_thinking = (
+                self._llm_manager.is_thinking_request(cleaned_text)
+                or self._llm_manager.is_real_thinking_request(cleaned_text)
+            )
             smalltalk_reply = (
                 None
                 if prefer_deep_thinking
@@ -176,7 +179,10 @@ class VoiceConversationService:
         )
 
     def _handle_general_chat(self, message: str) -> VoiceControlDecision:
-        if self._llm_manager.is_thinking_request(message):
+        if (
+            self._llm_manager.is_thinking_request(message)
+            or self._llm_manager.is_real_thinking_request(message)
+        ):
             raw_response = self._llm_manager.generate_reply(message)
             fallback_reply = clean_reply_text(
                 raw_response.reply,

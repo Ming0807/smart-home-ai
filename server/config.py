@@ -25,6 +25,7 @@ class Settings(BaseModel):
     llm_keep_awake_interval_seconds: int = Field(default=240)
     llm_max_tokens: int = Field(default=120)
     llm_general_max_tokens: int = Field(default=32)
+    llm_reasoning_max_tokens: int = Field(default=48)
     llm_thinking_max_tokens: int = Field(default=384)
     llm_num_ctx: int = Field(default=1024)
     llm_temperature: float = Field(default=0.2)
@@ -162,6 +163,7 @@ def get_settings() -> Settings:
         llm_keep_awake_interval_seconds=_get_int_env("LLM_KEEP_AWAKE_INTERVAL_SECONDS", 240),
         llm_max_tokens=_get_int_env("LLM_MAX_TOKENS", 120),
         llm_general_max_tokens=_get_int_env("LLM_GENERAL_MAX_TOKENS", 32),
+        llm_reasoning_max_tokens=_get_int_env("LLM_REASONING_MAX_TOKENS", 48),
         llm_thinking_max_tokens=_get_int_env("LLM_THINKING_MAX_TOKENS", 384),
         llm_num_ctx=_get_int_env("LLM_NUM_CTX", 1024),
         llm_temperature=_get_float_env("LLM_TEMPERATURE", 0.2),

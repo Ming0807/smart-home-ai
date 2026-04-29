@@ -69,9 +69,33 @@
           <div class="response-mode-toolbar">
             <div class="mode-switch" id="chat-response-mode-switch">
               <button id="chat-mode-fast" class="mode-button active" type="button">ตอบเร็ว</button>
-              <button id="chat-mode-thinking" class="mode-button" type="button">คิดก่อนตอบ</button>
+              <button id="chat-mode-thinking" class="mode-button" type="button">คิดก่อนตอบเร็ว</button>
             </div>
             <span id="chat-response-mode-label" class="status-pill neutral">โหมดตอบเร็ว</span>
+          </div>
+
+          <div class="thinking-test-actions" id="thinking-test-actions">
+            <button
+              type="button"
+              data-test-mode="fast"
+              data-test-message="หิวข้าว แนะนำเมนูง่าย ๆ ให้หน่อย"
+            >
+              เทสตอบเร็ว
+            </button>
+            <button
+              type="button"
+              data-test-mode="thinking"
+              data-test-message="ช่วยวิเคราะห์ว่า Gemma 2B เหมาะกับเดโมโปรเจกต์นี้ไหม"
+            >
+              เทสคิดก่อนตอบเร็ว
+            </button>
+            <button
+              type="button"
+              data-test-mode="thinking"
+              data-test-message="ช่วยวางแผนซ้อมนำเสนอโปรเจกต์นี้ให้ดูเป็นธรรมชาติ"
+            >
+              เทสวางแผนเดโม
+            </button>
           </div>
 
           <div id="chat-history" class="chat-history" aria-live="polite"></div>
