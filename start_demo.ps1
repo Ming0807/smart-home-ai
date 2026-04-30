@@ -51,26 +51,69 @@ function Get-EnvValue {
 }
 
 function Resolve-PythonCommand {
-    $venvPython = Join-Path $ProjectRoot ".venv\Scripts\python.exe"
-    if (Test-Path $venvPython) {
-        return @{
-            File = $venvPython
+    $candidates = @(
+        @{
+            File = (Join-Path $ProjectRoot ".venv\Scripts\python.exe")
             PrefixArgs = @()
-        }
-    }
-
-    $pyLauncher = Get-Command py -ErrorAction SilentlyContinue
-    if ($pyLauncher) {
-        return @{
+            Label = ".venv"
+        },
+        @{
+            File = (Join-Path $ProjectRoot "venv\Scripts\python.exe")
+            PrefixArgs = @()
+            Label = "venv"
+        },
+        @{
+            File = "C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\python.exe"
+            PrefixArgs = @()
+            Label = "Python310"
+        },
+        @{
             File = "py"
             PrefixArgs = @("-3.11")
+            Label = "py -3.11"
+        },
+        @{
+            File = "python"
+            PrefixArgs = @()
+            Label = "python"
         }
+    )
+
+    foreach ($candidate in $candidates) {
+        if ($candidate.File -match "\\python\.exe$" -and -not (Test-Path $candidate.File)) {
+            continue
+        }
+        if ($candidate.File -in @("py", "python") -and -not (Get-Command $candidate.File -ErrorAction SilentlyContinue)) {
+            continue
+        }
+
+        $testArgs = @($candidate.PrefixArgs) + @("-c", "import server.app")
+        try {
+            $previousErrorActionPreference = $ErrorActionPreference
+            $ErrorActionPreference = "SilentlyContinue"
+            & $candidate.File @testArgs *> $null
+            $exitCode = $LASTEXITCODE
+        }
+        catch {
+            Write-Warn "Skipping Python runtime '$($candidate.Label)' because it failed to start"
+            continue
+        }
+        finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
+
+        if ($exitCode -eq 0) {
+            Write-Ok "Using Python runtime: $($candidate.Label)"
+            return @{
+                File = $candidate.File
+                PrefixArgs = $candidate.PrefixArgs
+            }
+        }
+
+        Write-Warn "Skipping Python runtime '$($candidate.Label)' because it cannot import server.app"
     }
 
-    return @{
-        File = "python"
-        PrefixArgs = @()
-    }
+    throw "No working Python runtime found for this project"
 }
 
 function Test-HttpReady {
