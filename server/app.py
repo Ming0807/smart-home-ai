@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from server.config import get_settings, resolve_project_path
 from server.routes.chat import router as chat_router
 from server.routes.dashboard import router as dashboard_router
+from server.routes.devices import router as devices_router
 from server.routes.esp32 import router as esp32_router
 from server.routes.health import router as health_router
 from server.routes.voice import router as voice_router
@@ -38,6 +39,7 @@ def create_app() -> FastAPI:
     app.mount("/webui", StaticFiles(directory=webui_dir), name="webui")
     app.include_router(dashboard_router)
     app.include_router(chat_router)
+    app.include_router(devices_router)
     app.include_router(esp32_router)
     app.include_router(health_router)
     app.include_router(voice_router)

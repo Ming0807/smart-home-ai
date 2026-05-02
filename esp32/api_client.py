@@ -2,7 +2,21 @@ import time
 import ujson
 import urequests
 
-from config import DEVICE_ID, HTTP_TIMEOUT_SECONDS, SERVER_BASE_URL
+from config import (
+    BOARD_TYPE,
+    DEVICE_ID,
+    DHT22_PIN,
+    FIRMWARE_VERSION,
+    HTTP_TIMEOUT_SECONDS,
+    I2S_SCK_PIN,
+    I2S_SD_PIN,
+    I2S_WS_PIN,
+    MIC_ENABLED,
+    MOTION_ENABLED,
+    PIR_PIN,
+    RELAY_PIN,
+    SERVER_BASE_URL,
+)
 
 
 def _url(path):
@@ -59,6 +73,36 @@ def send_heartbeat():
     return _post_json("/esp32/heartbeat", {"device_id": DEVICE_ID})
 
 
+def send_capabilities():
+    capabilities = ["relay", "dht22"]
+    if MOTION_ENABLED:
+        capabilities.append("pir")
+    if MIC_ENABLED:
+        capabilities.append("i2s_microphone")
+
+    reserved_pins = [DHT22_PIN, RELAY_PIN]
+    sensor_pins = [DHT22_PIN]
+    if MOTION_ENABLED:
+        reserved_pins.append(PIR_PIN)
+        sensor_pins.append(PIR_PIN)
+    if MIC_ENABLED:
+        reserved_pins.extend([I2S_WS_PIN, I2S_SCK_PIN, I2S_SD_PIN])
+
+    payload = {
+        "device_id": DEVICE_ID,
+        "board_type": BOARD_TYPE,
+        "firmware_version": FIRMWARE_VERSION,
+        "capabilities": capabilities,
+        "relay_pins": [RELAY_PIN],
+        "sensor_pins": sensor_pins,
+        "reserved_pins": _unique_ints(reserved_pins),
+        "i2s_pins": [I2S_WS_PIN, I2S_SCK_PIN, I2S_SD_PIN] if MIC_ENABLED else [],
+        "available_pins": [],
+        "timestamp": _iso_timestamp(),
+    }
+    return _post_json("/esp32/capabilities", payload)
+
+
 def send_sensor_reading(reading):
     payload = {
         "device_id": DEVICE_ID,
@@ -82,8 +126,32 @@ def get_next_command():
     return _get_json("/esp32/commands?device_id=" + _query_escape(DEVICE_ID))
 
 
+def send_command_result(command, result):
+    command_id = command.get("command_id")
+    if not command_id:
+        return {"status": "skipped", "reason": "missing command_id"}
+
+    payload = {
+        "device_id": DEVICE_ID,
+        "command_id": command_id,
+        "status": result.get("status", "failed"),
+        "state": result.get("state"),
+        "error": result.get("error"),
+        "timestamp": _iso_timestamp(),
+    }
+    return _post_json("/esp32/command-result", payload)
+
+
 def _query_escape(value):
     return str(value).replace(" ", "%20")
+
+
+def _unique_ints(values):
+    result = []
+    for value in values:
+        if value not in result:
+            result.append(value)
+    return result
 
 
 def _iso_timestamp():

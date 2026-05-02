@@ -3,11 +3,14 @@ import time
 
 from api_client import (
     get_next_command,
+    send_capabilities,
+    send_command_result,
     send_heartbeat,
     send_motion_event,
     send_sensor_reading,
 )
 from config import (
+    CAPABILITIES_INTERVAL_SECONDS,
     COMMAND_POLL_INTERVAL_SECONDS,
     HEARTBEAT_INTERVAL_SECONDS,
     MOTION_ENABLED,
@@ -34,13 +37,24 @@ class RelayChannel:
 
     def apply(self, command):
         if command.get("type") != "relay" or command.get("channel") != 1:
-            return
+            return {
+                "status": "failed",
+                "state": None,
+                "error": "unsupported command",
+            }
         action = command.get("action")
         print("Relay command received:", command)
         if action == "on":
             self.on()
+            return {"status": "applied", "state": "on", "error": None}
         elif action == "off":
             self.off()
+            return {"status": "applied", "state": "off", "error": None}
+        return {
+            "status": "failed",
+            "state": None,
+            "error": "unsupported relay action",
+        }
 
 
 def _due(now, last_run, interval):
@@ -54,6 +68,7 @@ def main():
     relay = RelayChannel()
 
     last_heartbeat = None
+    last_capabilities = None
     last_sensor = None
     last_command_poll = None
 
@@ -66,6 +81,10 @@ def main():
                 print("Heartbeat:", send_heartbeat())
                 last_heartbeat = now
 
+            if _due(now, last_capabilities, CAPABILITIES_INTERVAL_SECONDS):
+                print("Capabilities:", send_capabilities())
+                last_capabilities = now
+
             if _due(now, last_sensor, SENSOR_INTERVAL_SECONDS):
                 reading = sensor.read()
                 print("Sensor:", reading, send_sensor_reading(reading))
@@ -75,7 +94,8 @@ def main():
                 response = get_next_command()
                 command = response.get("command") if response else None
                 if command:
-                    relay.apply(command)
+                    result = relay.apply(command)
+                    print("Command result:", result, send_command_result(command, result))
                 last_command_poll = now
 
             if motion_reader is not None:

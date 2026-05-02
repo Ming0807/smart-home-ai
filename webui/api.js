@@ -122,3 +122,63 @@ async function ensureAudioTokenReady(url) {
     throw new Error("audio not ready");
   }
 }
+
+async function fetchDeviceRegistryStatus() {
+  const { response, data } = await fetchJson("/devices/status", {}, 10000);
+  if (!response.ok) {
+    throw new Error("device registry status failed");
+  }
+  return data;
+}
+
+function getApiErrorDetail(data, fallbackText) {
+  if (typeof data?.detail === "string") {
+    return data.detail;
+  }
+  if (Array.isArray(data?.detail)) {
+    return data.detail
+      .map((item) => item?.msg || item?.message || "")
+      .filter(Boolean)
+      .join(" | ") || fallbackText;
+  }
+  if (typeof data?.error === "string") {
+    return data.error;
+  }
+  return fallbackText;
+}
+
+async function updateDeviceMetadata(deviceId, payload) {
+  const { response, data } = await fetchJson(
+    `/devices/${encodeURIComponent(deviceId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    10000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "device metadata update failed"));
+  }
+  return data.device;
+}
+
+async function createDevice(payload) {
+  const { response, data } = await fetchJson(
+    "/devices",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    10000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "device create failed"));
+  }
+  return data.device;
+}
+
+async function createVirtualDevice(payload) {
+  return createDevice({ ...payload, device_type: "virtual" });
+}

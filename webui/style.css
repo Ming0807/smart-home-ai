@@ -126,12 +126,24 @@ button:active,
   grid-column: span 8;
 }
 
+.panel-devices {
+  grid-column: span 8;
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;
   gap: 16px;
   align-items: flex-start;
   margin-bottom: 16px;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .panel-title {
@@ -447,6 +459,132 @@ button:active,
   text-align: right;
 }
 
+.device-registry-list {
+  display: grid;
+  gap: 10px;
+}
+
+.device-registry-item {
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.device-registry-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.device-registry-name {
+  margin: 0;
+  font-weight: 700;
+}
+
+.device-registry-meta {
+  margin: 4px 0 0;
+  color: var(--panel-muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.device-registry-aliases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.capabilities-box {
+  margin-top: 14px;
+}
+
+.capabilities-card {
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: rgba(47, 166, 109, 0.08);
+}
+
+.device-create-form,
+.device-registry-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.device-create-form {
+  margin: 0 0 14px;
+  padding: 12px;
+  border: 1px solid var(--panel-border);
+  background: rgba(77, 163, 255, 0.06);
+}
+
+.device-create-title {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.device-registry-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--panel-muted);
+  font-size: 0.9rem;
+}
+
+.device-registry-field-wide,
+.device-registry-enabled,
+.device-registry-form-actions {
+  grid-column: 1 / -1;
+}
+
+.device-registry-field input,
+.device-registry-field select,
+.device-registry-field textarea {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--panel-border);
+  background: #10141b;
+  color: var(--text);
+  padding: 0.7rem 0.8rem;
+}
+
+.device-create-form[data-device-type="virtual"] .hardware-only {
+  display: none;
+}
+
+.device-registry-field textarea {
+  resize: vertical;
+}
+
+.device-registry-enabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.device-registry-enabled input {
+  width: 16px;
+  height: 16px;
+}
+
+.device-registry-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .result-box {
   min-height: 98px;
   border: 1px solid var(--panel-border);
@@ -473,7 +611,8 @@ button:active,
 @media (max-width: 1080px) {
   .panel,
   .panel-chat,
-  .panel-weather {
+  .panel-weather,
+  .panel-devices {
     grid-column: span 12;
   }
 }
@@ -490,6 +629,11 @@ button:active,
   }
 
   .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .device-create-form,
+  .device-registry-form {
     grid-template-columns: 1fr;
   }
 

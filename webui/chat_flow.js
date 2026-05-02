@@ -50,6 +50,7 @@ async function handleChatResponse(data, options = {}) {
 
   if (refreshStatus) {
     await refreshDashboardStatus();
+    await refreshDeviceRegistry();
     await refreshVoiceDebugStatus();
   }
 
@@ -105,6 +106,7 @@ async function handleStreamingChatMessage(message, options = {}) {
       weatherResult.classList.remove("muted");
     }
     await refreshDashboardStatus();
+    await refreshDeviceRegistry();
     await refreshVoiceDebugStatus();
     return assistantEntry;
   } catch (error) {

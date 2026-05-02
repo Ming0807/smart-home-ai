@@ -68,10 +68,15 @@ pirSimToggle.addEventListener("change", () => {
 
 sensorRefreshButton.addEventListener("click", refreshDashboardStatus);
 motionRefreshButton.addEventListener("click", refreshDashboardStatus);
+deviceRegistryRefreshButton.addEventListener("click", () => refreshDeviceRegistry(true));
+deviceRegistryList.addEventListener("submit", handleDeviceRegistrySubmit);
+deviceCreateForm.addEventListener("submit", handleDeviceCreateSubmit);
+deviceCreateType.addEventListener("change", updateDeviceCreateMode);
 llmWarmupButton.addEventListener("click", warmupLlm);
 llmSleepButton.addEventListener("click", sleepLlm);
 refreshAllButton.addEventListener("click", async () => {
   await refreshDashboardStatus();
+  await refreshDeviceRegistry(true);
   await refreshVoiceDebugStatus();
 });
 
@@ -169,11 +174,14 @@ if (browserSupportsSpeechRecognition()) {
 
 updateVoiceModeButtons();
 updateChatResponseModeButtons();
+updateDeviceCreateMode();
 setVoiceLifecycleState(VOICE_STATE_STOPPED);
 setKeepMicIndicator(false, "Push-to-Talk Mode พร้อมแล้ว");
 setPillState(chatStatus, "neutral", "พร้อมใช้งาน");
 setChatBusy(false);
 refreshDashboardStatus();
+refreshDeviceRegistry(true);
 refreshVoiceDebugStatus();
 window.setInterval(refreshDashboardStatus, 15000);
+window.setInterval(refreshDeviceRegistry, 15000);
 window.setInterval(refreshVoiceDebugStatus, 5000);

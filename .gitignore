@@ -13,6 +13,7 @@ __pycache__/
 
 # Generated media
 static/*.mp3
+data/device_registry.json
 
 # Node
 node_modules/

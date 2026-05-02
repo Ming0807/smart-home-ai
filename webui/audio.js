@@ -81,6 +81,17 @@ async function loadAudioWithRetry(
   } catch (error) {
     const isSuperseded = error instanceof Error && error.message === "audio superseded";
     if (isSuperseded) {
+      if (recoveryText && isLatestAssistantAudio(audioElement, recoveryText)) {
+        try {
+          if (statusElement) {
+            statusElement.textContent = "เสียงถูกแทนที่ระหว่างสร้าง กำลังสร้างเสียงล่าสุดใหม่...";
+          }
+          const regeneratedAudioUrl = await requestSpeechAudioUrl(recoveryText);
+          return loadAudioWithRetry(audioElement, regeneratedAudioUrl, autoplay, statusElement, 0, null);
+        } catch (recoveryError) {
+          // Keep the clear superseded state below if recovery fails.
+        }
+      }
       if (statusElement) {
         statusElement.textContent = "เสียงนี้ถูกแทนที่ด้วยคำตอบล่าสุดแล้ว";
       }
@@ -108,4 +119,18 @@ async function loadAudioWithRetry(
       statusElement.textContent = "ยังสร้างเสียงไม่สำเร็จ ลองใหม่อีกครั้งได้";
     }
   }
+}
+
+function isLatestAssistantAudio(audioElement, recoveryText) {
+  const messageElement = audioElement.closest(".message");
+  if (!messageElement || !audioElement.dataset.audioRequestId) {
+    return false;
+  }
+
+  if (Number(audioElement.dataset.audioRequestId) !== state.audioRequestId) {
+    return false;
+  }
+
+  const messageText = messageElement.querySelector(".message-text")?.textContent || "";
+  return normalizeThaiText(recoveryText) === normalizeThaiText(messageText);
 }

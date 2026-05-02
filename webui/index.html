@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI Smart Home Dashboard</title>
-    <link rel="stylesheet" href="/webui/style.css" />
+    <link rel="stylesheet" href="/webui/style.css?v=ui-style-20260501" />
   </head>
   <body>
     <div class="page-shell">
@@ -180,6 +180,74 @@
           </dl>
         </section>
 
+        <section class="panel panel-devices">
+          <div class="panel-header">
+            <div>
+              <p class="panel-title">Device Registry</p>
+              <p class="panel-subtitle">ดู mapping อุปกรณ์, GPIO, alias และ state ล่าสุดแบบอ่านอย่างเดียว</p>
+            </div>
+            <div class="panel-actions">
+              <span id="device-registry-indicator" class="status-pill neutral">กำลังโหลด</span>
+              <button id="device-registry-refresh-button" class="secondary-button" type="button">รีเฟรช</button>
+            </div>
+          </div>
+
+          <form id="device-create-form" class="device-create-form" data-device-type="virtual">
+            <p class="device-create-title">เพิ่มอุปกรณ์ / alias พร้อมตรวจสอบ GPIO ก่อนใช้จริง</p>
+            <label class="device-registry-field">
+              <span>ประเภท</span>
+              <select id="device-create-type" name="device_type">
+                <option value="virtual" selected>Virtual / alias เท่านั้น</option>
+                <option value="relay">Relay จริงผ่าน ESP32</option>
+              </select>
+            </label>
+            <label class="device-registry-field">
+              <span>ชื่ออุปกรณ์</span>
+              <input id="device-create-name" name="display_name" type="text" placeholder="เช่น ไฟโต๊ะทำงาน" required />
+            </label>
+            <label class="device-registry-field">
+              <span>ห้อง</span>
+              <input id="device-create-room" name="room" type="text" placeholder="เช่น ห้องทำงาน" />
+            </label>
+            <label class="device-registry-field device-registry-field-wide">
+              <span>คำเรียก</span>
+              <textarea id="device-create-aliases" name="aliases" rows="2" placeholder="คั่นด้วย comma เช่น ไฟโต๊ะ, ไฟทำงาน"></textarea>
+            </label>
+            <label class="device-registry-field hardware-only">
+              <span>ESP32 Device ID</span>
+              <input id="device-create-esp32-id" name="esp32_device_id" type="text" placeholder="esp32-01" />
+            </label>
+            <label class="device-registry-field hardware-only">
+              <span>GPIO pin</span>
+              <input id="device-create-gpio-pin" name="gpio_pin" type="number" min="0" max="48" step="1" placeholder="เช่น 5" />
+            </label>
+            <label class="device-registry-field hardware-only">
+              <span>Relay channel</span>
+              <input id="device-create-relay-channel" name="relay_channel" type="number" min="1" max="1" step="1" value="1" />
+            </label>
+            <label class="device-registry-enabled hardware-only">
+              <input id="device-create-active-high" name="active_high" type="checkbox" checked />
+              <span>Active high</span>
+            </label>
+            <label class="device-registry-enabled">
+              <input id="device-create-enabled" name="enabled" type="checkbox" checked />
+              <span>เปิดใช้งาน</span>
+            </label>
+            <div class="device-registry-form-actions">
+              <button id="device-create-submit" type="submit">เพิ่มอุปกรณ์</button>
+              <span id="device-create-status" class="loading-text"></span>
+            </div>
+          </form>
+
+          <div id="device-registry-list" class="device-registry-list">
+            <p class="debug-text">กำลังอ่าน Device Registry...</p>
+          </div>
+          <div id="esp32-capabilities-box" class="capabilities-box">
+            <p class="debug-text">ยังไม่มีข้อมูล capabilities จาก ESP32</p>
+          </div>
+          <p class="debug-text">Relay จริงจะเพิ่มได้เฉพาะเมื่อ ESP32 online และส่ง capabilities แล้ว ระบบจะกันพินซ้ำ/พินที่ถูกจองไว้ก่อนบันทึก</p>
+        </section>
+
         <section class="panel">
           <div class="panel-header">
             <div>
@@ -336,13 +404,13 @@
 
     <script src="/webui/utils.js?v=ui-utils-20260429"></script>
     <script src="/webui/voice_utils.js?v=ui-voice-utils-20260430"></script>
-    <script src="/webui/api.js?v=ui-api-20260430"></script>
+    <script src="/webui/api.js?v=ui-api-20260501"></script>
     <script src="/webui/audio.js?v=ui-audio-20260430"></script>
     <script src="/webui/chat_ui.js?v=ui-chat-ui-20260430"></script>
-    <script src="/webui/dashboard.js?v=ui-dashboard-20260430"></script>
-    <script src="/webui/app.js?v=thinking-mode-20260429"></script>
+    <script src="/webui/dashboard.js?v=ui-dashboard-20260501"></script>
+    <script src="/webui/app.js?v=thinking-mode-20260501"></script>
     <script src="/webui/ui_state.js?v=ui-state-20260430"></script>
     <script src="/webui/chat_flow.js?v=ui-chat-flow-20260430"></script>
-    <script src="/webui/app_boot.js?v=ui-app-boot-20260430"></script>
+    <script src="/webui/app_boot.js?v=ui-app-boot-20260501"></script>
   </body>
 </html>

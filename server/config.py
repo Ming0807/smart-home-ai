@@ -34,6 +34,11 @@ class Settings(BaseModel):
     system_prompt_path: str = Field(default="prompts/system_prompt.txt")
     default_esp32_device_id: str = Field(default="esp32-01")
     esp32_offline_timeout_seconds: int = Field(default=60)
+    default_relay_gpio_pin: int = Field(default=5)
+    default_relay_active_high: bool = Field(default=True)
+    default_dht22_gpio_pin: int = Field(default=4)
+    default_pir_gpio_pin: int = Field(default=6)
+    device_registry_path: str = Field(default="data/device_registry.json")
     sensor_freshness_seconds: int = Field(default=300)
     openweather_api_key: str = Field(default="")
     default_weather_location: str = Field(default="Yala,TH")
@@ -172,6 +177,11 @@ def get_settings() -> Settings:
         system_prompt_path=getenv("SYSTEM_PROMPT_PATH", "prompts/system_prompt.txt"),
         default_esp32_device_id=getenv("DEFAULT_ESP32_DEVICE_ID", "esp32-01"),
         esp32_offline_timeout_seconds=_get_int_env("ESP32_OFFLINE_TIMEOUT_SECONDS", 60),
+        default_relay_gpio_pin=_get_int_env("DEFAULT_RELAY_GPIO_PIN", 5),
+        default_relay_active_high=_get_bool_env("DEFAULT_RELAY_ACTIVE_HIGH", True),
+        default_dht22_gpio_pin=_get_int_env("DEFAULT_DHT22_GPIO_PIN", 4),
+        default_pir_gpio_pin=_get_int_env("DEFAULT_PIR_GPIO_PIN", 6),
+        device_registry_path=getenv("DEVICE_REGISTRY_PATH", "data/device_registry.json"),
         sensor_freshness_seconds=_get_int_env("SENSOR_FRESHNESS_SECONDS", 300),
         openweather_api_key=getenv("OPENWEATHER_API_KEY", ""),
         default_weather_location=getenv("DEFAULT_WEATHER_LOCATION", "Yala,TH"),

@@ -36,6 +36,14 @@ const deviceOnlineIndicator = document.getElementById("device-online-indicator")
 const deviceLatestCommand = document.getElementById("device-latest-command");
 const devicePendingCount = document.getElementById("device-pending-count");
 const deviceLastSeen = document.getElementById("device-last-seen");
+const deviceRegistryIndicator = document.getElementById("device-registry-indicator");
+const deviceRegistryList = document.getElementById("device-registry-list");
+const deviceRegistryRefreshButton = document.getElementById("device-registry-refresh-button");
+const deviceCreateForm = document.getElementById("device-create-form");
+const deviceCreateType = document.getElementById("device-create-type");
+const deviceCreateSubmit = document.getElementById("device-create-submit");
+const deviceCreateStatus = document.getElementById("device-create-status");
+const esp32CapabilitiesBox = document.getElementById("esp32-capabilities-box");
 
 const voiceModeIndicator = document.getElementById("voice-mode-indicator");
 const voiceProvider = document.getElementById("voice-provider");
@@ -72,6 +80,7 @@ const relayOnButton = document.getElementById("relay-on-button");
 const relayOffButton = document.getElementById("relay-off-button");
 
 const state = {
+  audioRequestId: 0,
   chatBusy: false,
   recording: false,
   speechRecognition: null,
@@ -636,6 +645,7 @@ async function handleVoiceTurnResponse(payload) {
   setPillState(chatStatus, "good", "ตอบแล้ว");
 
   await refreshDashboardStatus();
+  await refreshDeviceRegistry();
   await refreshVoiceDebugStatus();
   void maybeContinueListening(assistantEntry);
 }

@@ -83,6 +83,10 @@ function attachMessageAudio(wrapper, text, audioUrl) {
   const audioElement = document.createElement("audio");
   audioElement.controls = true;
   audioElement.preload = "metadata";
+  const audioRequestId = String((state.audioRequestId || 0) + 1);
+  state.audioRequestId = Number(audioRequestId);
+  wrapper.dataset.audioRequestId = audioRequestId;
+  audioElement.dataset.audioRequestId = audioRequestId;
 
   const audioStatus = document.createElement("p");
   audioStatus.className = "audio-status";

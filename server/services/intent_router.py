@@ -94,6 +94,10 @@ class IntentRouter:
         if motion_match is not None:
             return motion_match
 
+        device_match = self._match_device_control(message, normalized_message)
+        if device_match is not None:
+            return device_match
+
         navigation_match = self._match_navigation(message, normalized_message)
         if navigation_match is not None:
             return navigation_match
@@ -207,6 +211,43 @@ class IntentRouter:
 
         if "คน" in normalized_message and "ไหม" in normalized_message:
             return IntentMatch(intent="sensor_query", matched_keyword="motion_people")
+        return None
+
+    def _match_device_control(
+        self,
+        original_message: str,
+        normalized_message: str,
+    ) -> IntentMatch | None:
+        has_device_word = any(
+            keyword in normalized_message
+            for keyword in (
+                "ไฟ",
+                "หลอดไฟ",
+                "พัดลม",
+                "ปลั๊ก",
+                "รีเลย์",
+                "relay",
+            )
+        )
+        if not has_device_word:
+            return None
+
+        has_control_or_status_word = any(
+            keyword in normalized_message
+            for keyword in (
+                "เปิด",
+                "ปิด",
+                "สถานะ",
+                "อยู่ไหม",
+                "ทำงานไหม",
+                "ติดไหม",
+            )
+        )
+        if has_control_or_status_word:
+            return IntentMatch(
+                intent="device_control",
+                matched_keyword=original_message.strip(),
+            )
         return None
 
     def _match_line_send(

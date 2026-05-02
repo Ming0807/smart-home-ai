@@ -48,6 +48,7 @@ class TTSService:
         self._settings = settings
         self._output_dir = resolve_project_path(settings.tts_output_dir)
         self._synthesis_lock = Lock()
+        self._state_lock = Lock()
         self._current_token: str | None = None
         self._pending_token: str | None = None
         self._last_generated_at: datetime | None = None
@@ -57,6 +58,8 @@ class TTSService:
         cleaned_text = text.strip()
         timer = start_timer()
         active_token = token or self._create_token()
+        if token is None:
+            self._set_pending_token(active_token)
         if not self._settings.tts_enabled:
             self._mark_failed_token(active_token, "tts disabled")
             return TTSResult(
@@ -95,12 +98,32 @@ class TTSService:
         output_path = self.get_output_path(cleaned_text)
         try:
             with self._synthesis_lock:
+                if self._settings.tts_overwrite_output and not self._is_pending_token(active_token):
+                    return TTSResult(
+                        ok=False,
+                        text=cleaned_text,
+                        provider=provider,
+                        error="audio superseded",
+                        token=active_token,
+                    )
                 self._output_dir.mkdir(parents=True, exist_ok=True)
-                output_path = self._write_audio_file(cleaned_text, output_path)
-                self._current_token = active_token
-                self._pending_token = active_token
-                self._last_generated_at = self._now()
-                self._last_error = None
+                output_path = self._write_audio_file(cleaned_text, output_path, active_token)
+                with self._state_lock:
+                    if (
+                        self._settings.tts_overwrite_output
+                        and self._pending_token != active_token
+                    ):
+                        return TTSResult(
+                            ok=False,
+                            text=cleaned_text,
+                            provider=provider,
+                            error="audio superseded",
+                            token=active_token,
+                        )
+                    self._current_token = active_token
+                    self._pending_token = active_token
+                    self._last_generated_at = self._now()
+                    self._last_error = None
                 if self._settings.tts_overwrite_output:
                     self._cleanup_demo_mode_files(output_path)
                 else:
@@ -136,7 +159,7 @@ class TTSService:
 
     def get_audio_url(self, text: str = "", token: str | None = None) -> str:
         if self._settings.tts_overwrite_output:
-            active_token = token or self._current_token
+            active_token = token or self._get_current_token()
             if active_token:
                 return f"/voice/audio/current?token={active_token}"
             return "/voice/audio/current"
@@ -144,12 +167,13 @@ class TTSService:
 
     def create_pending_audio_url(self) -> tuple[str, str]:
         token = self._create_token()
-        self._pending_token = token
+        self._set_pending_token(token)
         return token, self.get_audio_url(token=token)
 
     def get_current_audio_bytes(self, token: str | None = None) -> bytes | None:
-        if token and token != self._current_token:
-            return None
+        with self._state_lock:
+            if token and token != self._current_token:
+                return None
         output_path = self.get_output_path()
         try:
             audio_bytes = output_path.read_bytes()
@@ -160,7 +184,10 @@ class TTSService:
         return audio_bytes
 
     def get_status(self) -> TTSStatus:
-        visible_token = self._pending_token or self._current_token
+        with self._state_lock:
+            visible_token = self._pending_token or self._current_token
+            last_generated_at = self._last_generated_at
+            last_error = self._last_error
         audio_bytes = self.get_current_audio_bytes(token=visible_token)
         return TTSStatus(
             tts_enabled=self._settings.tts_enabled,
@@ -169,11 +196,11 @@ class TTSService:
             current_token=visible_token,
             audio_ready=audio_bytes is not None,
             file_size_bytes=len(audio_bytes) if audio_bytes is not None else 0,
-            last_generated_at=self._last_generated_at,
-            last_error=self._last_error,
+            last_generated_at=last_generated_at,
+            last_error=last_error,
         )
 
-    def _write_audio_file(self, text: str, output_path: Path) -> Path:
+    def _write_audio_file(self, text: str, output_path: Path, token: str) -> Path:
         if not self._settings.tts_overwrite_output:
             asyncio.run(self._synthesize_with_edge_tts(text, output_path))
             self._ensure_non_empty_file(output_path)
@@ -183,6 +210,8 @@ class TTSService:
         try:
             asyncio.run(self._synthesize_with_edge_tts(text, temp_path))
             self._ensure_non_empty_file(temp_path)
+            if not self._is_pending_token(token):
+                return output_path
             temp_path.replace(output_path)
             self._ensure_non_empty_file(output_path)
             return output_path
@@ -253,10 +282,23 @@ class TTSService:
     def _create_token() -> str:
         return uuid4().hex
 
+    def _set_pending_token(self, token: str) -> None:
+        with self._state_lock:
+            self._pending_token = token
+
+    def _get_current_token(self) -> str | None:
+        with self._state_lock:
+            return self._current_token
+
+    def _is_pending_token(self, token: str) -> bool:
+        with self._state_lock:
+            return self._pending_token == token
+
     def _mark_failed_token(self, token: str, error: str) -> None:
-        self._last_error = error
-        if self._pending_token == token:
-            self._pending_token = self._current_token
+        with self._state_lock:
+            self._last_error = error
+            if self._pending_token == token:
+                self._pending_token = self._current_token
 
     @staticmethod
     def _now() -> datetime:
