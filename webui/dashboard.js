@@ -28,8 +28,12 @@ function updateRelayVisual(state) {
   const s = STATE_MAP[state] || { cls: "state-off", text: "-- ไม่ทราบ", dot: "off", chip: "ไม่ทราบ" };
   relayStateBadge.className = `relay-state-badge ${s.cls}`;
   if (relayStateText) relayStateText.textContent = s.text;
-  if (relayDot) { relayDot.className = `relay-dot ${s.dot}`; }
+  if (relayDot) relayDot.className = `relay-dot ${s.dot}`;
   if (relayStateLabel) relayStateLabel.textContent = s.chip;
+  const relayDotAcc = document.getElementById("relay-dot-acc");
+  const relayLabelAcc = document.getElementById("relay-label-acc");
+  if (relayDotAcc) relayDotAcc.className = `relay-dot ${s.dot}`;
+  if (relayLabelAcc) relayLabelAcc.textContent = s.chip;
 }
 
 function updateSensorTemperatureColor(temp) {
