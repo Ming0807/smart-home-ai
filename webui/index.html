@@ -4,401 +4,348 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI Smart Home Dashboard</title>
-    <link rel="stylesheet" href="/webui/style.css?v=ui-style-20260501" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/webui/style.css?v=ui-v2-20260505" />
   </head>
   <body>
     <div class="page-shell">
-      <header class="hero">
-        <div>
-          <p class="eyebrow">AI Smart Home Thai Assistant</p>
-          <h1>Dashboard ทดสอบระบบ</h1>
-          <p class="hero-copy">
-            ใช้สำหรับเดโม chat, sensor, relay, weather, news, navigation, traffic,
-            Thai TTS และ voice input จากหน้าเดียว
-          </p>
+      <!-- Top Status Bar -->
+      <header class="top-bar">
+        <div class="top-bar-brand">
+          <span class="brand-icon">🏠</span>
+          <div>
+            <p class="brand-name">น้องฟ้า</p>
+            <p class="brand-sub">AI Smart Home Thai Assistant</p>
+          </div>
         </div>
-        <div class="hero-actions">
-          <a class="link-button" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
-          <button id="refresh-all-button" class="secondary-button" type="button">รีเฟรชทั้งหมด</button>
+        <div class="top-bar-status" id="top-bar-status">
+          <div class="status-chip" id="status-chip-esp32">
+            <span class="status-dot" id="esp32-dot"></span>
+            <span id="esp32-status-label">ESP32...</span>
+          </div>
+          <div class="status-chip sensor-chip">
+            <span class="sensor-icon">🌡️</span>
+            <strong id="tb-temperature">--</strong>
+            <span class="sensor-sep">·</span>
+            <span class="sensor-icon">💧</span>
+            <strong id="tb-humidity">--</strong>
+          </div>
+          <div class="status-chip relay-chip" id="relay-state-chip">
+            <span class="relay-dot" id="relay-dot"></span>
+            <span id="relay-state-label">Relay...</span>
+          </div>
+          <span id="chat-status" class="status-pill neutral">พร้อมใช้งาน</span>
+        </div>
+        <div class="top-bar-actions">
+          <a class="link-button link-button-sm" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
+          <button id="refresh-all-button" class="secondary-button btn-sm" type="button">รีเฟรช</button>
         </div>
       </header>
 
-      <main class="dashboard-grid">
-        <section class="panel panel-chat">
-          <div class="panel-header">
-            <div>
-              <p class="panel-title">Chat Panel</p>
-              <p class="panel-subtitle">
-                ทดสอบ intent routing, sensor, weather, news, navigation, traffic, relay control,
-                voice chat และ LLM
-              </p>
+      <!-- Main 2-Column Layout -->
+      <main class="dashboard-main">
+        <!-- LEFT: Chat Column -->
+        <section class="col-chat">
+
+          <!-- Quick Actions by Category -->
+          <div class="quick-action-panel" id="quick-actions">
+            <div class="qa-group">
+              <span class="qa-label">🏠 บ้าน</span>
+              <button type="button" data-message="สวัสดี">สวัสดี</button>
+              <button type="button" data-message="เปิดไฟ">เปิดไฟ</button>
+              <button type="button" data-message="ปิดไฟ">ปิดไฟ</button>
+              <button type="button" data-message="ห้องร้อนไหม">ห้องร้อนไหม</button>
+              <button type="button" data-message="มีคนเดินผ่านไหม">คนเดินผ่าน</button>
             </div>
-            <span id="chat-status" class="status-pill neutral">พร้อมใช้งาน</span>
-          </div>
-
-          <div class="quick-actions" id="quick-actions">
-            <button type="button" data-message="สวัสดี">สวัสดี</button>
-            <button type="button" data-message="ห้องร้อนไหม">ห้องร้อนไหม</button>
-            <button type="button" data-message="เปิดไฟ">เปิดไฟ</button>
-            <button type="button" data-message="ปิดไฟ">ปิดไฟ</button>
-            <button type="button" data-message="ข้างนอกร้อนไหม">ข้างนอกร้อนไหม</button>
-            <button type="button" data-message="ฝนจะตกไหม">ฝนจะตกไหม</button>
-            <button type="button" data-message="ข่าววันนี้">ข่าววันนี้</button>
-            <button type="button" data-message="ข่าว AI ล่าสุด">ข่าว AI ล่าสุด</button>
-            <button type="button" data-message="ข่าวการเงินล่าสุด">ข่าวการเงิน</button>
-            <button type="button" data-message="ข่าวการเมืองไทยล่าสุด">การเมืองไทย</button>
-            <button type="button" data-message="ส่งข่าวเข้า LINE">ส่งข่าวเข้า LINE</button>
-            <button type="button" data-message="ในยะลารถติดไหม">ในยะลารถติดไหม</button>
-            <button type="button" data-message="ไปสนามบินตอนนี้รถติดไหม">ไปสนามบินตอนนี้รถติดไหม</button>
-            <button type="button" data-message="ไปสนามบินใช้เวลากี่นาที">ไปสนามบินใช้เวลากี่นาที</button>
-            <button type="button" data-message="ไปตลาดใช้เวลากี่นาที">ไปตลาดใช้เวลากี่นาที</button>
-            <button type="button" data-message="ไปโรงพยาบาลยะลา">ไปโรงพยาบาลยะลา</button>
-            <button type="button" data-message="มีคนเดินผ่านไหม">มีคนเดินผ่านไหม</button>
-          </div>
-
-          <div class="voice-mode-toolbar">
-            <div class="mode-switch" id="voice-mode-switch">
-              <button id="voice-mode-push" class="mode-button active" type="button">Push-to-Talk Mode</button>
-              <button id="voice-mode-wake" class="mode-button" type="button">Wake Word Mode</button>
+            <div class="qa-group">
+              <span class="qa-label">🌤️ อากาศ</span>
+              <button type="button" data-message="ข้างนอกร้อนไหม">ข้างนอกร้อนไหม</button>
+              <button type="button" data-message="ฝนจะตกไหม">ฝนจะตกไหม</button>
             </div>
-            <p class="debug-text voice-mode-hint">
-              Wake phrase: <strong>น้องฟ้า</strong>
-            </p>
-          </div>
-
-          <div class="response-mode-toolbar">
-            <div class="mode-switch" id="chat-response-mode-switch">
-              <button id="chat-mode-fast" class="mode-button active" type="button">ตอบเร็ว</button>
-              <button id="chat-mode-thinking" class="mode-button" type="button">คิดก่อนตอบเร็ว</button>
+            <div class="qa-group">
+              <span class="qa-label">📰 ข่าว</span>
+              <button type="button" data-message="ข่าววันนี้">ข่าววันนี้</button>
+              <button type="button" data-message="ข่าว AI ล่าสุด">ข่าว AI</button>
+              <button type="button" data-message="ข่าวการเงินล่าสุด">ข่าวการเงิน</button>
+              <button type="button" data-message="ข่าวการเมืองไทยล่าสุด">การเมืองไทย</button>
+              <button type="button" data-message="ส่งข่าวเข้า LINE">ส่ง LINE</button>
             </div>
-            <span id="chat-response-mode-label" class="status-pill neutral">โหมดตอบเร็ว</span>
+            <div class="qa-group">
+              <span class="qa-label">🗺️ นำทาง</span>
+              <button type="button" data-message="ในยะลารถติดไหม">ยะลารถติดไหม</button>
+              <button type="button" data-message="ไปสนามบินตอนนี้รถติดไหม">ไปสนามบิน</button>
+              <button type="button" data-message="ไปสนามบินใช้เวลากี่นาที">ระยะทางสนามบิน</button>
+              <button type="button" data-message="ไปตลาดใช้เวลากี่นาที">ไปตลาด</button>
+              <button type="button" data-message="ไปโรงพยาบาลยะลา">โรงพยาบาลยะลา</button>
+            </div>
           </div>
 
-          <div class="thinking-test-actions" id="thinking-test-actions">
-            <button
-              type="button"
-              data-test-mode="fast"
-              data-test-message="หิวข้าว แนะนำเมนูง่าย ๆ ให้หน่อย"
-            >
-              เทสตอบเร็ว
-            </button>
-            <button
-              type="button"
-              data-test-mode="thinking"
-              data-test-message="ช่วยวิเคราะห์ว่า Gemma 2B เหมาะกับเดโมโปรเจกต์นี้ไหม"
-            >
-              เทสคิดก่อนตอบเร็ว
-            </button>
-            <button
-              type="button"
-              data-test-mode="thinking"
-              data-test-message="ช่วยวางแผนซ้อมนำเสนอโปรเจกต์นี้ให้ดูเป็นธรรมชาติ"
-            >
-              เทสวางแผนเดโม
-            </button>
-          </div>
+          <!-- Chat Area -->
+          <div class="chat-panel">
+            <div class="chat-panel-header">
+              <div class="voice-toolbar">
+                <div class="mode-switch" id="voice-mode-switch">
+                  <button id="voice-mode-push" class="mode-button active" type="button">Push-to-Talk</button>
+                  <button id="voice-mode-wake" class="mode-button" type="button">Wake Word</button>
+                </div>
+                <div class="mode-switch" id="chat-response-mode-switch">
+                  <button id="chat-mode-fast" class="mode-button active" type="button">ตอบเร็ว</button>
+                  <button id="chat-mode-thinking" class="mode-button" type="button">คิดก่อนตอบ</button>
+                </div>
+                <span id="chat-response-mode-label" class="status-pill neutral">โหมดตอบเร็ว</span>
+                <p class="wake-hint">Wake: <strong>น้องฟ้า</strong></p>
+              </div>
 
-          <div id="chat-history" class="chat-history" aria-live="polite"></div>
-
-          <form id="chat-form" class="chat-form">
-            <label class="sr-only" for="chat-input">ข้อความ</label>
-            <textarea
-              id="chat-input"
-              rows="3"
-              placeholder="พิมพ์ข้อความ เช่น วันนี้ยะลาอากาศยังไง"
-            ></textarea>
-            <div class="chat-form-actions">
-              <span id="chat-loading" class="loading-text" hidden>AI กำลังตอบ...</span>
-              <button id="chat-mic-button" class="secondary-button" type="button">Start talking</button>
-              <button id="chat-send-button" type="submit">ส่งข้อความ</button>
+              <!-- Thinking Test Actions (collapsible by default) -->
+              <details class="test-actions-detail">
+                <summary class="test-actions-summary">⚡ Test Actions</summary>
+                <div class="thinking-test-actions" id="thinking-test-actions">
+                  <button type="button" data-test-mode="fast" data-test-message="หิวข้าว แนะนำเมนูง่าย ๆ ให้หน่อย">เทสตอบเร็ว</button>
+                  <button type="button" data-test-mode="thinking" data-test-message="ช่วยวิเคราะห์ว่า Gemma 2B เหมาะกับเดโมโปรเจกต์นี้ไหม">เทสคิดก่อนตอบ</button>
+                  <button type="button" data-test-mode="thinking" data-test-message="ช่วยวางแผนซ้อมนำเสนอโปรเจกต์นี้ให้ดูเป็นธรรมชาติ">เทสวางแผนเดโม</button>
+                </div>
+              </details>
             </div>
 
-            <div class="voice-session-toolbar">
-              <label class="toggle-control" for="pir-sim-toggle">
-                <input id="pir-sim-toggle" type="checkbox" checked />
-                <span>จำลอง PIR มีคนอยู่</span>
+            <div id="chat-history" class="chat-history" aria-live="polite"></div>
+
+            <form id="chat-form" class="chat-form">
+              <label class="sr-only" for="chat-input">ข้อความ</label>
+              <div class="chat-input-row">
+                <textarea
+                  id="chat-input"
+                  rows="2"
+                  placeholder="พิมพ์ข้อความ เช่น วันนี้ยะลาอากาศยังไง"
+                ></textarea>
+                <div class="chat-input-buttons">
+                  <button id="chat-mic-button" class="mic-button" type="button">🎤 เริ่มพูด</button>
+                  <button id="chat-send-button" class="send-button" type="submit">ส่ง</button>
+                </div>
+              </div>
+
+              <div class="voice-status-row">
+                <span id="chat-loading" class="loading-text" hidden>AI กำลังตอบ...</span>
+                <span id="mic-state-indicator" class="status-pill neutral">พร้อมรับเสียง</span>
+                <span id="keep-mic-indicator" class="status-pill neutral keep-mic-pill">🎙️ ปิด</span>
+                <label class="toggle-control" for="pir-sim-toggle">
+                  <input id="pir-sim-toggle" type="checkbox" checked />
+                  <span>จำลอง PIR</span>
+                </label>
+                <button id="chat-stop-button" class="secondary-button btn-sm" type="button">⏹ หยุด</button>
+              </div>
+
+              <div class="quick-actions-exit" id="exit-quick-actions">
+                <button type="button" data-exit-message="ขอบคุณ">ขอบคุณ</button>
+                <button type="button" data-exit-message="พอแล้ว">พอแล้ว</button>
+                <button type="button" data-exit-message="แค่นี้แหละ">แค่นี้แหละ</button>
+                <button type="button" data-exit-message="เลิกคุย">เลิกคุย</button>
+                <button type="button" data-exit-message="หยุดฟัง">หยุดฟัง</button>
+              </div>
+
+              <!-- Debug section — compact but visible -->
+              <details class="debug-detail">
+                <summary class="debug-summary">🔧 Debug</summary>
+                <div class="debug-panel">
+                  <p id="chat-mic-status" class="debug-line">ไมโครโฟนพร้อมใช้งานเมื่ออนุญาตจากเบราว์เซอร์</p>
+                  <p id="chat-heard-text" class="debug-line" hidden></p>
+                  <p id="voice-turn-status" class="debug-line">พร้อมเริ่มคุยต่อเนื่องเมื่อกดไมค์</p>
+                  <p id="voice-debug-status" class="debug-line">กำลังอ่านสถานะเสียง...</p>
+                </div>
+              </details>
+            </form>
+          </div>
+        </section>
+
+        <!-- RIGHT: Status Cards Column -->
+        <aside class="col-status">
+
+          <!-- AI Warmup Card -->
+          <div class="status-card">
+            <div class="card-header">
+              <span class="card-title">🤖 AI Status</span>
+              <span id="llm-status-indicator" class="status-pill neutral">กำลังโหลด</span>
+            </div>
+            <dl class="card-detail">
+              <div><dt>Model</dt><dd id="llm-model">-</dd></div>
+              <div><dt>Warm</dt><dd id="llm-warmed">-</dd></div>
+              <div><dt>Keep awake</dt><dd id="llm-keep-awake">-</dd></div>
+              <div><dt>Latency</dt><dd id="llm-latency">-</dd></div>
+              <div><dt>เช็กล่าสุด</dt><dd id="llm-checked">-</dd></div>
+              <div><dt>ข้อความ</dt><dd id="llm-error">-</dd></div>
+            </dl>
+            <div class="card-actions">
+              <button id="llm-warmup-button" type="button">ปลุก AI</button>
+              <button id="llm-sleep-button" class="secondary-button" type="button">พัก AI</button>
+              <span id="llm-warmup-status" class="loading-text"></span>
+            </div>
+          </div>
+
+          <!-- Relay Control Card -->
+          <div class="status-card">
+            <div class="card-header">
+              <span class="card-title">⚡ Relay Control</span>
+              <span id="device-online-indicator" class="status-pill neutral">ไม่ทราบสถานะ</span>
+            </div>
+            <!-- Relay State Visual -->
+            <div class="relay-visual" id="relay-visual">
+              <div class="relay-state-badge" id="relay-state-badge">
+                <span class="relay-glow" id="relay-glow"></span>
+                <span class="relay-state-text" id="relay-state-text">--</span>
+              </div>
+            </div>
+            <div class="card-actions">
+              <button id="relay-on-button" type="button" class="relay-on-btn">เปิด Relay</button>
+              <button id="relay-off-button" class="secondary-button relay-off-btn" type="button">ปิด Relay</button>
+            </div>
+            <dl class="card-detail">
+              <div><dt>คำสั่งล่าสุด</dt><dd id="device-latest-command">-</dd></div>
+              <div><dt>คิวคงเหลือ</dt><dd id="device-pending-count">0</dd></div>
+              <div><dt>Heartbeat ล่าสุด</dt><dd id="device-last-seen">-</dd></div>
+            </dl>
+          </div>
+
+          <!-- Sensor Card -->
+          <div class="status-card">
+            <div class="card-header">
+              <span class="card-title">🌡️ Sensor</span>
+              <button id="sensor-refresh-button" class="secondary-button btn-sm" type="button">รีเฟรช</button>
+            </div>
+            <div class="sensor-metrics">
+              <div class="sensor-metric" id="sensor-temp-card">
+                <span class="sensor-metric-label">อุณหภูมิ</span>
+                <strong id="sensor-temperature" class="sensor-metric-value">-</strong>
+              </div>
+              <div class="sensor-metric">
+                <span class="sensor-metric-label">ความชื้น</span>
+                <strong id="sensor-humidity" class="sensor-metric-value">-</strong>
+              </div>
+            </div>
+            <dl class="card-detail">
+              <div><dt>สถานะข้อมูล</dt><dd id="sensor-freshness">ยังไม่มีข้อมูล</dd></div>
+              <div><dt>อัปเดตล่าสุด</dt><dd id="sensor-updated">-</dd></div>
+              <div><dt>Device ID</dt><dd id="sensor-device-id">-</dd></div>
+            </dl>
+          </div>
+
+          <!-- Motion Card -->
+          <div class="status-card">
+            <div class="card-header">
+              <span class="card-title">🚶 Motion</span>
+              <button id="motion-refresh-button" class="secondary-button btn-sm" type="button">รีเฟรช</button>
+            </div>
+            <div class="motion-status-row">
+              <span class="motion-dot" id="motion-dot"></span>
+              <strong id="motion-status" class="motion-label">-</strong>
+              <span id="motion-last-detected" class="motion-time">-</span>
+            </div>
+            <dl class="card-detail">
+              <div><dt>Event ล่าสุด</dt><dd id="motion-last-event">-</dd></div>
+              <div><dt>Greeting</dt><dd id="motion-greeting">-</dd></div>
+            </dl>
+          </div>
+
+          <!-- Voice / TTS Card -->
+          <div class="status-card">
+            <div class="card-header">
+              <span class="card-title">🔊 Voice / TTS</span>
+              <span id="voice-mode-indicator" class="status-pill neutral">กำลังโหลด</span>
+            </div>
+            <form id="tts-form" class="tts-form">
+              <textarea id="tts-input" rows="2">สวัสดี วันนี้อากาศร้อนนะ</textarea>
+              <div class="card-actions">
+                <button id="tts-submit-button" type="submit">สร้างเสียง</button>
+                <span id="tts-status-text" class="loading-text"></span>
+              </div>
+            </form>
+            <audio id="tts-audio-player" controls preload="metadata"></audio>
+            <dl class="card-detail">
+              <div><dt>Provider</dt><dd id="voice-provider">-</dd></div>
+              <div><dt>Voice</dt><dd id="voice-name">-</dd></div>
+              <div><dt>Output file</dt><dd id="voice-output-file">-</dd></div>
+            </dl>
+          </div>
+
+          <!-- Weather Card -->
+          <div class="status-card">
+            <div class="card-header">
+              <span class="card-title">🌤️ Weather</span>
+            </div>
+            <form id="weather-form" class="weather-form">
+              <input id="weather-location" type="text" placeholder="เช่น ยะลา" />
+              <button id="weather-submit-button" type="submit">ถามอากาศ</button>
+            </form>
+            <div id="weather-result" class="weather-result muted">ยังไม่ได้ถามอากาศ</div>
+          </div>
+
+          <!-- Device Registry Card -->
+          <div class="status-card card-registry">
+            <div class="card-header">
+              <span class="card-title">📋 Device Registry</span>
+              <div class="card-header-right">
+                <span id="device-registry-indicator" class="status-pill neutral">กำลังโหลด</span>
+                <button id="device-registry-refresh-button" class="secondary-button btn-sm" type="button">รีเฟรช</button>
+              </div>
+            </div>
+
+            <form id="device-create-form" class="device-create-form" data-device-type="virtual">
+              <p class="device-create-title">เพิ่มอุปกรณ์ / alias</p>
+              <label class="device-registry-field">
+                <span>ประเภท</span>
+                <select id="device-create-type" name="device_type">
+                  <option value="virtual" selected>Virtual / alias</option>
+                  <option value="relay">Relay จริงผ่าน ESP32</option>
+                </select>
               </label>
-              <span id="mic-state-indicator" class="status-pill neutral">Idle</span>
-              <span id="keep-mic-indicator" class="status-pill neutral">keep_mic_open: false</span>
-              <button id="chat-stop-button" class="secondary-button" type="button">หยุด</button>
-            </div>
+              <label class="device-registry-field">
+                <span>ชื่ออุปกรณ์</span>
+                <input id="device-create-name" name="display_name" type="text" placeholder="เช่น ไฟโต๊ะ" required />
+              </label>
+              <label class="device-registry-field">
+                <span>ห้อง</span>
+                <input id="device-create-room" name="room" type="text" placeholder="เช่น ห้องทำงาน" />
+              </label>
+              <label class="device-registry-field device-registry-field-wide">
+                <span>คำเรียก</span>
+                <textarea id="device-create-aliases" name="aliases" rows="2" placeholder="คั่นด้วย comma เช่น ไฟโต๊ะ, ไฟทำงาน"></textarea>
+              </label>
+              <label class="device-registry-field hardware-only">
+                <span>ESP32 Device ID</span>
+                <input id="device-create-esp32-id" name="esp32_device_id" type="text" placeholder="esp32-01" />
+              </label>
+              <label class="device-registry-field hardware-only">
+                <span>GPIO pin</span>
+                <input id="device-create-gpio-pin" name="gpio_pin" type="number" min="0" max="48" step="1" placeholder="เช่น 5" />
+              </label>
+              <label class="device-registry-field hardware-only">
+                <span>Relay channel</span>
+                <input id="device-create-relay-channel" name="relay_channel" type="number" min="1" max="1" step="1" value="1" />
+              </label>
+              <label class="device-registry-enabled hardware-only">
+                <input id="device-create-active-high" name="active_high" type="checkbox" checked />
+                <span>Active high</span>
+              </label>
+              <label class="device-registry-enabled">
+                <input id="device-create-enabled" name="enabled" type="checkbox" checked />
+                <span>เปิดใช้งาน</span>
+              </label>
+              <div class="device-registry-form-actions">
+                <button id="device-create-submit" type="submit">เพิ่มอุปกรณ์</button>
+                <span id="device-create-status" class="loading-text"></span>
+              </div>
+            </form>
 
-            <div class="quick-actions quick-actions-exit" id="exit-quick-actions">
-              <button type="button" data-exit-message="ขอบคุณ">ขอบคุณ</button>
-              <button type="button" data-exit-message="พอแล้ว">พอแล้ว</button>
-              <button type="button" data-exit-message="แค่นี้แหละ">แค่นี้แหละ</button>
-              <button type="button" data-exit-message="เลิกคุย">เลิกคุย</button>
-              <button type="button" data-exit-message="หยุดฟัง">หยุดฟัง</button>
+            <div id="device-registry-list" class="device-registry-list">
+              <p class="debug-line">กำลังอ่าน Device Registry...</p>
             </div>
-
-            <p id="chat-mic-status" class="debug-text">ไมโครโฟนพร้อมใช้งานเมื่ออนุญาตจากเบราว์เซอร์</p>
-            <p id="chat-heard-text" class="debug-text" hidden></p>
-            <p id="voice-turn-status" class="debug-text">พร้อมเริ่มคุยต่อเนื่องเมื่อกดไมค์</p>
-          </form>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-title">AI Warmup Panel</p>
-              <p class="panel-subtitle">ตรวจสถานะ Ollama/Typhoon และปลุกโมเดลก่อนเริ่มเดโม</p>
+            <div id="esp32-capabilities-box" class="capabilities-box">
+              <p class="debug-line">ยังไม่มีข้อมูล capabilities จาก ESP32</p>
             </div>
-            <span id="llm-status-indicator" class="status-pill neutral">กำลังโหลด</span>
+            <p class="debug-line">Relay จริงจะเพิ่มได้เฉพาะเมื่อ ESP32 online และส่ง capabilities แล้ว</p>
           </div>
 
-          <div class="action-row">
-            <button id="llm-warmup-button" type="button">ปลุก AI</button>
-            <button id="llm-sleep-button" class="secondary-button" type="button">พัก AI</button>
-            <span id="llm-warmup-status" class="loading-text"></span>
-          </div>
-
-          <dl class="detail-list">
-            <div>
-              <dt>Model</dt>
-              <dd id="llm-model">-</dd>
-            </div>
-            <div>
-              <dt>Warm status</dt>
-              <dd id="llm-warmed">-</dd>
-            </div>
-            <div>
-              <dt>Keep awake</dt>
-              <dd id="llm-keep-awake">-</dd>
-            </div>
-            <div>
-              <dt>Latency ล่าสุด</dt>
-              <dd id="llm-latency">-</dd>
-            </div>
-            <div>
-              <dt>เช็กสถานะล่าสุด</dt>
-              <dd id="llm-checked">-</dd>
-            </div>
-            <div>
-              <dt>ข้อความระบบ</dt>
-              <dd id="llm-error">-</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section class="panel panel-devices">
-          <div class="panel-header">
-            <div>
-              <p class="panel-title">Device Registry</p>
-              <p class="panel-subtitle">ดู mapping อุปกรณ์, GPIO, alias และ state ล่าสุดแบบอ่านอย่างเดียว</p>
-            </div>
-            <div class="panel-actions">
-              <span id="device-registry-indicator" class="status-pill neutral">กำลังโหลด</span>
-              <button id="device-registry-refresh-button" class="secondary-button" type="button">รีเฟรช</button>
-            </div>
-          </div>
-
-          <form id="device-create-form" class="device-create-form" data-device-type="virtual">
-            <p class="device-create-title">เพิ่มอุปกรณ์ / alias พร้อมตรวจสอบ GPIO ก่อนใช้จริง</p>
-            <label class="device-registry-field">
-              <span>ประเภท</span>
-              <select id="device-create-type" name="device_type">
-                <option value="virtual" selected>Virtual / alias เท่านั้น</option>
-                <option value="relay">Relay จริงผ่าน ESP32</option>
-              </select>
-            </label>
-            <label class="device-registry-field">
-              <span>ชื่ออุปกรณ์</span>
-              <input id="device-create-name" name="display_name" type="text" placeholder="เช่น ไฟโต๊ะทำงาน" required />
-            </label>
-            <label class="device-registry-field">
-              <span>ห้อง</span>
-              <input id="device-create-room" name="room" type="text" placeholder="เช่น ห้องทำงาน" />
-            </label>
-            <label class="device-registry-field device-registry-field-wide">
-              <span>คำเรียก</span>
-              <textarea id="device-create-aliases" name="aliases" rows="2" placeholder="คั่นด้วย comma เช่น ไฟโต๊ะ, ไฟทำงาน"></textarea>
-            </label>
-            <label class="device-registry-field hardware-only">
-              <span>ESP32 Device ID</span>
-              <input id="device-create-esp32-id" name="esp32_device_id" type="text" placeholder="esp32-01" />
-            </label>
-            <label class="device-registry-field hardware-only">
-              <span>GPIO pin</span>
-              <input id="device-create-gpio-pin" name="gpio_pin" type="number" min="0" max="48" step="1" placeholder="เช่น 5" />
-            </label>
-            <label class="device-registry-field hardware-only">
-              <span>Relay channel</span>
-              <input id="device-create-relay-channel" name="relay_channel" type="number" min="1" max="1" step="1" value="1" />
-            </label>
-            <label class="device-registry-enabled hardware-only">
-              <input id="device-create-active-high" name="active_high" type="checkbox" checked />
-              <span>Active high</span>
-            </label>
-            <label class="device-registry-enabled">
-              <input id="device-create-enabled" name="enabled" type="checkbox" checked />
-              <span>เปิดใช้งาน</span>
-            </label>
-            <div class="device-registry-form-actions">
-              <button id="device-create-submit" type="submit">เพิ่มอุปกรณ์</button>
-              <span id="device-create-status" class="loading-text"></span>
-            </div>
-          </form>
-
-          <div id="device-registry-list" class="device-registry-list">
-            <p class="debug-text">กำลังอ่าน Device Registry...</p>
-          </div>
-          <div id="esp32-capabilities-box" class="capabilities-box">
-            <p class="debug-text">ยังไม่มีข้อมูล capabilities จาก ESP32</p>
-          </div>
-          <p class="debug-text">Relay จริงจะเพิ่มได้เฉพาะเมื่อ ESP32 online และส่ง capabilities แล้ว ระบบจะกันพินซ้ำ/พินที่ถูกจองไว้ก่อนบันทึก</p>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-title">Sensor Panel</p>
-              <p class="panel-subtitle">ดูข้อมูล DHT22 ล่าสุดจาก ESP32</p>
-            </div>
-            <button id="sensor-refresh-button" class="secondary-button" type="button">รีเฟรช</button>
-          </div>
-
-          <div class="metric-grid">
-            <article class="metric-card">
-              <span class="metric-label">อุณหภูมิ</span>
-              <strong id="sensor-temperature" class="metric-value">-</strong>
-            </article>
-            <article class="metric-card">
-              <span class="metric-label">ความชื้น</span>
-              <strong id="sensor-humidity" class="metric-value">-</strong>
-            </article>
-          </div>
-
-          <dl class="detail-list">
-            <div>
-              <dt>สถานะข้อมูล</dt>
-              <dd id="sensor-freshness">ยังไม่มีข้อมูล</dd>
-            </div>
-            <div>
-              <dt>อัปเดตล่าสุด</dt>
-              <dd id="sensor-updated">-</dd>
-            </div>
-            <div>
-              <dt>Device ID</dt>
-              <dd id="sensor-device-id">-</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-title">Device Control Panel</p>
-              <p class="panel-subtitle">ทดสอบ queue คำสั่ง relay ผ่าน flow เดิมของ chat</p>
-            </div>
-            <span id="device-online-indicator" class="status-pill neutral">ไม่ทราบสถานะ</span>
-          </div>
-
-          <div class="action-row">
-            <button id="relay-on-button" type="button">เปิด Relay</button>
-            <button id="relay-off-button" class="secondary-button" type="button">ปิด Relay</button>
-          </div>
-
-          <dl class="detail-list">
-            <div>
-              <dt>คำสั่งล่าสุด</dt>
-              <dd id="device-latest-command">-</dd>
-            </div>
-            <div>
-              <dt>คิวคำสั่งคงเหลือ</dt>
-              <dd id="device-pending-count">0</dd>
-            </div>
-            <div>
-              <dt>Heartbeat ล่าสุด</dt>
-              <dd id="device-last-seen">-</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-title">Motion Panel</p>
-              <p class="panel-subtitle">ดูสถานะ PIR motion ล่าสุดและข้อความต้อนรับอัตโนมัติ</p>
-            </div>
-            <button id="motion-refresh-button" class="secondary-button" type="button">รีเฟรช</button>
-          </div>
-
-          <div class="metric-grid">
-            <article class="metric-card">
-              <span class="metric-label">สถานะการเคลื่อนไหว</span>
-              <strong id="motion-status" class="metric-value">-</strong>
-            </article>
-            <article class="metric-card">
-              <span class="metric-label">ตรวจพบล่าสุด</span>
-              <strong id="motion-last-detected" class="metric-value metric-value-small">-</strong>
-            </article>
-          </div>
-
-          <dl class="detail-list">
-            <div>
-              <dt>อัปเดต event ล่าสุด</dt>
-              <dd id="motion-last-event">-</dd>
-            </div>
-            <div>
-              <dt>Greeting ล่าสุด</dt>
-              <dd id="motion-greeting">-</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <div>
-              <p class="panel-title">Voice / TTS Panel</p>
-              <p class="panel-subtitle">ทดสอบสร้างเสียงไทยและตรวจโหมด demo voice</p>
-            </div>
-            <span id="voice-mode-indicator" class="status-pill neutral">กำลังโหลด</span>
-          </div>
-
-          <form id="tts-form" class="stack-form">
-            <label for="tts-input">ข้อความสำหรับสร้างเสียง</label>
-            <textarea id="tts-input" rows="3">สวัสดี วันนี้อากาศร้อนนะ</textarea>
-            <div class="action-row">
-              <button id="tts-submit-button" type="submit">สร้างเสียง</button>
-              <span id="tts-status-text" class="loading-text"></span>
-            </div>
-          </form>
-
-          <audio id="tts-audio-player" controls preload="metadata"></audio>
-          <p id="voice-debug-status" class="debug-text">กำลังอ่านสถานะเสียง...</p>
-
-          <dl class="detail-list">
-            <div>
-              <dt>Provider</dt>
-              <dd id="voice-provider">-</dd>
-            </div>
-            <div>
-              <dt>Voice</dt>
-              <dd id="voice-name">-</dd>
-            </div>
-            <div>
-              <dt>Output file</dt>
-              <dd id="voice-output-file">-</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section class="panel panel-weather">
-          <div class="panel-header">
-            <div>
-              <p class="panel-title">Weather Panel</p>
-              <p class="panel-subtitle">ถามอากาศผ่าน chat endpoint ตาม architecture ปัจจุบัน</p>
-            </div>
-          </div>
-
-          <form id="weather-form" class="inline-form">
-            <label class="sr-only" for="weather-location">สถานที่</label>
-            <input id="weather-location" type="text" placeholder="เช่น ยะลา" />
-            <button id="weather-submit-button" type="submit">ถามอากาศ</button>
-          </form>
-
-          <div id="weather-result" class="result-box muted">ยังไม่ได้ถามอากาศ</div>
-        </section>
+        </aside>
       </main>
     </div>
 
@@ -407,10 +354,10 @@
     <script src="/webui/api.js?v=ui-api-20260501"></script>
     <script src="/webui/audio.js?v=ui-audio-20260430"></script>
     <script src="/webui/chat_ui.js?v=ui-chat-ui-20260430"></script>
-    <script src="/webui/dashboard.js?v=ui-dashboard-20260501"></script>
+    <script src="/webui/dashboard.js?v=ui-dashboard-20260505"></script>
     <script src="/webui/app.js?v=thinking-mode-20260501"></script>
     <script src="/webui/ui_state.js?v=ui-state-20260430"></script>
     <script src="/webui/chat_flow.js?v=ui-chat-flow-20260430"></script>
-    <script src="/webui/app_boot.js?v=ui-app-boot-20260501"></script>
+    <script src="/webui/app_boot.js?v=ui-app-boot-20260505"></script>
   </body>
 </html>

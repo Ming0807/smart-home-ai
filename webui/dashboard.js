@@ -1,3 +1,57 @@
+// ── Top-bar element refs ──
+const tbTemperature = document.getElementById("tb-temperature");
+const tbHumidity = document.getElementById("tb-humidity");
+const esp32Dot = document.getElementById("esp32-dot");
+const esp32StatusLabel = document.getElementById("esp32-status-label");
+const relayDot = document.getElementById("relay-dot");
+const relayStateLabel = document.getElementById("relay-state-label");
+
+// ── Relay visual refs ──
+const relayStateBadge = document.getElementById("relay-state-badge");
+const relayGlow = document.getElementById("relay-glow");
+const relayStateText = document.getElementById("relay-state-text");
+const relayStateChip = document.getElementById("relay-state-chip");
+
+// ── Motion dot ref ──
+const motionDot = document.getElementById("motion-dot");
+
+// ── Sensor temperature card ref ──
+const sensorTempCard = document.getElementById("sensor-temp-card");
+
+function updateRelayVisual(state) {
+  if (!relayStateBadge) return;
+  const STATE_MAP = {
+    on:      { cls: "state-on",      text: "🟢 เปิดอยู่",    dot: "on",      chip: "เปิดอยู่" },
+    off:     { cls: "state-off",     text: "⚫ ปิดอยู่",    dot: "off",     chip: "ปิดอยู่" },
+    pending: { cls: "state-pending", text: "🟡 กำลังรอ",   dot: "pending", chip: "กำลังรอ" },
+  };
+  const s = STATE_MAP[state] || { cls: "state-off", text: "-- ไม่ทราบ", dot: "off", chip: "ไม่ทราบ" };
+  relayStateBadge.className = `relay-state-badge ${s.cls}`;
+  if (relayStateText) relayStateText.textContent = s.text;
+  if (relayDot) { relayDot.className = `relay-dot ${s.dot}`; }
+  if (relayStateLabel) relayStateLabel.textContent = s.chip;
+}
+
+function updateSensorTemperatureColor(temp) {
+  if (!sensorTempCard) return;
+  sensorTempCard.classList.remove("temp-hot", "temp-warm", "temp-cool");
+  if (temp === null || temp === undefined) return;
+  if (temp >= 35) sensorTempCard.classList.add("temp-hot");
+  else if (temp >= 28) sensorTempCard.classList.add("temp-warm");
+  else sensorTempCard.classList.add("temp-cool");
+}
+
+function updateMotionDot(detected) {
+  if (!motionDot) return;
+  motionDot.className = `motion-dot ${detected ? "detected" : ""}`;
+}
+
+function updateEsp32Dot(online) {
+  if (!esp32Dot) return;
+  esp32Dot.className = `status-dot ${online ? "online" : "offline"}`;
+  if (esp32StatusLabel) esp32StatusLabel.textContent = online ? "ESP32 online" : "ESP32 offline";
+}
+
 async function refreshVoiceDebugStatus() {
   try {
     const { response, data } = await fetchJson("/voice/status", {}, 8000);
@@ -80,9 +134,16 @@ async function refreshDeviceRegistry(force = false) {
       data.total > 0 ? "good" : "warn",
       `${data.enabled || 0}/${data.total || 0} enabled`
     );
+    // Update relay state badge from relay_1 device state
+    const relayDevice = (data.devices || []).find(
+      (d) => d.device_type === "relay" && d.enabled
+    );
+    if (relayDevice) {
+      updateRelayVisual(relayDevice.state || "unknown");
+    }
   } catch (error) {
     deviceRegistryList.replaceChildren(
-      createRegistryText("p", "debug-text", "อ่าน Device Registry ไม่สำเร็จ ลอง restart server แล้วรีเฟรชอีกครั้ง")
+      createRegistryText("p", "debug-line", "อ่าน Device Registry ไม่สำเร็จ ลอง restart server แล้วรีเฟรชอีกครั้ง")
     );
     setPillState(deviceRegistryIndicator, "bad", "โหลดไม่ได้");
   } finally {
@@ -529,30 +590,41 @@ async function refreshDashboardStatus() {
     trimChatHistory();
     updateLlmStatus(data.llm);
 
+    // Sensor panel
+    const tempVal = data.sensor.temperature;
+    const humVal = data.sensor.humidity;
     sensorDeviceId.textContent = data.sensor.device_id || "-";
-    sensorTemperature.textContent =
-      data.sensor.temperature === null ? "-" : `${Math.round(data.sensor.temperature)} °C`;
-    sensorHumidity.textContent =
-      data.sensor.humidity === null ? "-" : `${Math.round(data.sensor.humidity)} %`;
+    sensorTemperature.textContent = tempVal === null || tempVal === undefined ? "-" : `${Math.round(tempVal)} °C`;
+    sensorHumidity.textContent = humVal === null || humVal === undefined ? "-" : `${Math.round(humVal)} %`;
     sensorFreshness.textContent = data.sensor.is_fresh ? "ข้อมูลล่าสุดพร้อมใช้งาน" : "ยังไม่มีข้อมูลใหม่";
     sensorUpdated.textContent = formatDate(data.sensor.received_at || data.sensor.timestamp);
+    updateSensorTemperatureColor(tempVal);
 
-    motionStatus.textContent = data.motion.motion_detected ? "พบการเคลื่อนไหว" : "ยังไม่พบการเคลื่อนไหว";
+    // Top bar sensor
+    if (tbTemperature) tbTemperature.textContent = tempVal !== null && tempVal !== undefined ? `${Math.round(tempVal)} °C` : "--";
+    if (tbHumidity) tbHumidity.textContent = humVal !== null && humVal !== undefined ? `${Math.round(humVal)} %` : "--";
+
+    // Motion panel
+    const motionDetected = Boolean(data.motion.motion_detected);
+    motionStatus.textContent = motionDetected ? "พบการเคลื่อนไหว" : "ยังไม่พบการเคลื่อนไหว";
     motionLastDetected.textContent = formatDate(data.motion.last_motion_at);
     motionLastEvent.textContent = formatDate(data.motion.last_event_at);
     motionGreeting.textContent = data.motion.greeting_message || "-";
+    updateMotionDot(motionDetected);
 
     if (!state.pirTouched) {
-      pirSimToggle.checked = Boolean(data.motion.motion_detected);
+      pirSimToggle.checked = motionDetected;
     }
 
+    // ESP32 / Device Control panel
+    updateEsp32Dot(esp32Status.online);
     setPillState(
       deviceOnlineIndicator,
       esp32Status.online ? "good" : "warn",
       esp32Status.online ? "ESP32 online" : "ESP32 offline"
     );
     deviceLatestCommand.textContent = esp32Status.latest_command
-      ? `relay ch${esp32Status.latest_command.channel} -> ${esp32Status.latest_command.action}`
+      ? `relay ch${esp32Status.latest_command.channel} → ${esp32Status.latest_command.action}`
       : "-";
     devicePendingCount.textContent = String(esp32Status.pending_command_count ?? 0);
     deviceLastSeen.textContent = formatHeartbeatStatus(
@@ -561,6 +633,7 @@ async function refreshDashboardStatus() {
     );
     renderEsp32Capabilities(esp32Status.capabilities || null);
 
+    // Voice panel
     voiceProvider.textContent = data.voice.provider || "-";
     voiceName.textContent = data.voice.default_voice || "-";
     voiceOutputFile.textContent = data.voice.output_file || "-";
