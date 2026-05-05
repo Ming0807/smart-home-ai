@@ -78,25 +78,28 @@ def main():
             now = time.time()
 
             if _due(now, last_heartbeat, HEARTBEAT_INTERVAL_SECONDS):
-                print("Heartbeat:", send_heartbeat())
                 last_heartbeat = now
+                print("Heartbeat:", send_heartbeat())
 
             if _due(now, last_capabilities, CAPABILITIES_INTERVAL_SECONDS):
-                print("Capabilities:", send_capabilities())
                 last_capabilities = now
+                print("Capabilities:", send_capabilities())
 
             if _due(now, last_sensor, SENSOR_INTERVAL_SECONDS):
-                reading = sensor.read()
-                print("Sensor:", reading, send_sensor_reading(reading))
                 last_sensor = now
+                try:
+                    reading = sensor.read()
+                    print("Sensor:", reading, send_sensor_reading(reading))
+                except Exception as e:
+                    print("Sensor error:", e)
 
             if _due(now, last_command_poll, COMMAND_POLL_INTERVAL_SECONDS):
+                last_command_poll = now
                 response = get_next_command()
                 command = response.get("command") if response else None
                 if command:
                     result = relay.apply(command)
                     print("Command result:", result, send_command_result(command, result))
-                last_command_poll = now
 
             if motion_reader is not None:
                 motion_event = motion_reader.poll(now)

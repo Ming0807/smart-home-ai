@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
 from server.config import Settings, get_settings
 from server.models.esp32 import RelayAction
@@ -90,12 +91,19 @@ class DeviceControlService:
             "queued",
             "sent",
         }:
-            return DeviceControlResult(
-                reply=(
-                    f"มีคำสั่งล่าสุดของ{spoken_name}ค้างอยู่แล้ว "
-                    "กำลังรอ ESP32 ยืนยันผลก่อนนะ"
-                ),
-            )
+            is_stuck = True
+            if target_device.last_updated_at:
+                now = datetime.now(timezone.utc)
+                if (now - target_device.last_updated_at).total_seconds() > 15:
+                    is_stuck = False
+
+            if is_stuck:
+                return DeviceControlResult(
+                    reply=(
+                        f"มีคำสั่งล่าสุดของ{spoken_name}ค้างอยู่แล้ว "
+                        "กำลังรอ ESP32 ยืนยันผลก่อนนะ"
+                    ),
+                )
 
         command = self._esp32_manager.enqueue_relay_command(
             device_id=esp32_device_id,
