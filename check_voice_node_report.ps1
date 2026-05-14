@@ -62,6 +62,13 @@ try {
         Write-Host ("Average audio duration: {0:N1}s" -f ($report.average_uploaded_duration_ms / 1000))
     }
     Write-Host "Ready for demo: $($report.ready_for_demo)"
+    if ($null -ne $report.average_peak_ratio -and $report.average_peak_ratio -ge 0.98) {
+        Write-Host "Tuning hint: average peak is near 100%; use firmware MIC_RECORD_GAIN=32 or move 20-30 cm from INMP441."
+    } elseif ($null -ne $report.average_rms_ratio -and $report.average_rms_ratio -lt 0.02) {
+        Write-Host "Tuning hint: audio looks quiet; move closer to INMP441 before increasing firmware gain."
+    } elseif ($audioQualityOkRate -lt 0.7 -and $report.total_items -ge 5) {
+        Write-Host "Tuning hint: audio quality is unstable; check mic direction, distance, and room noise."
+    }
     Write-Host ""
     Write-Host "Notes:"
     foreach ($note in $report.notes) {

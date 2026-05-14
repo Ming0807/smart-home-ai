@@ -711,13 +711,15 @@ class VoiceNodeManager:
 
         if duration_ms is not None and duration_ms < 900:
             quality = "too_short"
-            notes.append("recording is very short; speak after the cue beep")
+            notes.append("recording is too short; wait for the cue beep, then speak")
         if peak_ratio < 0.06 or rms_ratio < 0.006 or silence_ratio > 0.97:
             quality = "too_quiet"
-            notes.append("audio level is low; move closer or increase mic gain")
+            notes.append("audio is too quiet; move closer to INMP441 or increase mic gain")
         if clipping_ratio >= 0.01 or peak_ratio >= 0.98:
             quality = "clipped"
-            notes.append("audio may be clipped; reduce mic gain or move back slightly")
+            notes.append(
+                "audio is clipping; flash firmware with MIC_RECORD_GAIN=32 or move 20-30 cm from INMP441"
+            )
 
         if not notes:
             notes.append("audio level looks usable")
@@ -809,7 +811,9 @@ class VoiceNodeManager:
         if quiet_warning_count > 0:
             notes.append(f"{quiet_warning_count} round(s) look too quiet")
         if clipping_warning_count > 0:
-            notes.append(f"{clipping_warning_count} round(s) may be clipped")
+            notes.append(
+                f"{clipping_warning_count} round(s) clipped; use firmware MIC_RECORD_GAIN=32 or move farther from the mic"
+            )
         if total_items >= 5 and audio_quality_ok_rate < 0.7:
             notes.append("Audio quality is unstable; inspect per-round peak/RMS details")
         if playback_records_count > 0 and playback_success_count < playback_records_count:

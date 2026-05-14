@@ -20,7 +20,10 @@
 - [x] Patched the existing app binary server URL with a corrected checksum/hash and flashed it through COM10 because ESP-IDF build dependencies were incomplete.
 - [x] Verified `voice-node-01` is online again at IP `192.168.115.226` and accepts queued `speaker_test` commands.
 - [x] Added Voice Node transcript normalization before intent routing for common clipped-audio mistakes: `รดติด` -> `รถติด`, `กรุ่งเทพ` -> `กรุงเทพ`, `ความชื่น` -> `ความชื้น`, `มองร้อนมั้ย` -> `ห้องร้อนไหม`, and `หาว/คาวล่าสุด` -> `ข่าวล่าสุด`.
-- [ ] Next hardware tuning: audio is still clipping at peak 100%; reduce mic input level in firmware or increase mic distance before final demo.
+- [x] Set next firmware mic gain target to `MIC_RECORD_GAIN=32` because the latest reports showed uploaded audio peaking near 100%.
+- [x] Rebuilt and flashed Voice Node on COM10 with `MIC_RECORD_GAIN=32`.
+- [x] Cleared old Voice Node audio history after flashing so the next report measures the new firmware only.
+- [ ] Run a fresh 10-round report with the new gain. If the report still says clipped, move 20-30 cm away from INMP441.
 
 อัปเดตล่าสุด: 2026-05-11
 
