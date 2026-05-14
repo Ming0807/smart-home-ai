@@ -10,7 +10,6 @@ const relayStateLabel = document.getElementById("relay-state-label");
 const relayStateBadge = document.getElementById("relay-state-badge");
 const relayGlow = document.getElementById("relay-glow");
 const relayStateText = document.getElementById("relay-state-text");
-const relayStateChip = document.getElementById("relay-state-chip");
 
 // ── Motion dot ref ──
 const motionDot = document.getElementById("motion-dot");
@@ -80,6 +79,360 @@ async function refreshVoiceDebugStatus() {
   } catch (error) {
     voiceDebugStatus.textContent = "อ่านสถานะเสียงไม่สำเร็จ";
   }
+}
+
+async function refreshVoiceNodePanel() {
+  if (!voiceNodeIndicator) {
+    return;
+  }
+
+  if (voiceNodeRefreshButton) {
+    voiceNodeRefreshButton.disabled = true;
+  }
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "กำลังอ่าน...";
+  }
+
+  try {
+    const [nodeStatus, audioStatus, audioHistory, audioReport] = await Promise.all([
+      fetchVoiceNodeStatus(),
+      fetchVoiceNodeAudioStatus(),
+      fetchVoiceNodeAudioHistory(),
+      fetchVoiceNodeAudioReport(),
+    ]);
+    renderVoiceNodeReport(audioReport);
+
+    setPillState(
+      voiceNodeIndicator,
+      nodeStatus.online ? "good" : "warn",
+      nodeStatus.online ? "Voice node online" : "Voice node offline"
+    );
+    voiceNodeBoardStatus.textContent = nodeStatus.online
+      ? `ออนไลน์ ${formatHeartbeatStatus(nodeStatus.last_seen_at, nodeStatus.seconds_since_heartbeat)}`
+      : "ยังไม่ออนไลน์";
+    voiceNodeState.textContent = [
+      nodeStatus.ip_address || "-",
+      nodeStatus.state || "-",
+      `คิวคำสั่ง ${nodeStatus.pending_command_count || 0}`,
+    ].join(" | ");
+
+    if (!audioStatus.has_result) {
+      voiceNodeAudioTime.textContent = "ยังไม่มีการอัปโหลดเสียง";
+      voiceNodeAudioSize.textContent = "-";
+      if (voiceNodeAudioPlayer) {
+        voiceNodeAudioPlayer.removeAttribute("src");
+        voiceNodeAudioPlayer.load();
+      }
+      voiceNodeSttStatus.textContent = "-";
+      if (voiceNodeSttRaw) {
+        voiceNodeSttRaw.textContent = "-";
+      }
+      if (voiceNodePlaybackStatus) {
+        voiceNodePlaybackStatus.textContent = audioStatus.playback_stage
+          ? `${audioStatus.playback_stage}: ${audioStatus.playback_ok ? "สำเร็จ" : "ยังไม่สำเร็จ"}`
+          : "-";
+      }
+      if (voiceNodePlaybackSize) {
+        voiceNodePlaybackSize.textContent = audioStatus.playback_audio_size_bytes
+          ? `${audioStatus.playback_audio_size_bytes} bytes`
+          : "-";
+      }
+      voiceNodeHeardText.textContent = "-";
+      voiceNodeReply.textContent = "-";
+      if (voiceNodeExpectedDisplay) voiceNodeExpectedDisplay.textContent = "-";
+      if (voiceNodeScore) voiceNodeScore.textContent = "-";
+      renderVoiceNodeHistory(audioHistory.items || []);
+      if (voiceNodeRefreshStatus) {
+        voiceNodeRefreshStatus.textContent = "พร้อมรับคำสั่งทดสอบจากหน้าเว็บ";
+      }
+      return;
+    }
+
+    if (state.voiceNodeRecordPendingSince && audioStatus.received_at) {
+      const receivedAtMs = new Date(audioStatus.received_at).getTime();
+      if (Number.isFinite(receivedAtMs) && receivedAtMs >= state.voiceNodeRecordPendingSince - 1000) {
+        state.voiceNodeRecordPendingSince = 0;
+        if (voiceNodeRecordOnceButton) {
+          voiceNodeRecordOnceButton.disabled = false;
+        }
+      }
+    }
+
+    voiceNodeAudioTime.textContent = formatHeartbeatStatus(
+      audioStatus.received_at,
+      audioStatus.seconds_since_received
+    );
+    if (audioStatus.uploaded_audio_size_bytes) {
+      const audioParts = [
+        `${audioStatus.uploaded_audio_size_bytes} bytes`,
+        audioStatus.uploaded_audio_content_type || "audio",
+      ];
+      if (audioStatus.uploaded_audio_duration_ms) {
+        audioParts.push(`${(audioStatus.uploaded_audio_duration_ms / 1000).toFixed(1)}s`);
+      }
+      if (audioStatus.uploaded_audio_quality) {
+        audioParts.push(`quality: ${audioStatus.uploaded_audio_quality}`);
+      }
+      if (audioStatus.uploaded_audio_peak_ratio !== null && audioStatus.uploaded_audio_peak_ratio !== undefined) {
+        audioParts.push(`peak: ${formatRatioPercent(audioStatus.uploaded_audio_peak_ratio)}`);
+      }
+      if (audioStatus.uploaded_audio_rms_ratio !== null && audioStatus.uploaded_audio_rms_ratio !== undefined) {
+        audioParts.push(`rms: ${formatRatioPercent(audioStatus.uploaded_audio_rms_ratio)}`);
+      }
+      voiceNodeAudioSize.textContent = audioParts.join(" | ");
+    } else {
+      voiceNodeAudioSize.textContent = "-";
+    }
+    if (voiceNodeAudioPlayer && audioStatus.uploaded_audio_url) {
+      const version = audioStatus.received_at ? new Date(audioStatus.received_at).getTime() : Date.now();
+      const nextSrc = `${audioStatus.uploaded_audio_url}&v=${version}`;
+      if (voiceNodeAudioPlayer.getAttribute("src") !== nextSrc) {
+        voiceNodeAudioPlayer.src = nextSrc;
+        voiceNodeAudioPlayer.load();
+      }
+    }
+    voiceNodeSttStatus.textContent = audioStatus.stt_ok
+      ? "อ่านเสียงสำเร็จ"
+      : `ยังอ่านไม่เจอเสียงพูด${audioStatus.stt_error ? `: ${audioStatus.stt_error}` : ""}`;
+    if (voiceNodeSttRaw) {
+      const rawText = audioStatus.stt_raw_text || "";
+      voiceNodeSttRaw.textContent =
+        rawText && rawText !== audioStatus.heard_text ? rawText : "-";
+    }
+    if (voiceNodePlaybackStatus) {
+      const playbackLabel = audioStatus.playback_stage || "-";
+      const playbackResult = audioStatus.playback_ok === true
+        ? "สำเร็จ"
+        : audioStatus.playback_ok === false
+          ? `ล้มเหลว${audioStatus.playback_error ? `: ${audioStatus.playback_error}` : ""}`
+          : "รอรายงาน";
+      voiceNodePlaybackStatus.textContent = `${playbackLabel} | ${playbackResult}`;
+    }
+    if (voiceNodePlaybackSize) {
+      voiceNodePlaybackSize.textContent = audioStatus.playback_audio_size_bytes
+        ? `${audioStatus.playback_audio_size_bytes} bytes`
+        : "-";
+    }
+    voiceNodeHeardText.textContent = audioStatus.heard_text || "(ว่าง)";
+    voiceNodeReply.textContent = audioStatus.reply || "-";
+    if (voiceNodeExpectedDisplay) {
+      voiceNodeExpectedDisplay.textContent = audioStatus.expected_text || "-";
+    }
+    if (voiceNodeScore) {
+      voiceNodeScore.textContent = formatSttScore(audioStatus.stt_similarity);
+    }
+    renderVoiceNodeHistory(audioHistory.items || []);
+
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = audioStatus.stt_ok
+        ? "ได้ข้อความจากบอร์ดแล้ว"
+        : "อัปโหลดผ่าน แต่ STT ยังไม่ได้ข้อความ";
+    }
+  } catch (error) {
+    setPillState(voiceNodeIndicator, "bad", "อ่านไม่ได้");
+    voiceNodeBoardStatus.textContent = "อ่านสถานะไม่สำเร็จ";
+    voiceNodeState.textContent = "-";
+    voiceNodeAudioTime.textContent = "-";
+    voiceNodeAudioSize.textContent = "-";
+    voiceNodeSttStatus.textContent = getReadableErrorMessage(error, "โหลดไม่สำเร็จ");
+    if (voiceNodeSttRaw) {
+      voiceNodeSttRaw.textContent = "-";
+    }
+    if (voiceNodePlaybackStatus) {
+      voiceNodePlaybackStatus.textContent = "-";
+    }
+    if (voiceNodePlaybackSize) {
+      voiceNodePlaybackSize.textContent = "-";
+    }
+    voiceNodeHeardText.textContent = "-";
+    voiceNodeReply.textContent = "-";
+    if (voiceNodeExpectedDisplay) voiceNodeExpectedDisplay.textContent = "-";
+    if (voiceNodeScore) voiceNodeScore.textContent = "-";
+    renderVoiceNodeHistory([]);
+    renderVoiceNodeReport(null);
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = "ลองรีเฟรชอีกครั้ง";
+    }
+  } finally {
+    if (voiceNodeRefreshButton) {
+      voiceNodeRefreshButton.disabled = false;
+    }
+  }
+}
+
+function renderVoiceNodeReport(report) {
+  if (!voiceNodeReportStatus || !voiceNodeReportSummary) {
+    return;
+  }
+  if (!report) {
+    setPillState(voiceNodeReportStatus, "neutral", "ยังไม่มีรายงาน");
+    voiceNodeReportSummary.textContent = "ยังไม่มีข้อมูลทดสอบ";
+    return;
+  }
+
+  if (report.ready_for_demo) {
+    setPillState(voiceNodeReportStatus, "good", "พร้อมเดโม");
+  } else if (report.total_items >= 5) {
+    setPillState(voiceNodeReportStatus, "warn", "ต้องจูนเพิ่ม");
+  } else {
+    setPillState(voiceNodeReportStatus, "neutral", "กำลังเก็บข้อมูล");
+  }
+
+  const parts = [
+    `Audio OK: ${Math.round((report.audio_quality_ok_rate || 0) * 100)}%`,
+    `รอบ: ${report.total_items}`,
+    `STT: ${Math.round((report.stt_success_rate || 0) * 100)}%`,
+    `Score: ${formatSttScore(report.average_similarity)}`,
+    `Playback: ${Math.round((report.playback_success_rate || 0) * 100)}%`,
+  ];
+  if (report.average_peak_ratio !== null && report.average_peak_ratio !== undefined) {
+    parts.push(`Peak: ${formatRatioPercent(report.average_peak_ratio)}`);
+  }
+  if (report.average_rms_ratio !== null && report.average_rms_ratio !== undefined) {
+    parts.push(`RMS: ${formatRatioPercent(report.average_rms_ratio)}`);
+  }
+  if (report.low_score_count) {
+    parts.push(`low score: ${report.low_score_count}`);
+  }
+  if (report.quiet_warning_count) {
+    parts.push(`quiet: ${report.quiet_warning_count}`);
+  }
+  if (report.clipping_warning_count) {
+    parts.push(`clipped: ${report.clipping_warning_count}`);
+  }
+  if (report.average_uploaded_duration_ms) {
+    parts.push(`เสียงเฉลี่ย: ${(report.average_uploaded_duration_ms / 1000).toFixed(1)}s`);
+  }
+  voiceNodeReportSummary.textContent = `${parts.join(" | ")} — ${(report.notes || []).join(" / ")}`;
+}
+
+function renderVoiceNodeHistory(items) {
+  if (!voiceNodeHistoryList) {
+    return;
+  }
+  if (!items.length) {
+    voiceNodeHistoryList.replaceChildren(
+      createRegistryText("p", "debug-line", "ยังไม่มีประวัติการทดสอบเสียงจากบอร์ด")
+    );
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  for (const item of items.slice(0, 10)) {
+    const card = document.createElement("article");
+    card.className = `voice-node-history-item ${item.stt_ok ? "ok" : "warn"}`;
+
+    const header = document.createElement("div");
+    header.className = "voice-node-history-header";
+    header.appendChild(
+      createRegistryText(
+        "strong",
+        "",
+        item.stt_ok ? "STT สำเร็จ" : "STT ยังไม่เจอเสียงพูด"
+      )
+    );
+    header.appendChild(
+      createRegistryText(
+        "span",
+        "debug-line",
+        formatHeartbeatStatus(item.received_at, item.seconds_since_received)
+      )
+    );
+    card.appendChild(header);
+
+    const meta = document.createElement("div");
+    meta.className = "message-meta";
+    meta.appendChild(createRegistryText("span", "badge", `intent: ${item.intent || "-"}`));
+    meta.appendChild(createRegistryText("span", "badge", `source: ${item.source || "-"}`));
+    meta.appendChild(
+      createRegistryText(
+        "span",
+        "badge",
+        `playback: ${formatVoiceNodePlayback(item)}`
+      )
+    );
+    if (item.stt_similarity !== null && item.stt_similarity !== undefined) {
+      meta.appendChild(createRegistryText("span", "badge", `score: ${formatSttScore(item.stt_similarity)}`));
+    }
+    if (item.uploaded_audio_duration_ms) {
+      meta.appendChild(
+        createRegistryText(
+          "span",
+          "badge",
+          `audio: ${(item.uploaded_audio_duration_ms / 1000).toFixed(1)}s`
+        )
+      );
+    }
+    if (item.uploaded_audio_quality) {
+      meta.appendChild(createRegistryText("span", "badge", `quality: ${item.uploaded_audio_quality}`));
+    }
+    if (item.uploaded_audio_peak_ratio !== null && item.uploaded_audio_peak_ratio !== undefined) {
+      meta.appendChild(createRegistryText("span", "badge", `peak: ${formatRatioPercent(item.uploaded_audio_peak_ratio)}`));
+    }
+    if (item.uploaded_audio_rms_ratio !== null && item.uploaded_audio_rms_ratio !== undefined) {
+      meta.appendChild(createRegistryText("span", "badge", `rms: ${formatRatioPercent(item.uploaded_audio_rms_ratio)}`));
+    }
+    card.appendChild(meta);
+
+    if (item.expected_text) {
+      card.appendChild(
+        createRegistryText("p", "debug-line", `ควรพูด: ${item.expected_text}`)
+      );
+    }
+    card.appendChild(
+      createRegistryText(
+        "p",
+        "voice-node-history-text",
+        `ได้ยินว่า: ${item.heard_text || "(ว่าง)"}`
+      )
+    );
+    if (item.stt_raw_text && item.stt_raw_text !== item.heard_text) {
+      card.appendChild(
+        createRegistryText("p", "debug-line", `STT ดิบ: ${item.stt_raw_text}`)
+      );
+    }
+    if (!item.stt_ok && item.stt_error) {
+      card.appendChild(
+        createRegistryText("p", "debug-line", `error: ${item.stt_error}`)
+      );
+    }
+    if (Array.isArray(item.uploaded_audio_quality_notes) && item.uploaded_audio_quality_notes.length) {
+      card.appendChild(
+        createRegistryText("p", "debug-line", `audio note: ${item.uploaded_audio_quality_notes.join(" / ")}`)
+      );
+    }
+    card.appendChild(
+      createRegistryText(
+        "p",
+        "voice-node-history-reply",
+        `AI: ${item.reply || "-"}`
+      )
+    );
+
+    fragment.appendChild(card);
+  }
+  voiceNodeHistoryList.replaceChildren(fragment);
+}
+
+function formatVoiceNodePlayback(item) {
+  if (item.playback_ok === true) {
+    return `${item.playback_stage || "ok"} ok`;
+  }
+  if (item.playback_ok === false) {
+    return `${item.playback_stage || "failed"} failed`;
+  }
+  return "รอรายงาน";
+}
+
+function formatSttScore(score) {
+  if (score === null || score === undefined) {
+    return "-";
+  }
+  return `${Math.round(Number(score) * 100)}%`;
+}
+
+function formatRatioPercent(value) {
+  return `${Math.round(Number(value) * 100)}%`;
 }
 
 function updateLlmStatus(llm) {

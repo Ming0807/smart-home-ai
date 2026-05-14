@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/webui/style.css?v=ui-v3-20260505" />
+    <link rel="stylesheet" href="/webui/style.css?v=ui-v3-20260511-voice-report" />
   </head>
   <body>
     <div class="page-shell">
@@ -275,6 +275,72 @@
             </div>
           </details>
 
+          <!-- 🎙️ Voice Node Test — DEFAULT OPEN -->
+          <details class="acc-card" open>
+            <summary class="acc-summary">
+              <span class="acc-icon">🎙️</span>
+              <span class="acc-title">Voice Node Test</span>
+              <span id="voice-node-indicator" class="status-pill neutral pill-sm">กำลังโหลด</span>
+              <button id="voice-node-refresh-button" class="ghost-button btn-sm acc-refresh-btn" type="button">↺</button>
+              <span class="acc-arrow">›</span>
+            </summary>
+            <div class="acc-body">
+              <p id="voice-node-help" class="debug-line">ใช้ปุ่มด้านล่างเพื่อสั่งทดสอบจากหน้าเว็บ ไม่ต้องกด BOOT บนบอร์ด</p>
+              <div class="voice-node-report-card">
+                <div class="voice-node-report-head">
+                  <strong>รายงานทดสอบ</strong>
+                  <span id="voice-node-report-status" class="status-pill neutral pill-sm">ยังไม่มีรายงาน</span>
+                </div>
+                <p id="voice-node-report-summary" class="debug-line">ยังไม่มีข้อมูลทดสอบ</p>
+              </div>
+              <dl class="acc-detail">
+                <div><dt>สถานะบอร์ด</dt><dd id="voice-node-board-status">-</dd></div>
+                <div><dt>IP / State</dt><dd id="voice-node-state">-</dd></div>
+                <div><dt>อัปโหลดล่าสุด</dt><dd id="voice-node-audio-time">-</dd></div>
+                <div><dt>ไฟล์เสียง</dt><dd id="voice-node-audio-size">-</dd></div>
+                <div><dt>STT</dt><dd id="voice-node-stt-status">-</dd></div>
+                <div><dt>STT ดิบ</dt><dd id="voice-node-stt-raw">-</dd></div>
+                <div><dt>Playback</dt><dd id="voice-node-playback-status">-</dd></div>
+                <div><dt>ไฟล์เสียงตอบ</dt><dd id="voice-node-playback-size">-</dd></div>
+                <div><dt>ประโยคทดสอบ</dt><dd id="voice-node-expected-display">-</dd></div>
+                <div><dt>คะแนน STT</dt><dd id="voice-node-score">-</dd></div>
+                <div><dt>ได้ยินว่า</dt><dd id="voice-node-heard-text">-</dd></div>
+                <div><dt>AI ตอบ</dt><dd id="voice-node-reply">-</dd></div>
+              </dl>
+              <audio id="voice-node-audio-player" controls preload="metadata"></audio>
+              <label class="device-registry-field">
+                <span>ประโยคที่จะพูดรอบนี้</span>
+                <select id="voice-node-expected-text">
+                  <option value="">ไม่วัดคะแนน</option>
+                  <option value="สวัสดีน้องฟ้า">สวัสดีน้องฟ้า</option>
+                  <option value="วันนี้มีข่าวอะไรบ้าง">วันนี้มีข่าวอะไรบ้าง</option>
+                  <option value="ข่าวระหว่างสหรัฐกับอิหร่านล่าสุดเป็นยังไง">ข่าวระหว่างสหรัฐกับอิหร่านล่าสุดเป็นยังไง</option>
+                  <option value="ส่งข่าวเข้าไลน์ให้หน่อย">ส่งข่าวเข้าไลน์ให้หน่อย</option>
+                  <option value="เปิดไฟให้หน่อย">เปิดไฟให้หน่อย</option>
+                  <option value="ปิดไฟให้หน่อย">ปิดไฟให้หน่อย</option>
+                  <option value="ห้องร้อนไหม">ห้องร้อนไหม</option>
+                  <option value="ความชื้นเท่าไหร่">ความชื้นเท่าไหร่</option>
+                  <option value="ในกรุงเทพรถติดไหม">ในกรุงเทพรถติดไหม</option>
+                  <option value="ไปสนามบินใช้เวลากี่นาที">ไปสนามบินใช้เวลากี่นาที</option>
+                </select>
+              </label>
+              <div class="acc-actions">
+                <button id="voice-node-speaker-test-button" class="ghost-button btn-sm" type="button">ทดสอบลำโพง</button>
+                <button id="voice-node-speech-test-button" class="ghost-button btn-sm" type="button">ทดสอบเสียงพูด</button>
+                <button id="voice-node-record-once-button" class="ghost-button btn-sm" type="button">อัดเสียง 1 รอบ</button>
+                <button id="voice-node-clear-history-button" class="ghost-button btn-sm" type="button">ล้างประวัติ</button>
+                <a class="link-button link-button-sm" href="/voice-node/audio/status" target="_blank" rel="noreferrer">ดู JSON</a>
+                <span id="voice-node-refresh-status" class="loading-text"></span>
+              </div>
+              <details class="debug-detail" open>
+                <summary class="debug-summary">ประวัติทดสอบเสียงล่าสุด</summary>
+                <div id="voice-node-history-list" class="voice-node-history-list">
+                  <p class="debug-line">ยังไม่มีประวัติการทดสอบเสียงจากบอร์ด</p>
+                </div>
+              </details>
+            </div>
+          </details>
+
           <!-- 🔊 Voice / TTS — DEFAULT CLOSED -->
           <details class="acc-card">
             <summary class="acc-summary">
@@ -388,13 +454,13 @@
 
     <script src="/webui/utils.js?v=ui-utils-20260429"></script>
     <script src="/webui/voice_utils.js?v=ui-voice-utils-20260430"></script>
-    <script src="/webui/api.js?v=ui-api-20260501"></script>
+    <script src="/webui/api.js?v=ui-api-20260511-voice-history"></script>
     <script src="/webui/audio.js?v=ui-audio-20260430"></script>
     <script src="/webui/chat_ui.js?v=ui-chat-ui-20260430"></script>
-    <script src="/webui/dashboard.js?v=ui-dashboard-20260505b"></script>
-    <script src="/webui/app.js?v=thinking-mode-20260501"></script>
+    <script src="/webui/dashboard.js?v=ui-dashboard-20260512-voice-diagnostics"></script>
+    <script src="/webui/app.js?v=thinking-mode-20260512-voice-diagnostics"></script>
     <script src="/webui/ui_state.js?v=ui-state-20260430"></script>
     <script src="/webui/chat_flow.js?v=ui-chat-flow-20260430"></script>
-    <script src="/webui/app_boot.js?v=ui-app-boot-20260505"></script>
+    <script src="/webui/app_boot.js?v=ui-app-boot-20260512-voice-diagnostics"></script>
   </body>
 </html>

@@ -1,0 +1,49 @@
+#pragma once
+
+typedef enum {
+    VOICE_NODE_STATE_BOOT = 0,
+    VOICE_NODE_STATE_WIFI_CONNECTING,
+    VOICE_NODE_STATE_REGISTERING,
+    VOICE_NODE_STATE_WAKE_LISTENING,
+    VOICE_NODE_STATE_WAKE_DETECTED,
+    VOICE_NODE_STATE_BEEPING,
+    VOICE_NODE_STATE_RECORDING_COMMAND,
+    VOICE_NODE_STATE_UPLOADING_AUDIO,
+    VOICE_NODE_STATE_WAITING_SERVER_REPLY,
+    VOICE_NODE_STATE_PLAYING_REPLY,
+    VOICE_NODE_STATE_COOLDOWN,
+    VOICE_NODE_STATE_ERROR,
+} voice_node_state_t;
+
+static inline const char *voice_node_state_to_string(voice_node_state_t state)
+{
+    switch (state) {
+    case VOICE_NODE_STATE_BOOT:
+        return "BOOT";
+    case VOICE_NODE_STATE_WIFI_CONNECTING:
+        return "WIFI_CONNECTING";
+    case VOICE_NODE_STATE_REGISTERING:
+        return "REGISTERING";
+    case VOICE_NODE_STATE_WAKE_LISTENING:
+        return "WAKE_LISTENING";
+    case VOICE_NODE_STATE_WAKE_DETECTED:
+        return "WAKE_DETECTED";
+    case VOICE_NODE_STATE_BEEPING:
+        return "BEEPING";
+    case VOICE_NODE_STATE_RECORDING_COMMAND:
+        return "RECORDING_COMMAND";
+    case VOICE_NODE_STATE_UPLOADING_AUDIO:
+        return "UPLOADING_AUDIO";
+    case VOICE_NODE_STATE_WAITING_SERVER_REPLY:
+        return "WAITING_SERVER_REPLY";
+    case VOICE_NODE_STATE_PLAYING_REPLY:
+        return "PLAYING_REPLY";
+    case VOICE_NODE_STATE_COOLDOWN:
+        return "COOLDOWN";
+    case VOICE_NODE_STATE_ERROR:
+        return "ERROR";
+    default:
+        return "ERROR";
+    }
+}
+

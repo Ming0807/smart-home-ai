@@ -39,6 +39,7 @@ class Settings(BaseModel):
     default_dht22_gpio_pin: int = Field(default=4)
     default_pir_gpio_pin: int = Field(default=6)
     device_registry_path: str = Field(default="data/device_registry.json")
+    device_command_timeout_seconds: int = Field(default=15)
     sensor_freshness_seconds: int = Field(default=300)
     openweather_api_key: str = Field(default="")
     default_weather_location: str = Field(default="Yala,TH")
@@ -76,11 +77,39 @@ class Settings(BaseModel):
     tts_output_file: str = Field(default="current_reply.mp3")
     tts_default_voice: str = Field(default="th-TH-PremwadeeNeural")
     tts_output_dir: str = Field(default="static")
+    voice_node_enabled: bool = Field(default=True)
+    voice_node_default_id: str = Field(default="voice-node-01")
+    voice_node_wake_word: str = Field(default="Hi ESP")
+    voice_node_audio_format: str = Field(default="wav")
+    voice_node_reply_audio_format: str = Field(default="wav")
+    voice_node_sample_rate: int = Field(default=16000)
+    voice_node_reply_sample_rate: int = Field(default=24000)
+    voice_node_spoken_reply_max_chars: int = Field(default=100)
+    voice_node_wav_target_peak: float = Field(default=0.88)
+    voice_node_wav_max_gain: float = Field(default=2.2)
+    voice_node_record_seconds: int = Field(default=4)
+    voice_node_timeout_seconds: float = Field(default=30.0)
+    voice_node_heartbeat_timeout_seconds: int = Field(default=60)
+    voice_node_command_ttl_seconds: int = Field(default=30)
     stt_provider: str = Field(default="faster_whisper")
     stt_model: str = Field(default="small")
     stt_language: str = Field(default="th")
     stt_timeout_seconds: float = Field(default=30.0)
     stt_warmup_on_start: bool = Field(default=True)
+    stt_beam_size: int = Field(default=5)
+    stt_vad_filter: bool = Field(default=True)
+    stt_initial_prompt: str = Field(
+        default=(
+            "ถอดเสียงภาษาไทยสำหรับผู้ช่วยบ้านอัจฉริยะ ชื่อ น้องฟ้า "
+            "คำที่พบบ่อย: ข่าว ข่าวล่าสุด ข่าววันนี้ ข่าวการเมือง ข่าวเทคโนโลยี ข่าว AI "
+            "อากาศ ฝน รถติด เส้นทาง เปิดไฟ ปิดไฟ เปิดพัดลม ปิดพัดลม "
+            "สหรัฐ อิหร่าน ยะลา กรุงเทพ หาดใหญ่ LINE ไลน์"
+        )
+    )
+    stt_audio_normalize: bool = Field(default=True)
+    stt_normalize_target_peak: float = Field(default=0.82)
+    stt_normalize_max_gain: float = Field(default=3.0)
+    stt_domain_corrections: bool = Field(default=True)
     max_chat_history_items: int = Field(default=50)
 
 
@@ -182,6 +211,7 @@ def get_settings() -> Settings:
         default_dht22_gpio_pin=_get_int_env("DEFAULT_DHT22_GPIO_PIN", 4),
         default_pir_gpio_pin=_get_int_env("DEFAULT_PIR_GPIO_PIN", 6),
         device_registry_path=getenv("DEVICE_REGISTRY_PATH", "data/device_registry.json"),
+        device_command_timeout_seconds=_get_int_env("DEVICE_COMMAND_TIMEOUT_SECONDS", 15),
         sensor_freshness_seconds=_get_int_env("SENSOR_FRESHNESS_SECONDS", 300),
         openweather_api_key=getenv("OPENWEATHER_API_KEY", ""),
         default_weather_location=getenv("DEFAULT_WEATHER_LOCATION", "Yala,TH"),
@@ -219,10 +249,42 @@ def get_settings() -> Settings:
         tts_output_file=getenv("TTS_OUTPUT_FILE", "current_reply.mp3"),
         tts_default_voice=getenv("TTS_DEFAULT_VOICE", "th-TH-PremwadeeNeural"),
         tts_output_dir=getenv("TTS_OUTPUT_DIR", "static"),
+        voice_node_enabled=_get_bool_env("VOICE_NODE_ENABLED", True),
+        voice_node_default_id=getenv("VOICE_NODE_DEFAULT_ID", "voice-node-01"),
+        voice_node_wake_word=getenv("VOICE_NODE_WAKE_WORD", "Hi ESP"),
+        voice_node_audio_format=getenv("VOICE_NODE_AUDIO_FORMAT", "wav"),
+        voice_node_reply_audio_format=getenv("VOICE_NODE_REPLY_AUDIO_FORMAT", "wav"),
+        voice_node_sample_rate=_get_int_env("VOICE_NODE_SAMPLE_RATE", 16000),
+        voice_node_reply_sample_rate=_get_int_env("VOICE_NODE_REPLY_SAMPLE_RATE", 24000),
+        voice_node_spoken_reply_max_chars=_get_int_env("VOICE_NODE_SPOKEN_REPLY_MAX_CHARS", 100),
+        voice_node_wav_target_peak=_get_float_env("VOICE_NODE_WAV_TARGET_PEAK", 0.88),
+        voice_node_wav_max_gain=_get_float_env("VOICE_NODE_WAV_MAX_GAIN", 2.2),
+        voice_node_record_seconds=_get_int_env("VOICE_NODE_RECORD_SECONDS", 4),
+        voice_node_timeout_seconds=_get_float_env("VOICE_NODE_TIMEOUT_SECONDS", 30.0),
+        voice_node_heartbeat_timeout_seconds=_get_int_env(
+            "VOICE_NODE_HEARTBEAT_TIMEOUT_SECONDS",
+            60,
+        ),
+        voice_node_command_ttl_seconds=_get_int_env("VOICE_NODE_COMMAND_TTL_SECONDS", 30),
         stt_provider=getenv("STT_PROVIDER", "faster_whisper"),
         stt_model=getenv("STT_MODEL", "small"),
         stt_language=getenv("STT_LANGUAGE", "th"),
         stt_timeout_seconds=_get_float_env("STT_TIMEOUT_SECONDS", 30.0),
         stt_warmup_on_start=_get_bool_env("STT_WARMUP_ON_START", True),
+        stt_beam_size=_get_int_env("STT_BEAM_SIZE", 5),
+        stt_vad_filter=_get_bool_env("STT_VAD_FILTER", True),
+        stt_initial_prompt=getenv(
+            "STT_INITIAL_PROMPT",
+            (
+                "ถอดเสียงภาษาไทยสำหรับผู้ช่วยบ้านอัจฉริยะ ชื่อ น้องฟ้า "
+                "คำที่พบบ่อย: ข่าว ข่าวล่าสุด ข่าววันนี้ ข่าวการเมือง ข่าวเทคโนโลยี ข่าว AI "
+                "อากาศ ฝน รถติด เส้นทาง เปิดไฟ ปิดไฟ เปิดพัดลม ปิดพัดลม "
+                "สหรัฐ อิหร่าน ยะลา กรุงเทพ หาดใหญ่ LINE ไลน์"
+            ),
+        ),
+        stt_audio_normalize=_get_bool_env("STT_AUDIO_NORMALIZE", True),
+        stt_normalize_target_peak=_get_float_env("STT_NORMALIZE_TARGET_PEAK", 0.82),
+        stt_normalize_max_gain=_get_float_env("STT_NORMALIZE_MAX_GAIN", 3.0),
+        stt_domain_corrections=_get_bool_env("STT_DOMAIN_CORRECTIONS", True),
         max_chat_history_items=_get_int_env("MAX_CHAT_HISTORY_ITEMS", 50),
     )

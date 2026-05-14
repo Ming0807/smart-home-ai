@@ -131,6 +131,89 @@ async function fetchDeviceRegistryStatus() {
   return data;
 }
 
+async function fetchVoiceNodeStatus() {
+  const { response, data } = await fetchJson("/voice-node/status?device_id=voice-node-01", {}, 8000);
+  if (!response.ok) {
+    throw new Error("voice node status failed");
+  }
+  return data;
+}
+
+async function fetchVoiceNodeAudioStatus() {
+  const { response, data } = await fetchJson("/voice-node/audio/status?device_id=voice-node-01", {}, 8000);
+  if (!response.ok) {
+    throw new Error("voice node audio status failed");
+  }
+  return data;
+}
+
+async function fetchVoiceNodeAudioHistory() {
+  const { response, data } = await fetchJson("/voice-node/audio/history?device_id=voice-node-01", {}, 8000);
+  if (!response.ok) {
+    throw new Error("voice node audio history failed");
+  }
+  return data;
+}
+
+async function fetchVoiceNodeAudioReport() {
+  const { response, data } = await fetchJson("/voice-node/audio/report?device_id=voice-node-01", {}, 8000);
+  if (!response.ok) {
+    throw new Error("voice node audio report failed");
+  }
+  return data;
+}
+
+async function clearVoiceNodeAudioHistory() {
+  const { response, data } = await fetchJson(
+    "/voice-node/audio/history?device_id=voice-node-01",
+    { method: "DELETE" },
+    8000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "voice node clear history failed"));
+  }
+  return data;
+}
+
+async function queueVoiceNodeSpeakerTest() {
+  const { response, data } = await fetchJson(
+    "/voice-node/commands/speaker-test?device_id=voice-node-01",
+    { method: "POST" },
+    8000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "voice node speaker test failed"));
+  }
+  return data;
+}
+
+async function queueVoiceNodeSpeechTest() {
+  const { response, data } = await fetchJson(
+    "/voice-node/commands/speech-test?device_id=voice-node-01",
+    { method: "POST" },
+    45000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "voice node speech test failed"));
+  }
+  return data;
+}
+
+async function queueVoiceNodeRecordOnce(expectedText = "") {
+  const expectedQuery = expectedText
+    ? `&expected_text=${encodeURIComponent(expectedText)}`
+    : "";
+  const { response, data } = await fetchJson(
+    `/voice-node/commands/record-once?device_id=voice-node-01${expectedQuery}`,
+    { method: "POST" },
+    8000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "voice node record command failed"));
+  }
+  return data;
+}
+
 function getApiErrorDetail(data, fallbackText) {
   if (typeof data?.detail === "string") {
     return data.detail;

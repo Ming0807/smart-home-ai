@@ -68,8 +68,8 @@ class IntentRouter:
         re.compile(r"(how\s+long\s+to|route\s+to|directions).+", re.IGNORECASE),
     )
     _LINE_SEND_PATTERNS = (
-        re.compile(r"ส่ง.*(ไลน์|line)", re.IGNORECASE),
-        re.compile(r"(ไลน์|line).*ส่ง", re.IGNORECASE),
+        re.compile(r"ส่ง.*(ไลน์|ไล|ลาย|line)", re.IGNORECASE),
+        re.compile(r"(ไลน์|ไล|ลาย|line).*ส่ง", re.IGNORECASE),
     )
 
     def __init__(self, rules: Sequence[KeywordRule] | None = None) -> None:
@@ -264,9 +264,20 @@ class IntentRouter:
             )
         ):
             return None
+        has_line_word = any(
+            keyword in normalized_message
+            for keyword in ("ไลน์", "ไล", "ลาย", "line")
+        )
+        has_news_or_link_word = any(
+            keyword in normalized_message
+            for keyword in ("ข่าว", "ข้าว", "ข้อ", "ลิงก์", "ลิงค์", "link", "url")
+        )
+        if has_line_word and has_news_or_link_word:
+            return IntentMatch(intent="line_send_request", matched_keyword="line_news_voice")
+
         if not any(pattern.search(original_message.casefold()) for pattern in self._LINE_SEND_PATTERNS):
             return None
-        if any(keyword in normalized_message for keyword in ("ข่าว", "ลิงก์", "ลิงค์", "link", "url")):
+        if has_news_or_link_word:
             return IntentMatch(intent="line_send_request", matched_keyword="line_news")
         return IntentMatch(intent="line_send_request", matched_keyword="line")
 

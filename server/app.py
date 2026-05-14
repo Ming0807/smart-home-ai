@@ -8,12 +8,14 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from server.config import get_settings, resolve_project_path
+from server.routes.assistant import router as assistant_router
 from server.routes.chat import router as chat_router
 from server.routes.dashboard import router as dashboard_router
 from server.routes.devices import router as devices_router
 from server.routes.esp32 import router as esp32_router
 from server.routes.health import router as health_router
 from server.routes.voice import router as voice_router
+from server.routes.voice_node import router as voice_node_router
 from server.services.llm_manager import get_llm_manager
 from server.services.stt_service import get_stt_service
 from server.utils.observability import configure_logging
@@ -37,12 +39,14 @@ def create_app() -> FastAPI:
     webui_dir.mkdir(parents=True, exist_ok=True)
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     app.mount("/webui", StaticFiles(directory=webui_dir), name="webui")
+    app.include_router(assistant_router)
     app.include_router(dashboard_router)
     app.include_router(chat_router)
     app.include_router(devices_router)
     app.include_router(esp32_router)
     app.include_router(health_router)
     app.include_router(voice_router)
+    app.include_router(voice_node_router)
     _register_handlers(app)
     _register_startup_tasks(app)
 

@@ -49,6 +49,30 @@ const voiceModeIndicator = document.getElementById("voice-mode-indicator");
 const voiceProvider = document.getElementById("voice-provider");
 const voiceName = document.getElementById("voice-name");
 const voiceOutputFile = document.getElementById("voice-output-file");
+const voiceNodeIndicator = document.getElementById("voice-node-indicator");
+const voiceNodeRefreshButton = document.getElementById("voice-node-refresh-button");
+const voiceNodeSpeakerTestButton = document.getElementById("voice-node-speaker-test-button");
+const voiceNodeSpeechTestButton = document.getElementById("voice-node-speech-test-button");
+const voiceNodeRecordOnceButton = document.getElementById("voice-node-record-once-button");
+const voiceNodeRefreshStatus = document.getElementById("voice-node-refresh-status");
+const voiceNodeBoardStatus = document.getElementById("voice-node-board-status");
+const voiceNodeState = document.getElementById("voice-node-state");
+const voiceNodeAudioTime = document.getElementById("voice-node-audio-time");
+const voiceNodeAudioSize = document.getElementById("voice-node-audio-size");
+const voiceNodeAudioPlayer = document.getElementById("voice-node-audio-player");
+const voiceNodeSttStatus = document.getElementById("voice-node-stt-status");
+const voiceNodeSttRaw = document.getElementById("voice-node-stt-raw");
+const voiceNodePlaybackStatus = document.getElementById("voice-node-playback-status");
+const voiceNodePlaybackSize = document.getElementById("voice-node-playback-size");
+const voiceNodeHeardText = document.getElementById("voice-node-heard-text");
+const voiceNodeReply = document.getElementById("voice-node-reply");
+const voiceNodeHistoryList = document.getElementById("voice-node-history-list");
+const voiceNodeExpectedText = document.getElementById("voice-node-expected-text");
+const voiceNodeExpectedDisplay = document.getElementById("voice-node-expected-display");
+const voiceNodeScore = document.getElementById("voice-node-score");
+const voiceNodeReportStatus = document.getElementById("voice-node-report-status");
+const voiceNodeReportSummary = document.getElementById("voice-node-report-summary");
+const voiceNodeClearHistoryButton = document.getElementById("voice-node-clear-history-button");
 
 const llmStatusIndicator = document.getElementById("llm-status-indicator");
 const llmWarmupButton = document.getElementById("llm-warmup-button");
@@ -113,6 +137,7 @@ const state = {
   lastHandledTranscript: "",
   lastHandledTranscriptAt: 0,
   chatWaitTimerIds: [],
+  voiceNodeRecordPendingSince: 0,
 };
 
 function createSpeechRecognition(mode) {

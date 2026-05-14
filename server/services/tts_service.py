@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import io
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 import re
-from threading import Lock
+from threading import Lock, Thread
 from uuid import uuid4
+import wave
 
 from server.config import Settings, get_settings, resolve_project_path
 from server.utils.observability import log_timing, start_timer
@@ -19,6 +21,16 @@ try:
     import edge_tts
 except ImportError:  # pragma: no cover - dependency validation happens at runtime
     edge_tts = None
+
+try:
+    import av
+except ImportError:  # pragma: no cover - optional voice-node conversion dependency
+    av = None
+
+try:
+    import numpy as np
+except ImportError:  # pragma: no cover - optional PyAV ndarray helper
+    np = None
 
 
 @dataclass(frozen=True)
@@ -51,6 +63,9 @@ class TTSService:
         self._state_lock = Lock()
         self._current_token: str | None = None
         self._pending_token: str | None = None
+        self._wav_cache_token: str | None = None
+        self._wav_cache_sample_rate: int | None = None
+        self._wav_cache_bytes: bytes | None = None
         self._last_generated_at: datetime | None = None
         self._last_error: str | None = None
 
@@ -122,6 +137,9 @@ class TTSService:
                         )
                     self._current_token = active_token
                     self._pending_token = active_token
+                    self._wav_cache_token = None
+                    self._wav_cache_sample_rate = None
+                    self._wav_cache_bytes = None
                     self._last_generated_at = self._now()
                     self._last_error = None
                 if self._settings.tts_overwrite_output:
@@ -183,6 +201,65 @@ class TTSService:
             return None
         return audio_bytes
 
+    def get_current_audio_wav_bytes(
+        self,
+        token: str | None = None,
+        sample_rate: int = 16000,
+    ) -> bytes | None:
+        with self._state_lock:
+            active_token = token or self._current_token
+            if token and token != self._current_token:
+                return None
+            if (
+                active_token
+                and active_token == self._wav_cache_token
+                and sample_rate == self._wav_cache_sample_rate
+                and self._wav_cache_bytes
+            ):
+                return self._wav_cache_bytes
+
+        audio_bytes = self.get_current_audio_bytes(token=token)
+        if audio_bytes is None or av is None:
+            return None
+
+        try:
+            input_buffer = io.BytesIO(audio_bytes)
+            output_buffer = io.BytesIO()
+            resampler = av.audio.resampler.AudioResampler(
+                format="s16",
+                layout="mono",
+                rate=sample_rate,
+            )
+            pcm_buffer = bytearray()
+
+            with av.open(input_buffer, mode="r") as container:
+                for frame in container.decode(audio=0):
+                    resampled_frames = resampler.resample(frame)
+                    if not isinstance(resampled_frames, list):
+                        resampled_frames = [resampled_frames]
+                    for resampled_frame in resampled_frames:
+                        pcm_buffer.extend(self._audio_frame_to_pcm_bytes(resampled_frame))
+
+            pcm_bytes = self._postprocess_voice_node_pcm_bytes(bytes(pcm_buffer))
+            with wave.open(output_buffer, "wb") as wav_file:
+                wav_file.setnchannels(1)
+                wav_file.setsampwidth(2)
+                wav_file.setframerate(sample_rate)
+                wav_file.writeframes(pcm_bytes)
+
+            wav_bytes = output_buffer.getvalue()
+        except Exception as exc:  # pragma: no cover - codec/runtime dependent
+            logger.warning("TTS MP3 to WAV conversion failed: %s", exc)
+            return None
+
+        if wav_bytes:
+            with self._state_lock:
+                if active_token == self._current_token:
+                    self._wav_cache_token = active_token
+                    self._wav_cache_sample_rate = sample_rate
+                    self._wav_cache_bytes = wav_bytes
+        return wav_bytes or None
+
     def get_status(self) -> TTSStatus:
         with self._state_lock:
             visible_token = self._pending_token or self._current_token
@@ -202,13 +279,13 @@ class TTSService:
 
     def _write_audio_file(self, text: str, output_path: Path, token: str) -> Path:
         if not self._settings.tts_overwrite_output:
-            asyncio.run(self._synthesize_with_edge_tts(text, output_path))
+            self._run_coro_blocking(self._synthesize_with_edge_tts(text, output_path))
             self._ensure_non_empty_file(output_path)
             return output_path
 
         temp_path = output_path.with_name(f".{output_path.stem}.{uuid4().hex}.tmp.mp3")
         try:
-            asyncio.run(self._synthesize_with_edge_tts(text, temp_path))
+            self._run_coro_blocking(self._synthesize_with_edge_tts(text, temp_path))
             self._ensure_non_empty_file(temp_path)
             if not self._is_pending_token(token):
                 return output_path
@@ -228,6 +305,66 @@ class TTSService:
             voice=self._settings.tts_default_voice,
         )
         await communicator.save(str(output_path))
+
+    @staticmethod
+    def _audio_frame_to_pcm_bytes(frame: object) -> bytes:
+        if np is not None and hasattr(frame, "to_ndarray"):
+            samples = frame.to_ndarray()
+            samples = samples.reshape(-1).astype("<i2", copy=False)
+            return samples.tobytes()
+
+        chunks: list[bytes] = []
+        for plane in frame.planes:  # type: ignore[attr-defined]
+            chunks.append(bytes(plane))
+        return b"".join(chunks)
+
+    def _postprocess_voice_node_pcm_bytes(self, pcm_bytes: bytes) -> bytes:
+        if np is None or not pcm_bytes:
+            return pcm_bytes
+
+        samples = np.frombuffer(pcm_bytes, dtype="<i2").astype(np.float32)
+        if samples.size == 0:
+            return pcm_bytes
+
+        samples -= float(np.mean(samples))
+        peak = float(np.max(np.abs(samples)))
+        if peak <= 0:
+            return pcm_bytes
+
+        target_peak = max(
+            0.10,
+            min(0.98, self._settings.voice_node_wav_target_peak),
+        ) * 32767.0
+        max_gain = max(1.0, self._settings.voice_node_wav_max_gain)
+        if peak < target_peak:
+            gain = min(max_gain, target_peak / peak)
+        else:
+            gain = target_peak / peak
+
+        processed = np.clip(samples * gain, -32768, 32767).astype("<i2")
+        return processed.tobytes()
+
+    @staticmethod
+    def _run_coro_blocking(coro: object) -> None:
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            asyncio.run(coro)  # type: ignore[arg-type]
+            return
+
+        result: dict[str, BaseException | None] = {"error": None}
+
+        def runner() -> None:
+            try:
+                asyncio.run(coro)  # type: ignore[arg-type]
+            except BaseException as exc:  # pragma: no cover - thread bridge
+                result["error"] = exc
+
+        thread = Thread(target=runner, name="tts-async-bridge", daemon=True)
+        thread.start()
+        thread.join()
+        if result["error"] is not None:
+            raise result["error"]
 
     def _build_filename(self, text: str) -> str:
         if self._settings.tts_overwrite_output:

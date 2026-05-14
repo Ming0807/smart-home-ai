@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from server.config import Settings, get_settings
+from server.models.device import DeviceDefinition
 from server.models.esp32 import RelayAction
 from server.services.device_registry import DeviceRegistry, get_device_registry
 from server.services.esp32_manager import Esp32Manager, get_esp32_manager
@@ -39,6 +40,7 @@ class DeviceControlService:
             )
 
         spoken_name = self._detect_device_name(message) or target_device.display_name
+        target_device = self._mark_timed_out_pending_command(target_device)
         if self._is_status_query(message):
             return DeviceControlResult(
                 reply=self._build_status_reply(
@@ -91,19 +93,17 @@ class DeviceControlService:
             "queued",
             "sent",
         }:
-            is_stuck = True
-            if target_device.last_updated_at:
-                now = datetime.now(timezone.utc)
-                if (now - target_device.last_updated_at).total_seconds() > 15:
-                    is_stuck = False
-
-            if is_stuck:
+            if self._is_pending_command_fresh(target_device):
                 return DeviceControlResult(
                     reply=(
                         f"มีคำสั่งล่าสุดของ{spoken_name}ค้างอยู่แล้ว "
                         "กำลังรอ ESP32 ยืนยันผลก่อนนะ"
                     ),
                 )
+            self._device_registry.mark_command_timeout(
+                device_id=target_device.id,
+                command_id=target_device.last_command_id,
+            )
 
         command = self._esp32_manager.enqueue_relay_command(
             device_id=esp32_device_id,
@@ -122,6 +122,34 @@ class DeviceControlService:
                 f"ส่งคำสั่ง{self._action_verb(action)}{spoken_name}ให้แล้ว "
                 "กำลังรอ ESP32 ยืนยันผล"
             ),
+        )
+
+    def _is_pending_command_fresh(self, target_device: DeviceDefinition) -> bool:
+        updated_at = target_device.last_updated_at
+        if updated_at is None:
+            return True
+        if updated_at.tzinfo is None:
+            updated_at = updated_at.replace(tzinfo=timezone.utc)
+        elapsed_seconds = (datetime.now(timezone.utc) - updated_at).total_seconds()
+        return elapsed_seconds <= self._settings.device_command_timeout_seconds
+
+    def _mark_timed_out_pending_command(
+        self,
+        target_device: DeviceDefinition,
+    ) -> DeviceDefinition:
+        if target_device.state != "pending" or target_device.last_command_status not in {
+            "queued",
+            "sent",
+        }:
+            return target_device
+        if self._is_pending_command_fresh(target_device):
+            return target_device
+        return (
+            self._device_registry.mark_command_timeout(
+                device_id=target_device.id,
+                command_id=target_device.last_command_id,
+            )
+            or target_device
         )
 
     @staticmethod
@@ -167,6 +195,8 @@ class DeviceControlService:
         state: str,
         command_status: str | None,
     ) -> str:
+        if command_status == "timeout":
+            return f"คำสั่งล่าสุดของ{spoken_name}หมดเวลาแล้ว ตอนนี้ยังไม่รู้สถานะจริงจาก ESP32"
         if state == "on":
             return f"{spoken_name}เปิดอยู่ตอนนี้"
         if state == "off":

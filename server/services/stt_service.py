@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from array import array
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
+import io
 import logging
 from pathlib import Path
+import re
+import sys
 import tempfile
 from threading import Lock
+import wave
 
 from fastapi import UploadFile
 
@@ -26,6 +31,7 @@ class STTResult:
     text: str
     provider: str
     error: str | None = None
+    raw_text: str | None = None
 
 
 class STTService:
@@ -38,11 +44,23 @@ class STTService:
         self._last_error: str | None = None
 
     async def transcribe_upload(self, audio_file: UploadFile) -> STTResult:
+        audio_bytes = await audio_file.read()
+        return self.transcribe_bytes(
+            filename=audio_file.filename,
+            content_type=audio_file.content_type,
+            audio_bytes=audio_bytes,
+        )
+
+    def transcribe_bytes(
+        self,
+        filename: str | None,
+        content_type: str | None,
+        audio_bytes: bytes,
+    ) -> STTResult:
         provider = self._settings.stt_provider.strip().lower()
         temp_path: Path | None = None
 
         try:
-            audio_bytes = await audio_file.read()
             if not audio_bytes:
                 return STTResult(
                     ok=False,
@@ -51,9 +69,14 @@ class STTService:
                     error="audio file is empty",
                 )
 
+            audio_bytes = self._prepare_audio_bytes(
+                filename=filename,
+                content_type=content_type,
+                audio_bytes=audio_bytes,
+            )
             temp_path = self._write_temp_audio_file(
-                filename=audio_file.filename,
-                content_type=audio_file.content_type,
+                filename=filename,
+                content_type=content_type,
                 audio_bytes=audio_bytes,
             )
 
@@ -127,26 +150,62 @@ class STTService:
             )
 
         model = self._get_whisper_model()
+        result = self._transcribe_with_faster_whisper_options(
+            model=model,
+            audio_path=audio_path,
+            vad_filter=self._settings.stt_vad_filter,
+        )
+        if (
+            not result.ok
+            and self._settings.stt_vad_filter
+            and result.error == "no speech detected"
+        ):
+            logger.info("STT returned no speech with VAD; retrying once without VAD")
+            retry_result = self._transcribe_with_faster_whisper_options(
+                model=model,
+                audio_path=audio_path,
+                vad_filter=False,
+            )
+            if retry_result.ok:
+                return retry_result
+            if retry_result.raw_text and not result.raw_text:
+                return retry_result
+        return result
+
+    def _transcribe_with_faster_whisper_options(
+        self,
+        model: WhisperModel,
+        audio_path: Path,
+        vad_filter: bool,
+    ) -> STTResult:
         segments, _ = model.transcribe(
             str(audio_path),
             language=self._settings.stt_language or None,
-            beam_size=1,
-            vad_filter=True,
+            beam_size=max(1, self._settings.stt_beam_size),
+            vad_filter=vad_filter,
+            vad_parameters={
+                "min_silence_duration_ms": 600,
+                "speech_pad_ms": 300,
+            },
+            initial_prompt=self._settings.stt_initial_prompt.strip() or None,
             condition_on_previous_text=False,
         )
-        transcript = " ".join(segment.text.strip() for segment in segments).strip()
+        raw_transcript = " ".join(segment.text.strip() for segment in segments).strip()
+        transcript = self._apply_domain_corrections(raw_transcript)
         if not transcript:
             return STTResult(
                 ok=False,
                 text="",
                 provider="faster_whisper",
                 error="no speech detected",
+                raw_text=raw_transcript,
             )
 
         return STTResult(
             ok=True,
             text=transcript,
             provider="faster_whisper",
+            raw_text=raw_transcript,
         )
 
     def _get_whisper_model(self) -> WhisperModel:
@@ -188,6 +247,126 @@ class STTService:
                 provider=provider,
                 status="error",
             )
+
+    def _prepare_audio_bytes(
+        self,
+        filename: str | None,
+        content_type: str | None,
+        audio_bytes: bytes,
+    ) -> bytes:
+        if not self._settings.stt_audio_normalize:
+            return audio_bytes
+        if not STTService._looks_like_wav(filename=filename, content_type=content_type):
+            return audio_bytes
+        return self._normalize_wav_bytes(audio_bytes)
+
+    @staticmethod
+    def _looks_like_wav(filename: str | None, content_type: str | None) -> bool:
+        lower_filename = (filename or "").lower()
+        lower_content_type = (content_type or "").lower()
+        return lower_filename.endswith(".wav") or lower_content_type in {"audio/wav", "audio/x-wav"}
+
+    def _normalize_wav_bytes(self, audio_bytes: bytes) -> bytes:
+        try:
+            with wave.open(io.BytesIO(audio_bytes), "rb") as reader:
+                channels = reader.getnchannels()
+                sample_width = reader.getsampwidth()
+                frame_rate = reader.getframerate()
+                frame_count = reader.getnframes()
+                frames = reader.readframes(frame_count)
+        except wave.Error:
+            return audio_bytes
+
+        if channels != 1 or sample_width != 2 or frame_count <= 0:
+            return audio_bytes
+
+        samples = array("h")
+        samples.frombytes(frames)
+        if sys.byteorder != "little":
+            samples.byteswap()
+
+        peak = max((abs(sample) for sample in samples), default=0)
+        if peak <= 0:
+            return audio_bytes
+
+        target_peak = int(32767 * max(0.1, min(0.98, self._settings.stt_normalize_target_peak)))
+        gain = min(self._settings.stt_normalize_max_gain, target_peak / peak)
+        if gain <= 1.05:
+            return audio_bytes
+
+        normalized = array("h")
+        for sample in samples:
+            value = int(sample * gain)
+            if value > 32767:
+                value = 32767
+            elif value < -32768:
+                value = -32768
+            normalized.append(value)
+
+        output = io.BytesIO()
+        with wave.open(output, "wb") as writer:
+            writer.setnchannels(channels)
+            writer.setsampwidth(sample_width)
+            writer.setframerate(frame_rate)
+            writer.writeframes(normalized.tobytes())
+        return output.getvalue()
+
+    def _apply_domain_corrections(self, transcript: str) -> str:
+        if not self._settings.stt_domain_corrections:
+            return transcript
+
+        corrected = " ".join(transcript.split()).strip()
+        if not corrected:
+            return corrected
+
+        corrected = re.sub(r"\bline\b", "LINE", corrected, flags=re.IGNORECASE)
+        corrected = re.sub(r"ไลน(?!์)", "ไลน์", corrected)
+
+        news_context_patterns = (
+            "ล่าสุด",
+            "วันนี้",
+            "การเมือง",
+            "เทคโนโลยี",
+            "เอไอ",
+            "AI",
+            "สหรัฐ",
+            "อิหร่าน",
+            "ระหว่าง",
+            "สถานการณ์",
+            "ส่งเข้า",
+            "เข้าไลน์",
+            "อ่านต่อ",
+            "LINE",
+            "ไลน์",
+        )
+        has_news_context = any(pattern in corrected for pattern in news_context_patterns)
+        direct_news_mistakes = {
+            "ข้าวล่าสุด": "ข่าวล่าสุด",
+            "ข้าววันนี้": "ข่าววันนี้",
+            "ข้าวการเมือง": "ข่าวการเมือง",
+            "ข้าวเทคโนโลยี": "ข่าวเทคโนโลยี",
+            "ข้าวเอไอ": "ข่าวเอไอ",
+            "ข้าว AI": "ข่าว AI",
+            "ข้าว LINE": "ข่าว LINE",
+            "ข้าวไลน์": "ข่าวไลน์",
+            "อัพเดทข้าว": "อัพเดทข่าว",
+            "อัปเดตข้าว": "อัปเดตข่าว",
+            "ส่งข้าวเข้า": "ส่งข่าวเข้า",
+            "อ่านข้าว": "อ่านข่าว",
+        }
+        for wrong, right in direct_news_mistakes.items():
+            corrected = corrected.replace(wrong, right)
+
+        if has_news_context:
+            corrected = corrected.replace("มีข้าวอะไร", "มีข่าวอะไร")
+            corrected = corrected.replace("มีข้าว", "มีข่าว")
+            corrected = corrected.replace("ข้าวระหว่าง", "ข่าวระหว่าง")
+            corrected = corrected.replace("ข้าวสาร", "ข่าวสาร")
+            if "กินข้าว" not in corrected and "หิวข้าว" not in corrected:
+                corrected = corrected.replace("ข้าวสหรัฐ", "ข่าวสหรัฐ")
+                corrected = corrected.replace("ข้าวอิหร่าน", "ข่าวอิหร่าน")
+
+        return corrected
 
     @staticmethod
     def _write_temp_audio_file(

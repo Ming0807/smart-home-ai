@@ -1,0 +1,183 @@
+menu "AI Smart Home Voice Node"
+
+    config VOICE_NODE_DEVICE_ID
+        string "Voice node device id"
+        default "voice-node-01"
+        help
+            Device id reported to the FastAPI server.
+
+    config VOICE_NODE_FIRMWARE_VERSION
+        string "Firmware version"
+        default "0.1.0"
+
+    config VOICE_NODE_WIFI_SSID
+        string "Wi-Fi SSID"
+        default ""
+
+    config VOICE_NODE_WIFI_PASSWORD
+        string "Wi-Fi password"
+        default ""
+
+    config VOICE_NODE_SERVER_BASE_URL
+        string "FastAPI server base URL"
+        default "http://192.168.1.50:8000"
+        help
+            Use the notebook LAN IP, not 127.0.0.1.
+
+    config VOICE_NODE_HEARTBEAT_INTERVAL_MS
+        int "Heartbeat interval in milliseconds"
+        default 15000
+        range 5000 120000
+
+    config VOICE_NODE_MIC_ENABLED
+        bool "Enable INMP441 microphone RMS test"
+        default n
+        help
+            Enable I2S RX and print microphone level stats to serial.
+
+    config VOICE_NODE_MIC_WS_GPIO
+        int "INMP441 WS/LRCLK GPIO"
+        default 16
+        range 0 48
+
+    config VOICE_NODE_MIC_SCK_GPIO
+        int "INMP441 SCK/BCLK GPIO"
+        default 17
+        range 0 48
+
+    config VOICE_NODE_MIC_SD_GPIO
+        int "INMP441 SD/DIN GPIO"
+        default 18
+        range 0 48
+
+    config VOICE_NODE_MIC_SAMPLE_RATE
+        int "INMP441 sample rate"
+        default 16000
+        range 8000 48000
+
+    config VOICE_NODE_MIC_LOG_INTERVAL_MS
+        int "Microphone stats log interval in milliseconds"
+        default 3000
+        range 250 10000
+
+    config VOICE_NODE_MIC_RECORD_GAIN
+        int "INMP441 recording gain"
+        default 64
+        range 1 512
+        help
+            Software gain used when converting INMP441 samples to 16-bit WAV.
+
+    config VOICE_NODE_MIC_VAD_ENABLED
+        bool "Stop recording early after speech ends"
+        default y
+        help
+            Lightweight voice activity detection for demo latency. Records until speech is detected and then stops after a short silence window.
+
+    config VOICE_NODE_MIC_VAD_THRESHOLD
+        int "Microphone VAD average absolute threshold"
+        default 40
+        range 1 5000
+
+    config VOICE_NODE_MIC_VAD_MIN_RECORD_MS
+        int "Minimum recording duration for VAD"
+        default 1500
+        range 300 5000
+
+    config VOICE_NODE_MIC_VAD_SILENCE_STOP_MS
+        int "Silence duration before VAD stops recording"
+        default 900
+        range 200 3000
+
+    config VOICE_NODE_AUDIO_UPLOAD_TEST_ENABLED
+        bool "Record and upload one test command after boot"
+        default n
+        help
+            Development-only test. Records one WAV clip and uploads it to /assistant/audio.
+
+    config VOICE_NODE_AUDIO_UPLOAD_TEST_DELAY_MS
+        int "Audio upload test delay in milliseconds"
+        default 3000
+        range 0 30000
+
+    config VOICE_NODE_BUTTON_UPLOAD_TEST_ENABLED
+        bool "Enable BOOT button audio upload test"
+        default n
+        help
+            Development helper. Press BOOT/GPIO0 during runtime to record one WAV clip and upload it.
+
+    config VOICE_NODE_BUTTON_GPIO
+        int "Audio upload test button GPIO"
+        default 0
+        range 0 48
+
+    config VOICE_NODE_BUTTON_ACTIVE_LOW
+        bool "Audio upload test button is active low"
+        default y
+
+    config VOICE_NODE_BUTTON_DEBOUNCE_MS
+        int "Button debounce time in milliseconds"
+        default 250
+        range 50 3000
+
+    config VOICE_NODE_BUTTON_LONG_PRESS_MS
+        int "Button long press time in milliseconds"
+        default 2000
+        range 800 8000
+        help
+            Hold BOOT this long to play speaker diagnostic tones instead of recording.
+
+    config VOICE_NODE_SPEAKER_ENABLED
+        bool "Enable MAX98357A speaker beep test"
+        default n
+        help
+            Enable I2S TX to MAX98357A. When enabled, firmware plays a short beep before recording.
+
+    config VOICE_NODE_SPEAKER_LRC_GPIO
+        int "MAX98357A LRC/WS GPIO"
+        default 9
+        range 0 48
+
+    config VOICE_NODE_SPEAKER_BCLK_GPIO
+        int "MAX98357A BCLK GPIO"
+        default 10
+        range 0 48
+
+    config VOICE_NODE_SPEAKER_DIN_GPIO
+        int "MAX98357A DIN GPIO"
+        default 11
+        range 0 48
+
+    config VOICE_NODE_SPEAKER_SAMPLE_RATE
+        int "MAX98357A sample rate"
+        default 24000
+        range 8000 48000
+
+    config VOICE_NODE_SPEAKER_BEEP_FREQUENCY_HZ
+        int "Speaker beep frequency in Hz"
+        default 880
+        range 200 4000
+
+    config VOICE_NODE_SPEAKER_BEEP_DURATION_MS
+        int "Speaker beep duration in milliseconds"
+        default 160
+        range 20 1000
+
+    config VOICE_NODE_SPEAKER_BEEP_AMPLITUDE
+        int "Speaker beep amplitude"
+        default 2200
+        range 200 16000
+
+    config VOICE_NODE_SPEAKER_REPLY_VOLUME_PERCENT
+        int "Reply playback volume percent"
+        default 75
+        range 5 100
+        help
+            Lower this if MAX98357A output sounds clipped or noisy, especially when powered from USB.
+
+    config VOICE_NODE_SPEAKER_SELF_TEST_ON_BOOT
+        bool "Play speaker self-test tone after boot"
+        default n
+        help
+            Development helper. Plays three short tones after I2S speaker init to verify wiring and power before server audio is involved.
+
+endmenu

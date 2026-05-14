@@ -66,9 +66,120 @@ pirSimToggle.addEventListener("change", () => {
     : "PIR จำลอง: ไม่มีคนอยู่ ระบบจะเคารพคำตัดสินของ AI มากขึ้น";
 });
 
-sensorRefreshButton.addEventListener("click", refreshDashboardStatus);
-motionRefreshButton.addEventListener("click", refreshDashboardStatus);
-deviceRegistryRefreshButton.addEventListener("click", () => refreshDeviceRegistry(true));
+sensorRefreshButton.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  void refreshDashboardStatus();
+});
+motionRefreshButton.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  void refreshDashboardStatus();
+});
+voiceNodeRefreshButton?.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  void refreshVoiceNodePanel();
+});
+voiceNodeSpeakerTestButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeSpeakerTestButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "ส่งคำสั่งทดสอบลำโพงแล้ว รอบอร์ด polling...";
+  }
+  try {
+    await queueVoiceNodeSpeakerTest();
+    await refreshVoiceNodePanel();
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "ส่งคำสั่งทดสอบลำโพงไม่สำเร็จ");
+    }
+  } finally {
+    voiceNodeSpeakerTestButton.disabled = false;
+  }
+});
+voiceNodeSpeechTestButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeSpeechTestButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "กำลังสร้างเสียงพูดและส่งให้บอร์ดเล่นแบบ streaming...";
+  }
+  try {
+    await queueVoiceNodeSpeechTest();
+    window.setTimeout(() => void refreshVoiceNodePanel(), 2500);
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "สั่งทดสอบเสียงพูดไม่สำเร็จ");
+    }
+  } finally {
+    voiceNodeSpeechTestButton.disabled = false;
+  }
+});
+voiceNodeRecordOnceButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeRecordOnceButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "ส่งคำสั่งให้อัดเสียง 1 รอบแล้ว รอดูผลล่าสุด...";
+  }
+  try {
+    const expectedText = voiceNodeExpectedText ? voiceNodeExpectedText.value.trim() : "";
+    await queueVoiceNodeRecordOnce(expectedText);
+    state.voiceNodeRecordPendingSince = Date.now();
+    window.setTimeout(() => {
+      if (state.voiceNodeRecordPendingSince && Date.now() - state.voiceNodeRecordPendingSince >= 11000) {
+        state.voiceNodeRecordPendingSince = 0;
+        if (voiceNodeRecordOnceButton) {
+          voiceNodeRecordOnceButton.disabled = false;
+        }
+        if (voiceNodeRefreshStatus) {
+          voiceNodeRefreshStatus.textContent = "record command timeout; refresh and try again if the board did not upload";
+        }
+      }
+    }, 12000);
+    await refreshVoiceNodePanel();
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "ส่งคำสั่งอัดเสียงไม่สำเร็จ");
+    }
+  } finally {
+    if (!state.voiceNodeRecordPendingSince) {
+      voiceNodeRecordOnceButton.disabled = false;
+    }
+  }
+});
+voiceNodeClearHistoryButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeClearHistoryButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "กำลังล้างประวัติทดสอบเสียง...";
+  }
+  try {
+    await clearVoiceNodeAudioHistory();
+    state.voiceNodeRecordPendingSince = 0;
+    if (voiceNodeRecordOnceButton) {
+      voiceNodeRecordOnceButton.disabled = false;
+    }
+    await refreshVoiceNodePanel();
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = "ล้างประวัติแล้ว เริ่มเทสรอบใหม่ได้เลย";
+    }
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "ล้างประวัติไม่สำเร็จ");
+    }
+  } finally {
+    voiceNodeClearHistoryButton.disabled = false;
+  }
+});
+deviceRegistryRefreshButton.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  void refreshDeviceRegistry(true);
+});
 deviceRegistryList.addEventListener("submit", handleDeviceRegistrySubmit);
 deviceCreateForm.addEventListener("submit", handleDeviceCreateSubmit);
 deviceCreateType.addEventListener("change", updateDeviceCreateMode);
@@ -182,6 +293,8 @@ setChatBusy(false);
 refreshDashboardStatus();
 refreshDeviceRegistry(true);
 refreshVoiceDebugStatus();
+refreshVoiceNodePanel();
 window.setInterval(refreshDashboardStatus, 15000);
 window.setInterval(refreshDeviceRegistry, 15000);
 window.setInterval(refreshVoiceDebugStatus, 5000);
+window.setInterval(refreshVoiceNodePanel, 3000);

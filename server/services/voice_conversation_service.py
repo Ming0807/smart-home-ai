@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 from json import JSONDecodeError
 from pathlib import Path
+from typing import Literal
 
 from fastapi import BackgroundTasks
 
@@ -72,6 +73,7 @@ class VoiceConversationService:
         heard_text: str,
         pir_state: int,
         background_tasks: BackgroundTasks,
+        audio_mode: Literal["background", "inline", "none"] = "background",
     ) -> VoiceChatData:
         cleaned_text = heard_text.strip()
         if not cleaned_text:
@@ -83,6 +85,7 @@ class VoiceConversationService:
                 action="none",
                 keep_mic_open=False,
                 background_tasks=background_tasks,
+                audio_mode=audio_mode,
             )
 
         if self._contains_exit_word(cleaned_text):
@@ -94,6 +97,7 @@ class VoiceConversationService:
                 action="none",
                 keep_mic_open=False,
                 background_tasks=background_tasks,
+                audio_mode=audio_mode,
             )
 
         intent = self._intent_router.classify(cleaned_text).intent
@@ -121,6 +125,7 @@ class VoiceConversationService:
                     action="none",
                     keep_mic_open=keep_mic_open,
                     background_tasks=background_tasks,
+                    audio_mode=audio_mode,
                 )
 
             decision = self._handle_general_chat(cleaned_text)
@@ -137,6 +142,7 @@ class VoiceConversationService:
                 action=decision.action,
                 keep_mic_open=keep_mic_open,
                 background_tasks=background_tasks,
+                audio_mode=audio_mode,
             )
 
         chat_response = self._chat_service.handle_message(
@@ -162,11 +168,13 @@ class VoiceConversationService:
             action=action,
             keep_mic_open=keep_mic_open,
             background_tasks=background_tasks,
+            audio_mode=audio_mode,
         )
 
     def build_stt_unavailable_response(
         self,
         background_tasks: BackgroundTasks,
+        audio_mode: Literal["background", "inline", "none"] = "background",
     ) -> VoiceChatData:
         return self._build_response(
             heard_text="",
@@ -176,6 +184,7 @@ class VoiceConversationService:
             action="none",
             keep_mic_open=False,
             background_tasks=background_tasks,
+            audio_mode=audio_mode,
         )
 
     def _handle_general_chat(self, message: str) -> VoiceControlDecision:
@@ -227,11 +236,15 @@ class VoiceConversationService:
         action: MicAction,
         keep_mic_open: bool,
         background_tasks: BackgroundTasks,
+        audio_mode: Literal["background", "inline", "none"],
     ) -> VoiceChatData:
         audio_url = None
-        if self._settings.tts_enabled:
+        if self._settings.tts_enabled and audio_mode == "background":
             token, audio_url = self._tts_service.create_pending_audio_url()
             background_tasks.add_task(self._tts_service.synthesize, reply, token)
+        elif self._settings.tts_enabled and audio_mode == "inline":
+            tts_result = self._tts_service.synthesize(reply)
+            audio_url = tts_result.audio_url if tts_result.ok else None
         return VoiceChatData(
             heard_text=heard_text,
             reply=reply,

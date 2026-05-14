@@ -214,6 +214,18 @@ class DeviceRegistry:
             command_status="sent",
         )
 
+    def mark_command_timeout(
+        self,
+        device_id: str,
+        command_id: str | None,
+    ) -> DeviceDefinition | None:
+        return self._update_device(
+            device_id=device_id,
+            state="unknown",
+            command_id=command_id,
+            command_status="timeout",
+        )
+
     def apply_command_result(
         self,
         command: RelayCommand,

@@ -1,0 +1,269 @@
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+
+from server.config import Settings, get_settings
+from server.models.voice_node import (
+    VoiceNodeAudioHistoryClearResponse,
+    VoiceNodeAudioHistoryResponse,
+    VoiceNodeAudioReportResponse,
+    VoiceNodeAudioStatusResponse,
+    VoiceNodeCommandPollResponse,
+    VoiceNodeCommandQueueResponse,
+    VoiceNodeConfigResponse,
+    VoiceNodeHeartbeatRequest,
+    VoiceNodeHeartbeatResponse,
+    VoiceNodePlaybackStatusRequest,
+    VoiceNodePlaybackStatusResponse,
+    VoiceNodeStatusResponse,
+)
+from server.services.tts_service import TTSService, get_tts_service
+from server.services.voice_node_manager import VoiceNodeManager, get_voice_node_manager
+
+router = APIRouter(prefix="/voice-node", tags=["voice-node"])
+
+
+@router.post(
+    "/heartbeat",
+    response_model=VoiceNodeHeartbeatResponse,
+    status_code=status.HTTP_200_OK,
+)
+def voice_node_heartbeat(
+    request: VoiceNodeHeartbeatRequest,
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeHeartbeatResponse:
+    server_time = voice_node_manager.record_heartbeat(request)
+    return VoiceNodeHeartbeatResponse(server_time=server_time)
+
+
+@router.get(
+    "/config",
+    response_model=VoiceNodeConfigResponse,
+)
+def voice_node_config(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeConfigResponse:
+    return voice_node_manager.get_config(device_id=device_id)
+
+
+@router.get(
+    "/status",
+    response_model=VoiceNodeStatusResponse,
+)
+def voice_node_status(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeStatusResponse:
+    return voice_node_manager.get_status(device_id=device_id)
+
+
+@router.get(
+    "/audio/status",
+    response_model=VoiceNodeAudioStatusResponse,
+)
+def voice_node_audio_status(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeAudioStatusResponse:
+    return voice_node_manager.get_audio_status(device_id=device_id)
+
+
+@router.get(
+    "/audio/history",
+    response_model=VoiceNodeAudioHistoryResponse,
+)
+def voice_node_audio_history(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeAudioHistoryResponse:
+    return voice_node_manager.get_audio_history(device_id=device_id)
+
+
+@router.get(
+    "/audio/report",
+    response_model=VoiceNodeAudioReportResponse,
+)
+def voice_node_audio_report(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeAudioReportResponse:
+    return voice_node_manager.get_audio_report(device_id=device_id)
+
+
+@router.delete(
+    "/audio/history",
+    response_model=VoiceNodeAudioHistoryClearResponse,
+)
+def clear_voice_node_audio_history(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeAudioHistoryClearResponse:
+    return voice_node_manager.clear_audio_history(device_id=device_id)
+
+
+@router.post(
+    "/playback-status",
+    response_model=VoiceNodePlaybackStatusResponse,
+    status_code=status.HTTP_200_OK,
+)
+def voice_node_playback_status(
+    request: VoiceNodePlaybackStatusRequest,
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodePlaybackStatusResponse:
+    voice_node_manager.record_playback_status(request)
+    return VoiceNodePlaybackStatusResponse()
+
+
+@router.post(
+    "/commands/speaker-test",
+    response_model=VoiceNodeCommandQueueResponse,
+    status_code=status.HTTP_200_OK,
+)
+def queue_voice_node_speaker_test(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeCommandQueueResponse:
+    return voice_node_manager.queue_command("speaker_test", device_id=device_id)
+
+
+@router.post(
+    "/commands/record-once",
+    response_model=VoiceNodeCommandQueueResponse,
+    status_code=status.HTTP_200_OK,
+)
+def queue_voice_node_record_once(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    expected_text: str | None = Query(default=None, min_length=1, max_length=160),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeCommandQueueResponse:
+    return voice_node_manager.queue_command(
+        "record_once",
+        device_id=device_id,
+        expected_text=expected_text,
+    )
+
+
+@router.post(
+    "/commands/speech-test",
+    response_model=VoiceNodeCommandQueueResponse,
+    status_code=status.HTTP_200_OK,
+)
+def queue_voice_node_speech_test(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+    tts_service: TTSService = Depends(get_tts_service),
+    settings: Settings = Depends(get_settings),
+) -> VoiceNodeCommandQueueResponse:
+    tts_result = tts_service.synthesize(
+        "ทดสอบเสียงน้องฟ้า เสียงนี้ส่งจากเซิร์ฟเวอร์ไปยังบอร์ดแบบสตรีมมิง"
+    )
+    if not tts_result.ok or not tts_result.audio_url:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=tts_result.error or "voice node speech test audio not ready",
+        )
+
+    audio_url = voice_node_manager.to_voice_node_audio_url(tts_result.audio_url)
+    if (
+        audio_url is not None
+        and settings.voice_node_reply_audio_format.strip().lower() == "wav"
+    ):
+        audio_url = audio_url.replace(
+            "/voice-node/audio/current",
+            "/voice-node/audio/current.wav",
+            1,
+        )
+    return voice_node_manager.queue_command(
+        "play_audio",
+        device_id=device_id,
+        audio_url=audio_url,
+    )
+
+
+@router.get(
+    "/commands",
+    response_model=VoiceNodeCommandPollResponse,
+)
+def poll_voice_node_command(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeCommandPollResponse:
+    return voice_node_manager.pop_next_command(device_id=device_id)
+
+
+@router.get(
+    "/audio/current",
+    include_in_schema=False,
+)
+def current_voice_node_audio(
+    token: str | None = Query(default=None, min_length=1, max_length=64),
+    tts_service: TTSService = Depends(get_tts_service),
+) -> Response:
+    audio_bytes = tts_service.get_current_audio_bytes(token=token)
+    if audio_bytes is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="audio not ready")
+
+    return Response(
+        content=audio_bytes,
+        media_type="audio/mpeg",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Accept-Ranges": "none",
+            "X-Generated-At": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+
+
+@router.get(
+    "/audio/current.wav",
+    include_in_schema=False,
+)
+def current_voice_node_audio_wav(
+    token: str | None = Query(default=None, min_length=1, max_length=64),
+    tts_service: TTSService = Depends(get_tts_service),
+    settings: Settings = Depends(get_settings),
+) -> Response:
+    audio_bytes = tts_service.get_current_audio_wav_bytes(
+        token=token,
+        sample_rate=settings.voice_node_reply_sample_rate,
+    )
+    if audio_bytes is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="wav audio not ready")
+
+    return Response(
+        content=audio_bytes,
+        media_type="audio/wav",
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Accept-Ranges": "none",
+            "X-Generated-At": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+
+
+@router.get(
+    "/audio/uploaded",
+    include_in_schema=False,
+)
+def latest_uploaded_voice_node_audio(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> Response:
+    latest_audio = voice_node_manager.get_uploaded_audio(device_id=device_id)
+    if latest_audio is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="uploaded audio not ready")
+
+    audio_bytes, content_type, received_at = latest_audio
+    return Response(
+        content=audio_bytes,
+        media_type=content_type,
+        headers={
+            "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+            "Pragma": "no-cache",
+            "Accept-Ranges": "none",
+            "X-Uploaded-At": received_at.isoformat(),
+        },
+    )

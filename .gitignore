@@ -15,6 +15,12 @@ __pycache__/
 static/*.mp3
 data/device_registry.json
 
+# ESP-IDF generated files
+firmware/**/build/
+firmware/**/managed_components/
+firmware/**/sdkconfig
+firmware/**/sdkconfig.old
+
 # Node
 node_modules/
 dist/

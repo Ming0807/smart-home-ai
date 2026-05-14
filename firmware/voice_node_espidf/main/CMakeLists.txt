@@ -1,0 +1,20 @@
+idf_component_register(
+    SRCS
+        "app_main.c"
+        "button_reader.c"
+        "http_client.c"
+        "mic_reader.c"
+        "speaker_player.c"
+        "wifi_manager.c"
+    INCLUDE_DIRS
+        "."
+    REQUIRES
+        esp_http_client
+        esp_netif
+        esp_timer
+        esp_wifi
+        esp_driver_gpio
+        esp_driver_i2s
+        json
+        nvs_flash
+)
