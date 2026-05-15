@@ -29,6 +29,7 @@ esp_err_t voice_node_http_poll_command(
 esp_err_t voice_node_http_upload_audio(
     const uint8_t *wav_data,
     size_t wav_size,
+    int pir_state,
     voice_node_upload_result_t *result);
 esp_err_t voice_node_http_download_reply_audio(
     const char *reply_audio_url,

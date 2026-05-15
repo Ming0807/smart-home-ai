@@ -326,6 +326,7 @@ esp_err_t voice_node_http_poll_command(
 esp_err_t voice_node_http_upload_audio(
     const uint8_t *wav_data,
     size_t wav_size,
+    int pir_state,
     voice_node_upload_result_t *result)
 {
     if (wav_data == NULL || wav_size == 0) {
@@ -348,7 +349,7 @@ esp_err_t voice_node_http_upload_audio(
         "%s\r\n"
         "--%s\r\n"
         "Content-Disposition: form-data; name=\"pir_state\"\r\n\r\n"
-        "0\r\n"
+        "%d\r\n"
         "--%s\r\n"
         "Content-Disposition: form-data; name=\"source\"\r\n\r\n"
         "voice_node\r\n"
@@ -358,6 +359,7 @@ esp_err_t voice_node_http_upload_audio(
         HTTP_MULTIPART_BOUNDARY,
         VOICE_NODE_DEVICE_ID,
         HTTP_MULTIPART_BOUNDARY,
+        pir_state != 0 ? 1 : 0,
         HTTP_MULTIPART_BOUNDARY,
         HTTP_MULTIPART_BOUNDARY);
 

@@ -149,7 +149,7 @@ static esp_err_t play_reply_audio_streaming(const char *reply_audio_url)
     return err;
 }
 
-static bool record_and_upload_audio(const char *reason)
+static bool record_and_upload_audio(const char *reason, bool conversation_turn)
 {
     ESP_LOGI(TAG, "%s flow started", reason);
     if (!VOICE_NODE_MIC_ENABLED) {
@@ -197,7 +197,11 @@ static bool record_and_upload_audio(const char *reason)
 
     set_state(VOICE_NODE_STATE_UPLOADING_AUDIO);
     voice_node_upload_result_t upload_result = { 0 };
-    err = voice_node_http_upload_audio(wav_data, wav_size, &upload_result);
+    err = voice_node_http_upload_audio(
+        wav_data,
+        wav_size,
+        conversation_turn ? 1 : 0,
+        &upload_result);
     mic_reader_free_wav(wav_data);
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "%s upload failed: %s", reason, esp_err_to_name(err));
@@ -255,7 +259,7 @@ static void poll_remote_commands(void)
     }
     if (strcmp(command_type, "record_once") == 0) {
         ESP_LOGI(TAG, "Remote command: record one voice command");
-        (void)record_and_upload_audio("Remote UI audio upload test");
+        (void)record_and_upload_audio("Remote UI audio upload test", false);
         return;
     }
     if (strcmp(command_type, "conversation_start") == 0) {
@@ -360,7 +364,7 @@ static void voice_node_main_loop(void)
             s_state == VOICE_NODE_STATE_WAKE_LISTENING &&
             now_ms >= s_next_conversation_record_ms
         ) {
-            bool keep_mic_open = record_and_upload_audio("Continuous conversation");
+            bool keep_mic_open = record_and_upload_audio("Continuous conversation", true);
             if (keep_mic_open) {
                 s_next_conversation_record_ms =
                     (esp_timer_get_time() / 1000) + VOICE_NODE_CONVERSATION_COOLDOWN_MS;
@@ -384,7 +388,7 @@ static void voice_node_main_loop(void)
             last_mic_log_ms = esp_timer_get_time() / 1000;
         } else if (button_event == BUTTON_EVENT_SHORT_PRESS) {
             ESP_LOGI(TAG, "Button short press: record and upload one voice command");
-            (void)record_and_upload_audio("Button audio upload test");
+            (void)record_and_upload_audio("Button audio upload test", false);
             last_heartbeat_ms = -VOICE_NODE_HEARTBEAT_INTERVAL_MS;
             last_mic_log_ms = esp_timer_get_time() / 1000;
         }
@@ -408,7 +412,7 @@ static void run_audio_upload_test_once(void)
         vTaskDelay(pdMS_TO_TICKS(CONFIG_VOICE_NODE_AUDIO_UPLOAD_TEST_DELAY_MS));
     }
 
-    (void)record_and_upload_audio("Boot audio upload test");
+    (void)record_and_upload_audio("Boot audio upload test", false);
 }
 
 static void voice_node_task(void *params)
