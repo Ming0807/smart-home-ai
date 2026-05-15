@@ -11,6 +11,7 @@ from server.models.voice_node import (
     VoiceNodeCommandPollResponse,
     VoiceNodeCommandQueueResponse,
     VoiceNodeConfigResponse,
+    VoiceNodeConfigUpdateRequest,
     VoiceNodeHeartbeatRequest,
     VoiceNodeHeartbeatResponse,
     VoiceNodePlaybackStatusRequest,
@@ -45,6 +46,18 @@ def voice_node_config(
     voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
 ) -> VoiceNodeConfigResponse:
     return voice_node_manager.get_config(device_id=device_id)
+
+
+@router.post(
+    "/config",
+    response_model=VoiceNodeConfigResponse,
+)
+def update_voice_node_config(
+    request: VoiceNodeConfigUpdateRequest,
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeConfigResponse:
+    return voice_node_manager.update_config(request=request, device_id=device_id)
 
 
 @router.get(
@@ -142,6 +155,30 @@ def queue_voice_node_record_once(
         device_id=device_id,
         expected_text=expected_text,
     )
+
+
+@router.post(
+    "/commands/conversation-start",
+    response_model=VoiceNodeCommandQueueResponse,
+    status_code=status.HTTP_200_OK,
+)
+def queue_voice_node_conversation_start(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeCommandQueueResponse:
+    return voice_node_manager.queue_command("conversation_start", device_id=device_id)
+
+
+@router.post(
+    "/commands/conversation-stop",
+    response_model=VoiceNodeCommandQueueResponse,
+    status_code=status.HTTP_200_OK,
+)
+def queue_voice_node_conversation_stop(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeCommandQueueResponse:
+    return voice_node_manager.queue_command("conversation_stop", device_id=device_id)
 
 
 @router.post(

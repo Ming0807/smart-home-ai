@@ -14,6 +14,11 @@ typedef esp_err_t (*voice_node_audio_chunk_handler_t)(
     size_t data_size,
     void *user_data);
 
+typedef struct {
+    char reply_audio_url[192];
+    bool keep_mic_open;
+} voice_node_upload_result_t;
+
 esp_err_t voice_node_http_get_config(voice_node_server_config_t *config);
 esp_err_t voice_node_http_send_heartbeat(voice_node_state_t state);
 esp_err_t voice_node_http_poll_command(
@@ -24,8 +29,7 @@ esp_err_t voice_node_http_poll_command(
 esp_err_t voice_node_http_upload_audio(
     const uint8_t *wav_data,
     size_t wav_size,
-    char *reply_audio_url,
-    size_t reply_audio_url_size);
+    voice_node_upload_result_t *result);
 esp_err_t voice_node_http_download_reply_audio(
     const char *reply_audio_url,
     uint8_t **audio_data,

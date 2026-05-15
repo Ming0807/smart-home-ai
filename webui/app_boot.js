@@ -150,6 +150,42 @@ voiceNodeRecordOnceButton?.addEventListener("click", async (event) => {
     }
   }
 });
+voiceNodeConversationStartButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeConversationStartButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "สั่งให้บอร์ดเริ่มคุยต่อเนื่องแล้ว รอเสียงติ๊ดแล้วพูดได้เลย";
+  }
+  try {
+    await queueVoiceNodeConversationStart();
+    await refreshVoiceNodePanel();
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "เริ่มคุยผ่านบอร์ดไม่สำเร็จ");
+    }
+  } finally {
+    voiceNodeConversationStartButton.disabled = false;
+  }
+});
+voiceNodeConversationStopButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeConversationStopButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "ส่งคำสั่งหยุดคุยผ่านบอร์ดแล้ว";
+  }
+  try {
+    await queueVoiceNodeConversationStop();
+    await refreshVoiceNodePanel();
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "หยุดคุยผ่านบอร์ดไม่สำเร็จ");
+    }
+  } finally {
+    voiceNodeConversationStopButton.disabled = false;
+  }
+});
 voiceNodeClearHistoryButton?.addEventListener("click", async (event) => {
   event.preventDefault();
   event.stopPropagation();
@@ -173,6 +209,41 @@ voiceNodeClearHistoryButton?.addEventListener("click", async (event) => {
     }
   } finally {
     voiceNodeClearHistoryButton.disabled = false;
+  }
+});
+voiceNodeTuningForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  const submitButton = voiceNodeTuningForm.querySelector("button[type='submit']");
+  if (submitButton) {
+    submitButton.disabled = true;
+  }
+  if (voiceNodeTuningStatus) {
+    voiceNodeTuningStatus.textContent = "Saving tuning config...";
+  }
+
+  try {
+    const payload = {
+      enabled: Boolean(voiceNodeTuningEnabled?.checked),
+      record_seconds: Number(voiceNodeTuningRecordSeconds?.value || 4),
+      mic_record_gain: Number(voiceNodeTuningGain?.value || 32),
+      vad_enabled: Boolean(voiceNodeTuningVadEnabled?.checked),
+      vad_threshold: Number(voiceNodeTuningVadThreshold?.value || 40),
+      vad_silence_stop_ms: Number(voiceNodeTuningVadSilence?.value || 900),
+    };
+    await updateVoiceNodeConfig(payload);
+    if (voiceNodeTuningStatus) {
+      voiceNodeTuningStatus.textContent = "Saved. Board will refresh config within about 10 seconds.";
+    }
+    await refreshVoiceNodePanel();
+  } catch (error) {
+    if (voiceNodeTuningStatus) {
+      voiceNodeTuningStatus.textContent = getReadableErrorMessage(error, "Save tuning config failed");
+    }
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+    }
   }
 });
 deviceRegistryRefreshButton.addEventListener("click", (event) => {

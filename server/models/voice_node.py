@@ -52,9 +52,24 @@ class VoiceNodeConfigResponse(BaseModel):
     reply_sample_rate: int
     audio_format: str
     reply_audio_format: str
+    mic_record_gain: int
+    vad_enabled: bool
+    vad_threshold: int
+    vad_min_record_ms: int
+    vad_silence_stop_ms: int
     heartbeat_endpoint: str
     audio_endpoint: str
     status_endpoint: str
+
+
+class VoiceNodeConfigUpdateRequest(BaseModel):
+    enabled: bool | None = None
+    record_seconds: int | None = Field(default=None, ge=1, le=10)
+    mic_record_gain: int | None = Field(default=None, ge=1, le=128)
+    vad_enabled: bool | None = None
+    vad_threshold: int | None = Field(default=None, ge=1, le=5000)
+    vad_min_record_ms: int | None = Field(default=None, ge=300, le=5000)
+    vad_silence_stop_ms: int | None = Field(default=None, ge=200, le=3000)
 
 
 class VoiceNodeStatusResponse(BaseModel):
@@ -206,7 +221,13 @@ class AssistantAudioResponse(BaseModel):
     data: AssistantAudioData
 
 
-VoiceNodeCommandType = Literal["speaker_test", "record_once", "play_audio"]
+VoiceNodeCommandType = Literal[
+    "speaker_test",
+    "record_once",
+    "play_audio",
+    "conversation_start",
+    "conversation_stop",
+]
 
 
 class VoiceNodeCommandData(BaseModel):

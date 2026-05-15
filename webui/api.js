@@ -139,6 +139,30 @@ async function fetchVoiceNodeStatus() {
   return data;
 }
 
+async function fetchVoiceNodeConfig() {
+  const { response, data } = await fetchJson("/voice-node/config?device_id=voice-node-01", {}, 8000);
+  if (!response.ok) {
+    throw new Error("voice node config failed");
+  }
+  return data;
+}
+
+async function updateVoiceNodeConfig(payload) {
+  const { response, data } = await fetchJson(
+    "/voice-node/config?device_id=voice-node-01",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+    10000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "voice node config update failed"));
+  }
+  return data;
+}
+
 async function fetchVoiceNodeAudioStatus() {
   const { response, data } = await fetchJson("/voice-node/audio/status?device_id=voice-node-01", {}, 8000);
   if (!response.ok) {
@@ -210,6 +234,30 @@ async function queueVoiceNodeRecordOnce(expectedText = "") {
   );
   if (!response.ok) {
     throw new Error(getApiErrorDetail(data, "voice node record command failed"));
+  }
+  return data;
+}
+
+async function queueVoiceNodeConversationStart() {
+  const { response, data } = await fetchJson(
+    "/voice-node/commands/conversation-start?device_id=voice-node-01",
+    { method: "POST" },
+    8000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "voice node conversation start failed"));
+  }
+  return data;
+}
+
+async function queueVoiceNodeConversationStop() {
+  const { response, data } = await fetchJson(
+    "/voice-node/commands/conversation-stop?device_id=voice-node-01",
+    { method: "POST" },
+    8000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "voice node conversation stop failed"));
   }
   return data;
 }

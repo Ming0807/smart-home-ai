@@ -94,12 +94,14 @@ async function refreshVoiceNodePanel() {
   }
 
   try {
-    const [nodeStatus, audioStatus, audioHistory, audioReport] = await Promise.all([
+    const [nodeStatus, nodeConfig, audioStatus, audioHistory, audioReport] = await Promise.all([
       fetchVoiceNodeStatus(),
+      fetchVoiceNodeConfig(),
       fetchVoiceNodeAudioStatus(),
       fetchVoiceNodeAudioHistory(),
       fetchVoiceNodeAudioReport(),
     ]);
+    renderVoiceNodeTuning(nodeConfig);
     renderVoiceNodeReport(audioReport);
 
     setPillState(
@@ -304,6 +306,33 @@ function renderVoiceNodeReport(report) {
     parts.push(`เสียงเฉลี่ย: ${(report.average_uploaded_duration_ms / 1000).toFixed(1)}s`);
   }
   voiceNodeReportSummary.textContent = `${parts.join(" | ")} — ${(report.notes || []).join(" / ")}`;
+}
+
+function renderVoiceNodeTuning(config) {
+  if (!config || !voiceNodeTuningForm) {
+    return;
+  }
+  if (document.activeElement && voiceNodeTuningForm.contains(document.activeElement)) {
+    return;
+  }
+  if (voiceNodeTuningEnabled) {
+    voiceNodeTuningEnabled.checked = Boolean(config.enabled);
+  }
+  if (voiceNodeTuningRecordSeconds) {
+    voiceNodeTuningRecordSeconds.value = String(config.record_seconds ?? 4);
+  }
+  if (voiceNodeTuningGain) {
+    voiceNodeTuningGain.value = String(config.mic_record_gain ?? 32);
+  }
+  if (voiceNodeTuningVadEnabled) {
+    voiceNodeTuningVadEnabled.checked = Boolean(config.vad_enabled);
+  }
+  if (voiceNodeTuningVadThreshold) {
+    voiceNodeTuningVadThreshold.value = String(config.vad_threshold ?? 40);
+  }
+  if (voiceNodeTuningVadSilence) {
+    voiceNodeTuningVadSilence.value = String(config.vad_silence_stop_ms ?? 900);
+  }
 }
 
 function renderVoiceNodeHistory(items) {

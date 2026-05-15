@@ -121,6 +121,22 @@ static void parse_string_field(
     }
 }
 
+static void parse_int_field(const cJSON *root, const char *field_name, int *output)
+{
+    const cJSON *item = cJSON_GetObjectItemCaseSensitive(root, field_name);
+    if (cJSON_IsNumber(item)) {
+        *output = item->valueint;
+    }
+}
+
+static void parse_bool_field(const cJSON *root, const char *field_name, bool *output)
+{
+    const cJSON *item = cJSON_GetObjectItemCaseSensitive(root, field_name);
+    if (cJSON_IsBool(item)) {
+        *output = cJSON_IsTrue(item);
+    }
+}
+
 static void parse_nested_string_field(
     const cJSON *root,
     const char *object_name,
@@ -200,19 +216,14 @@ esp_err_t voice_node_http_get_config(voice_node_server_config_t *config)
         return ESP_FAIL;
     }
 
-    const cJSON *enabled = cJSON_GetObjectItemCaseSensitive(root, "enabled");
-    const cJSON *record_seconds = cJSON_GetObjectItemCaseSensitive(root, "record_seconds");
-    const cJSON *sample_rate = cJSON_GetObjectItemCaseSensitive(root, "sample_rate");
-
-    if (cJSON_IsBool(enabled)) {
-        config->enabled = cJSON_IsTrue(enabled);
-    }
-    if (cJSON_IsNumber(record_seconds)) {
-        config->record_seconds = record_seconds->valueint;
-    }
-    if (cJSON_IsNumber(sample_rate)) {
-        config->sample_rate = sample_rate->valueint;
-    }
+    parse_bool_field(root, "enabled", &config->enabled);
+    parse_int_field(root, "record_seconds", &config->record_seconds);
+    parse_int_field(root, "sample_rate", &config->sample_rate);
+    parse_int_field(root, "mic_record_gain", &config->mic_record_gain);
+    parse_bool_field(root, "vad_enabled", &config->vad_enabled);
+    parse_int_field(root, "vad_threshold", &config->vad_threshold);
+    parse_int_field(root, "vad_min_record_ms", &config->vad_min_record_ms);
+    parse_int_field(root, "vad_silence_stop_ms", &config->vad_silence_stop_ms);
 
     parse_string_field(root, "wake_word", config->wake_word, sizeof(config->wake_word));
     parse_string_field(root, "audio_format", config->audio_format, sizeof(config->audio_format));
@@ -226,11 +237,14 @@ esp_err_t voice_node_http_get_config(voice_node_server_config_t *config)
     free(response);
     ESP_LOGI(
         TAG,
-        "Config: enabled=%d wake_word=%s record_seconds=%d sample_rate=%d audio=%s reply=%s",
+        "Config: enabled=%d wake_word=%s record_seconds=%d sample_rate=%d gain=%d vad=%d threshold=%d audio=%s reply=%s",
         config->enabled,
         config->wake_word,
         config->record_seconds,
         config->sample_rate,
+        config->mic_record_gain,
+        config->vad_enabled,
+        config->vad_threshold,
         config->audio_format,
         config->reply_audio_format);
     return ESP_OK;
@@ -312,14 +326,14 @@ esp_err_t voice_node_http_poll_command(
 esp_err_t voice_node_http_upload_audio(
     const uint8_t *wav_data,
     size_t wav_size,
-    char *reply_audio_url,
-    size_t reply_audio_url_size)
+    voice_node_upload_result_t *result)
 {
     if (wav_data == NULL || wav_size == 0) {
         return ESP_ERR_INVALID_ARG;
     }
-    if (reply_audio_url != NULL && reply_audio_url_size > 0) {
-        reply_audio_url[0] = '\0';
+    if (result != NULL) {
+        result->reply_audio_url[0] = '\0';
+        result->keep_mic_open = false;
     }
 
     char url[HTTP_URL_BUFFER_SIZE];
@@ -411,14 +425,30 @@ esp_err_t voice_node_http_upload_audio(
     }
 
     ESP_LOGI(TAG, "Audio upload ok: %s", response->data);
-    if (reply_audio_url != NULL && reply_audio_url_size > 0) {
+    if (result != NULL) {
         cJSON *root = cJSON_Parse(response->data);
         if (root != NULL) {
-            parse_nested_string_field(root, "data", "reply_audio_url", reply_audio_url, reply_audio_url_size);
+            parse_nested_string_field(
+                root,
+                "data",
+                "reply_audio_url",
+                result->reply_audio_url,
+                sizeof(result->reply_audio_url));
+            const cJSON *data = cJSON_GetObjectItemCaseSensitive(root, "data");
+            if (cJSON_IsObject(data)) {
+                const cJSON *keep_mic_open = cJSON_GetObjectItemCaseSensitive(data, "keep_mic_open");
+                if (cJSON_IsBool(keep_mic_open)) {
+                    result->keep_mic_open = cJSON_IsTrue(keep_mic_open);
+                }
+            }
             cJSON_Delete(root);
         }
-        if (reply_audio_url[0] != '\0') {
-            ESP_LOGI(TAG, "Reply audio URL: %s", reply_audio_url);
+        if (result->reply_audio_url[0] != '\0') {
+            ESP_LOGI(
+                TAG,
+                "Reply audio URL: %s keep_mic_open=%d",
+                result->reply_audio_url,
+                result->keep_mic_open);
         } else {
             ESP_LOGW(TAG, "No reply audio URL in assistant response");
         }

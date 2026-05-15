@@ -1,5 +1,50 @@
 # Voice Node Task Board
 
+## Update 2026-05-14 - Runtime tuning pass
+
+- [x] Added backend runtime config updates for `voice-node-01` through `POST /voice-node/config`.
+- [x] Added server config fields for mic gain, VAD enable, VAD threshold, min record time, and silence stop time.
+- [x] Updated ESP-IDF firmware to refresh config from the server while in `WAKE_LISTENING`.
+- [x] Updated firmware recording so gain and VAD values come from server config instead of requiring a reflash every time.
+- [x] Added Web UI tuning controls for record seconds, mic gain, VAD threshold, and silence stop.
+- [x] Updated `check_voice_node_report.ps1` to print the active Voice Node tuning values.
+- [ ] Flash the runtime-tuning firmware to `voice-node-01`.
+- [ ] Run a fresh 10-round report and adjust tuning from the Web UI if needed.
+
+## Update 2026-05-15 - Continuous board conversation pass
+
+- [x] Added Voice Node command types `conversation_start` and `conversation_stop`.
+- [x] Added backend endpoints `POST /voice-node/commands/conversation-start` and `POST /voice-node/commands/conversation-stop`.
+- [x] Updated firmware to parse `keep_mic_open` from `/assistant/audio`.
+- [x] Added firmware continuous conversation mode: record -> upload -> play reply -> record again only when `keep_mic_open=true`.
+- [x] Added Web UI buttons `เริ่มคุยผ่านบอร์ด` and `หยุดคุยผ่านบอร์ด`.
+- [x] Built and flashed firmware to `voice-node-01` on COM10.
+- [ ] Test with real speech: start board conversation, say `สวัสดี`, continue one more turn, then say `ขอบคุณ` or click stop.
+
+Important:
+- This does not touch browser mic.
+- This is not full ESP-SR WakeNet yet. It is the safer hands-free conversation bridge before adding real wake word.
+- Use the stop button if STT hears silence or keeps looping unexpectedly.
+
+Suggested first tuning values:
+
+```text
+record_seconds=6
+mic_record_gain=32
+vad_enabled=true
+vad_threshold=40
+vad_silence_stop_ms=900
+```
+
+If many STT rounds are blank:
+- keep the mic 10-20 cm from the mouth
+- lower `vad_threshold` to 25-35
+- increase `record_seconds` to 7
+
+If the report says clipped:
+- reduce `mic_record_gain` to 24
+- move 20-30 cm away from INMP441
+
 ## Update 2026-05-12
 
 - [x] Added per-upload WAV diagnostics on the server: duration, peak, RMS, clipping, silence, and quality notes.

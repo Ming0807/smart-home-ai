@@ -120,6 +120,11 @@ typedef struct {
     int sample_rate;
     char audio_format[12];
     char reply_audio_format[12];
+    int mic_record_gain;
+    bool vad_enabled;
+    int vad_threshold;
+    int vad_min_record_ms;
+    int vad_silence_stop_ms;
 } voice_node_server_config_t;
 
 static inline voice_node_server_config_t voice_node_default_server_config(void)
@@ -131,6 +136,11 @@ static inline voice_node_server_config_t voice_node_default_server_config(void)
         .sample_rate = 16000,
         .audio_format = "wav",
         .reply_audio_format = "mp3",
+        .mic_record_gain = CONFIG_VOICE_NODE_MIC_RECORD_GAIN,
+        .vad_enabled = VOICE_NODE_MIC_VAD_ENABLED,
+        .vad_threshold = CONFIG_VOICE_NODE_MIC_VAD_THRESHOLD,
+        .vad_min_record_ms = CONFIG_VOICE_NODE_MIC_VAD_MIN_RECORD_MS,
+        .vad_silence_stop_ms = CONFIG_VOICE_NODE_MIC_VAD_SILENCE_STOP_MS,
     };
     return config;
 }

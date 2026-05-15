@@ -22,6 +22,7 @@ from server.models.voice_node import (
     VoiceNodeCommandQueueResponse,
     VoiceNodeCommandType,
     VoiceNodeConfigResponse,
+    VoiceNodeConfigUpdateRequest,
     VoiceNodeHeartbeatRequest,
     VoiceNodePlaybackStatusRequest,
     VoiceNodeStatusResponse,
@@ -88,6 +89,17 @@ class VoiceNodeCommandRecord:
     expected_text: str | None = None
 
 
+@dataclass(frozen=True)
+class VoiceNodeRuntimeConfig:
+    enabled: bool | None = None
+    record_seconds: int | None = None
+    mic_record_gain: int | None = None
+    vad_enabled: bool | None = None
+    vad_threshold: int | None = None
+    vad_min_record_ms: int | None = None
+    vad_silence_stop_ms: int | None = None
+
+
 class VoiceNodeManager:
     """In-memory status/config source for the ESP32-S3 voice node."""
 
@@ -100,6 +112,7 @@ class VoiceNodeManager:
         self._latest_playback: dict[str, VoiceNodePlaybackRecord] = {}
         self._commands: dict[str, list[VoiceNodeCommandRecord]] = {}
         self._active_expected_text: dict[str, str] = {}
+        self._runtime_config: dict[str, VoiceNodeRuntimeConfig] = {}
 
     def record_heartbeat(
         self,
@@ -176,19 +189,78 @@ class VoiceNodeManager:
 
     def get_config(self, device_id: str | None = None) -> VoiceNodeConfigResponse:
         resolved_device_id = self._resolve_device_id(device_id)
+        config = self._get_runtime_config(resolved_device_id)
         return VoiceNodeConfigResponse(
             device_id=resolved_device_id,
-            enabled=self._settings.voice_node_enabled,
+            enabled=self._value_or_default(config.enabled, self._settings.voice_node_enabled),
             wake_word=self._settings.voice_node_wake_word,
-            record_seconds=self._settings.voice_node_record_seconds,
+            record_seconds=self._value_or_default(
+                config.record_seconds,
+                self._settings.voice_node_record_seconds,
+            ),
             sample_rate=self._settings.voice_node_sample_rate,
             reply_sample_rate=self._settings.voice_node_reply_sample_rate,
             audio_format=self._settings.voice_node_audio_format,
             reply_audio_format=self._settings.voice_node_reply_audio_format,
+            mic_record_gain=self._value_or_default(
+                config.mic_record_gain,
+                self._settings.voice_node_mic_record_gain,
+            ),
+            vad_enabled=self._value_or_default(
+                config.vad_enabled,
+                self._settings.voice_node_vad_enabled,
+            ),
+            vad_threshold=self._value_or_default(
+                config.vad_threshold,
+                self._settings.voice_node_vad_threshold,
+            ),
+            vad_min_record_ms=self._value_or_default(
+                config.vad_min_record_ms,
+                self._settings.voice_node_vad_min_record_ms,
+            ),
+            vad_silence_stop_ms=self._value_or_default(
+                config.vad_silence_stop_ms,
+                self._settings.voice_node_vad_silence_stop_ms,
+            ),
             heartbeat_endpoint="/voice-node/heartbeat",
             audio_endpoint="/assistant/audio",
             status_endpoint="/voice-node/status",
         )
+
+    def update_config(
+        self,
+        request: VoiceNodeConfigUpdateRequest,
+        device_id: str | None = None,
+    ) -> VoiceNodeConfigResponse:
+        resolved_device_id = self._resolve_device_id(device_id)
+        with self._lock:
+            current_config = self._runtime_config.get(resolved_device_id, VoiceNodeRuntimeConfig())
+            updated_config = VoiceNodeRuntimeConfig(
+                enabled=self._optional_update(request.enabled, current_config.enabled),
+                record_seconds=self._optional_update(
+                    request.record_seconds,
+                    current_config.record_seconds,
+                ),
+                mic_record_gain=self._optional_update(
+                    request.mic_record_gain,
+                    current_config.mic_record_gain,
+                ),
+                vad_enabled=self._optional_update(request.vad_enabled, current_config.vad_enabled),
+                vad_threshold=self._optional_update(
+                    request.vad_threshold,
+                    current_config.vad_threshold,
+                ),
+                vad_min_record_ms=self._optional_update(
+                    request.vad_min_record_ms,
+                    current_config.vad_min_record_ms,
+                ),
+                vad_silence_stop_ms=self._optional_update(
+                    request.vad_silence_stop_ms,
+                    current_config.vad_silence_stop_ms,
+                ),
+            )
+            self._runtime_config[resolved_device_id] = updated_config
+        return self.get_config(device_id=resolved_device_id)
 
     def get_status(self, device_id: str | None = None) -> VoiceNodeStatusResponse:
         resolved_device_id = self._resolve_device_id(device_id)
@@ -473,6 +545,18 @@ class VoiceNodeManager:
         cleaned_device_id = (device_id or "").strip()
         return cleaned_device_id or self._settings.voice_node_default_id
 
+    def _get_runtime_config(self, device_id: str) -> VoiceNodeRuntimeConfig:
+        with self._lock:
+            return self._runtime_config.get(device_id, VoiceNodeRuntimeConfig())
+
+    @staticmethod
+    def _value_or_default(value, default):
+        return default if value is None else value
+
+    @staticmethod
+    def _optional_update(new_value, current_value):
+        return current_value if new_value is None else new_value
+
     def _pending_command_count_unlocked(self, device_id: str) -> int:
         return len(self._commands.get(device_id, []))
 
@@ -714,11 +798,11 @@ class VoiceNodeManager:
             notes.append("recording is too short; wait for the cue beep, then speak")
         if peak_ratio < 0.06 or rms_ratio < 0.006 or silence_ratio > 0.97:
             quality = "too_quiet"
-            notes.append("audio is too quiet; move closer to INMP441 or increase mic gain")
+            notes.append("audio is too quiet; move closer to INMP441 or increase Mic gain in Voice Node Test")
         if clipping_ratio >= 0.01 or peak_ratio >= 0.98:
             quality = "clipped"
             notes.append(
-                "audio is clipping; flash firmware with MIC_RECORD_GAIN=32 or move 20-30 cm from INMP441"
+                "audio is clipping; reduce Mic gain in Voice Node Test or move 20-30 cm from INMP441"
             )
 
         if not notes:
@@ -812,7 +896,7 @@ class VoiceNodeManager:
             notes.append(f"{quiet_warning_count} round(s) look too quiet")
         if clipping_warning_count > 0:
             notes.append(
-                f"{clipping_warning_count} round(s) clipped; use firmware MIC_RECORD_GAIN=32 or move farther from the mic"
+                f"{clipping_warning_count} round(s) clipped; reduce Mic gain in Voice Node Test or move farther from the mic"
             )
         if total_items >= 5 and audio_quality_ok_rate < 0.7:
             notes.append("Audio quality is unstable; inspect per-round peak/RMS details")

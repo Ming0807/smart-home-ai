@@ -168,9 +168,23 @@ esp_err_t mic_reader_read_level(mic_level_stats_t *stats)
     return ESP_OK;
 }
 
-esp_err_t mic_reader_record_wav(uint8_t **wav_data, size_t *wav_size, int record_seconds)
+static int clamp_int(int value, int min_value, int max_value)
 {
-    if (wav_data == NULL || wav_size == NULL || record_seconds <= 0) {
+    if (value < min_value) {
+        return min_value;
+    }
+    if (value > max_value) {
+        return max_value;
+    }
+    return value;
+}
+
+esp_err_t mic_reader_record_wav(
+    uint8_t **wav_data,
+    size_t *wav_size,
+    const mic_record_config_t *record_config)
+{
+    if (wav_data == NULL || wav_size == NULL || record_config == NULL) {
         return ESP_ERR_INVALID_ARG;
     }
     *wav_data = NULL;
@@ -181,11 +195,16 @@ esp_err_t mic_reader_record_wav(uint8_t **wav_data, size_t *wav_size, int record
     }
 
     const int sample_rate = CONFIG_VOICE_NODE_MIC_SAMPLE_RATE;
+    const int record_seconds = clamp_int(record_config->record_seconds, 1, 10);
+    const int record_gain = clamp_int(record_config->record_gain, 1, 128);
+    const int vad_threshold = clamp_int(record_config->vad_threshold, 1, 5000);
+    const int vad_min_record_ms = clamp_int(record_config->vad_min_record_ms, 300, 5000);
+    const int vad_silence_stop_ms = clamp_int(record_config->vad_silence_stop_ms, 200, 3000);
     const int total_samples = sample_rate * record_seconds;
     const size_t pcm_bytes = (size_t)total_samples * sizeof(int16_t);
     const size_t total_bytes = WAV_HEADER_SIZE + pcm_bytes;
-    const int min_record_samples = (sample_rate * CONFIG_VOICE_NODE_MIC_VAD_MIN_RECORD_MS) / MS_PER_SECOND;
-    const int silence_stop_samples = (sample_rate * CONFIG_VOICE_NODE_MIC_VAD_SILENCE_STOP_MS) / MS_PER_SECOND;
+    const int min_record_samples = (sample_rate * vad_min_record_ms) / MS_PER_SECOND;
+    const int silence_stop_samples = (sample_rate * vad_silence_stop_ms) / MS_PER_SECOND;
 
     uint8_t *buffer = malloc(total_bytes);
     if (buffer == NULL) {
@@ -234,7 +253,7 @@ esp_err_t mic_reader_record_wav(uint8_t **wav_data, size_t *wav_size, int record
             sum_abs += fabs(centered);
         }
         const double average_abs = sum_abs / (double)sample_count;
-        const bool chunk_has_speech = average_abs >= (double)CONFIG_VOICE_NODE_MIC_VAD_THRESHOLD;
+        const bool chunk_has_speech = average_abs >= (double)vad_threshold;
         if (chunk_has_speech) {
             speech_detected = true;
             silence_samples_after_speech = 0;
@@ -244,12 +263,12 @@ esp_err_t mic_reader_record_wav(uint8_t **wav_data, size_t *wav_size, int record
 
         for (int index = 0; index < sample_count; index++) {
             const double centered = (double)(samples[index] >> 16) - mean;
-            const int amplified = (int)(centered * CONFIG_VOICE_NODE_MIC_RECORD_GAIN);
+            const int amplified = (int)(centered * record_gain);
             pcm[samples_written++] = clamp_i16(amplified);
         }
 
         if (
-            VOICE_NODE_MIC_VAD_ENABLED &&
+            record_config->vad_enabled &&
             speech_detected &&
             samples_written >= min_record_samples &&
             silence_samples_after_speech >= silence_stop_samples
@@ -258,7 +277,7 @@ esp_err_t mic_reader_record_wav(uint8_t **wav_data, size_t *wav_size, int record
                 TAG,
                 "VAD stop: recorded_ms=%d threshold=%d last_avg_abs=%.1f",
                 (samples_written * MS_PER_SECOND) / sample_rate,
-                CONFIG_VOICE_NODE_MIC_VAD_THRESHOLD,
+                vad_threshold,
                 average_abs);
             break;
         }
@@ -275,11 +294,14 @@ esp_err_t mic_reader_record_wav(uint8_t **wav_data, size_t *wav_size, int record
     *wav_size = actual_total_bytes;
     ESP_LOGI(
         TAG,
-        "Recorded WAV: max_seconds=%d actual_ms=%d bytes=%u speech=%d",
+        "Recorded WAV: max_seconds=%d actual_ms=%d bytes=%u speech=%d gain=%d vad=%d threshold=%d",
         record_seconds,
         (samples_written * MS_PER_SECOND) / sample_rate,
         (unsigned int)actual_total_bytes,
-        speech_detected);
+        speech_detected,
+        record_gain,
+        record_config->vad_enabled,
+        vad_threshold);
     return ESP_OK;
 }
 

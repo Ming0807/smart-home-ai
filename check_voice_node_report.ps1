@@ -35,11 +35,13 @@ function Get-ValueOrDefault {
 try {
     $encodedDeviceId = [System.Uri]::EscapeDataString($DeviceId)
     $status = Get-JsonUtf8 "$BaseUrl/voice-node/status?device_id=$encodedDeviceId"
+    $config = Get-JsonUtf8 "$BaseUrl/voice-node/config?device_id=$encodedDeviceId"
     $report = Get-JsonUtf8 "$BaseUrl/voice-node/audio/report?device_id=$encodedDeviceId"
 
     Write-Host "Voice Node: $($status.device_id)"
     Write-Host "Online: $($status.online) | State: $($status.state) | IP: $($status.ip_address)"
     Write-Host "Heartbeat: $($status.seconds_since_heartbeat) seconds ago"
+    Write-Host "Tuning: record=$($config.record_seconds)s | gain=$($config.mic_record_gain) | vad=$($config.vad_enabled) | threshold=$($config.vad_threshold) | silence=$($config.vad_silence_stop_ms)ms"
     Write-Host ""
     Write-Host "Test rounds: $($report.total_items)"
     Write-Host "STT success: $(Get-PercentText $report.stt_success_rate) ($($report.stt_success_count)/$($report.total_items))"
@@ -63,9 +65,9 @@ try {
     }
     Write-Host "Ready for demo: $($report.ready_for_demo)"
     if ($null -ne $report.average_peak_ratio -and $report.average_peak_ratio -ge 0.98) {
-        Write-Host "Tuning hint: average peak is near 100%; use firmware MIC_RECORD_GAIN=32 or move 20-30 cm from INMP441."
+        Write-Host "Tuning hint: average peak is near 100%; reduce Mic gain in Web UI or move 20-30 cm from INMP441."
     } elseif ($null -ne $report.average_rms_ratio -and $report.average_rms_ratio -lt 0.02) {
-        Write-Host "Tuning hint: audio looks quiet; move closer to INMP441 before increasing firmware gain."
+        Write-Host "Tuning hint: audio looks quiet; move closer to INMP441 before increasing Mic gain in Web UI."
     } elseif ($audioQualityOkRate -lt 0.7 -and $report.total_items -ge 5) {
         Write-Host "Tuning hint: audio quality is unstable; check mic direction, distance, and room noise."
     }
