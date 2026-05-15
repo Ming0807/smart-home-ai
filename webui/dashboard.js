@@ -115,6 +115,9 @@ async function refreshVoiceNodePanel() {
     voiceNodeState.textContent = [
       nodeStatus.ip_address || "-",
       nodeStatus.state || "-",
+      nodeStatus.wake_mode_enabled
+        ? (nodeStatus.wake_conversation_active ? "Wake: active" : "Wake: waiting")
+        : "Wake: off",
       `คิวคำสั่ง ${nodeStatus.pending_command_count || 0}`,
     ].join(" | ");
 

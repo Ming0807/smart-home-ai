@@ -20,6 +20,25 @@ from server.utils.observability import log_timing, start_timer
 
 logger = logging.getLogger(__name__)
 
+VOICE_NODE_WAKE_SOURCE = "voice_node_wake"
+VOICE_NODE_WAKE_PHRASES: tuple[str, ...] = (
+    "สวัสดีน้องฟ้า",
+    "หวัดดีน้องฟ้า",
+    "น้องฟ้า",
+    "น้องฟ้าจ๋า",
+)
+VOICE_NODE_SLEEP_PHRASES: tuple[str, ...] = (
+    "ขอบคุณ",
+    "พอแล้ว",
+    "หยุดฟัง",
+    "เลิกคุย",
+    "น้องฟ้าพักก่อน",
+    "น้องฟ้าปิด",
+    "ปิดน้องฟ้า",
+)
+VOICE_NODE_WAKE_ACK_REPLY = "ฟังอยู่ครับ พูดต่อได้เลย"
+VOICE_NODE_SLEEP_REPLY = "ได้เลย น้องฟ้าจะรอฟังคำปลุกอยู่นะ"
+
 
 class AssistantAudioService:
     """Voice Node audio upload pipeline: STT -> existing chat logic -> TTS URL."""
@@ -43,6 +62,7 @@ class AssistantAudioService:
         audio: UploadFile,
         device_id: str,
         pir_state: int,
+        source: str,
         background_tasks: BackgroundTasks,
     ) -> AssistantAudioResponse:
         timer = start_timer()
@@ -57,6 +77,7 @@ class AssistantAudioService:
                 audio.content_type,
                 device_id,
                 pir_state,
+                source,
                 background_tasks,
             )
             return AssistantAudioResponse(data=audio_data)
@@ -80,6 +101,7 @@ class AssistantAudioService:
         content_type: str | None,
         device_id: str,
         pir_state: int,
+        source: str,
         background_tasks: BackgroundTasks,
     ) -> tuple[AssistantAudioData, str]:
         status_text = "ok"
@@ -88,8 +110,23 @@ class AssistantAudioService:
             content_type=content_type,
             audio_bytes=audio_bytes,
         )
+        is_wake_upload = source.strip().lower() == VOICE_NODE_WAKE_SOURCE
         if not stt_result.ok:
             status_text = "stt_fallback"
+            if is_wake_upload:
+                self._voice_node_manager.set_wake_mode_enabled(device_id, True)
+                audio_data = self._build_silent_wake_response(device_id=device_id)
+                self._voice_node_manager.record_audio_result(
+                    device_id=device_id,
+                    stt_ok=False,
+                    stt_error=stt_result.error,
+                    stt_raw_text=stt_result.raw_text,
+                    data=audio_data,
+                    uploaded_audio_bytes=audio_bytes,
+                    uploaded_audio_content_type=content_type,
+                )
+                return audio_data, status_text
+
             voice_data = self._voice_conversation_service.build_stt_unavailable_response(
                 background_tasks=background_tasks,
                 audio_mode="none",
@@ -103,6 +140,24 @@ class AssistantAudioService:
                 )
         else:
             normalized_text = normalize_voice_node_transcript(stt_result.text)
+            if is_wake_upload:
+                self._voice_node_manager.set_wake_mode_enabled(device_id, True)
+                audio_data = self._handle_wake_upload(
+                    heard_text=normalized_text,
+                    device_id=device_id,
+                    background_tasks=background_tasks,
+                )
+                self._voice_node_manager.record_audio_result(
+                    device_id=device_id,
+                    stt_ok=stt_result.ok,
+                    stt_error=stt_result.error,
+                    stt_raw_text=stt_result.raw_text,
+                    data=audio_data,
+                    uploaded_audio_bytes=audio_bytes,
+                    uploaded_audio_content_type=content_type,
+                )
+                return audio_data, status_text
+
             voice_data = self._voice_conversation_service.handle_turn(
                 heard_text=normalized_text,
                 pir_state=pir_state,
@@ -132,6 +187,98 @@ class AssistantAudioService:
         )
         return audio_data, status_text
 
+    def _handle_wake_upload(
+        self,
+        heard_text: str,
+        device_id: str,
+        background_tasks: BackgroundTasks,
+    ) -> AssistantAudioData:
+        cleaned_text = heard_text.strip()
+        active = self._voice_node_manager.is_wake_conversation_active(device_id)
+        wake_remainder = self._extract_wake_remainder(cleaned_text)
+
+        if not active:
+            if wake_remainder is None:
+                return self._build_silent_wake_response(
+                    device_id=device_id,
+                    heard_text=cleaned_text,
+                )
+
+            self._voice_node_manager.set_wake_conversation_active(device_id, True)
+            cleaned_text = wake_remainder.strip()
+            if not cleaned_text:
+                return self._build_wake_response(
+                    heard_text=heard_text,
+                    reply=VOICE_NODE_WAKE_ACK_REPLY,
+                    keep_mic_open=True,
+                )
+
+        if self._contains_sleep_phrase(cleaned_text):
+            self._voice_node_manager.set_wake_conversation_active(device_id, False)
+            return self._build_wake_response(
+                heard_text=cleaned_text,
+                reply=VOICE_NODE_SLEEP_REPLY,
+                keep_mic_open=True,
+            )
+
+        if not cleaned_text:
+            return self._build_silent_wake_response(device_id=device_id)
+
+        voice_data = self._voice_conversation_service.handle_turn(
+            heard_text=cleaned_text,
+            pir_state=1,
+            background_tasks=background_tasks,
+            audio_mode="none",
+        )
+        if not voice_data.keep_mic_open:
+            self._voice_node_manager.set_wake_conversation_active(device_id, False)
+
+        reply_audio_url = self._synthesize_voice_node_reply(voice_data.reply)
+        return AssistantAudioData(
+            heard_text=voice_data.heard_text,
+            reply=voice_data.reply,
+            intent=voice_data.intent,
+            source=voice_data.source,
+            action=voice_data.action,
+            keep_mic_open=True,
+            reply_audio_url=self._resolve_reply_audio_url(reply_audio_url),
+            reply_audio_format=self._settings.voice_node_reply_audio_format,
+        )
+
+    def _build_silent_wake_response(
+        self,
+        device_id: str,
+        heard_text: str = "",
+    ) -> AssistantAudioData:
+        return AssistantAudioData(
+            heard_text=heard_text,
+            reply="",
+            intent="general_chat",
+            source="voice_control",
+            action="none",
+            keep_mic_open=True,
+            reply_audio_url=None,
+            reply_audio_format=self._settings.voice_node_reply_audio_format,
+        )
+
+    def _build_wake_response(
+        self,
+        heard_text: str,
+        reply: str,
+        keep_mic_open: bool,
+    ) -> AssistantAudioData:
+        reply_audio_url = self._synthesize_voice_node_reply(reply)
+        return AssistantAudioData(
+            heard_text=heard_text,
+            reply=reply,
+            intent="general_chat",
+            source="voice_control",
+            action="none",
+            keep_mic_open=keep_mic_open,
+            reply_audio_url=self._resolve_reply_audio_url(reply_audio_url),
+            reply_audio_format=self._settings.voice_node_reply_audio_format,
+        )
+
     @staticmethod
     def _is_unclear_voice_result(error: str | None) -> bool:
         if error is None:
@@ -141,6 +288,46 @@ class AssistantAudioService:
             "no speech detected",
             "audio file is empty",
         }
+
+    @classmethod
+    def _extract_wake_remainder(cls, text: str) -> str | None:
+        normalized_text = cls._normalize_for_wake(text)
+        if not normalized_text:
+            return None
+
+        for phrase in VOICE_NODE_WAKE_PHRASES:
+            normalized_phrase = cls._normalize_for_wake(phrase)
+            index = normalized_text.find(normalized_phrase)
+            if index < 0:
+                continue
+            remainder_start = index + len(normalized_phrase)
+            compact_remainder = normalized_text[remainder_start:]
+            return cls._strip_wake_phrase_from_original(text, phrase, compact_remainder)
+        return None
+
+    @classmethod
+    def _contains_sleep_phrase(cls, text: str) -> bool:
+        normalized_text = cls._normalize_for_wake(text)
+        return any(
+            cls._normalize_for_wake(phrase) in normalized_text
+            for phrase in VOICE_NODE_SLEEP_PHRASES
+        )
+
+    @staticmethod
+    def _normalize_for_wake(text: str) -> str:
+        return "".join(text.casefold().split())
+
+    @staticmethod
+    def _strip_wake_phrase_from_original(
+        text: str,
+        phrase: str,
+        compact_remainder: str,
+    ) -> str:
+        pattern = r"\s*".join(re.escape(character) for character in phrase)
+        stripped = re.sub(pattern, "", text, count=1, flags=re.IGNORECASE).strip(" ,:;.!?ๆ")
+        if stripped:
+            return stripped
+        return compact_remainder
 
     def _synthesize_voice_node_reply(self, reply: str) -> str | None:
         if not self._settings.tts_enabled:

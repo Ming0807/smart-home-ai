@@ -28,6 +28,7 @@ static const int VOICE_NODE_RECORD_START_SETTLE_MS = 350;
 static voice_node_state_t s_state = VOICE_NODE_STATE_BOOT;
 static voice_node_server_config_t s_server_config;
 static bool s_conversation_mode = false;
+static bool s_wake_listen_mode = false;
 static int64_t s_next_conversation_record_ms = 0;
 
 static esp_err_t stream_reply_audio_chunk(const uint8_t *data, size_t data_size, void *user_data)
@@ -149,7 +150,10 @@ static esp_err_t play_reply_audio_streaming(const char *reply_audio_url)
     return err;
 }
 
-static bool record_and_upload_audio(const char *reason, bool conversation_turn)
+static bool record_and_upload_audio(
+    const char *reason,
+    bool conversation_turn,
+    const char *upload_source)
 {
     ESP_LOGI(TAG, "%s flow started", reason);
     if (!VOICE_NODE_MIC_ENABLED) {
@@ -201,6 +205,7 @@ static bool record_and_upload_audio(const char *reason, bool conversation_turn)
         wav_data,
         wav_size,
         conversation_turn ? 1 : 0,
+        upload_source,
         &upload_result);
     mic_reader_free_wav(wav_data);
     if (err != ESP_OK) {
@@ -259,17 +264,31 @@ static void poll_remote_commands(void)
     }
     if (strcmp(command_type, "record_once") == 0) {
         ESP_LOGI(TAG, "Remote command: record one voice command");
-        (void)record_and_upload_audio("Remote UI audio upload test", false);
+        (void)record_and_upload_audio("Remote UI audio upload test", false, "voice_node");
         return;
     }
     if (strcmp(command_type, "conversation_start") == 0) {
         ESP_LOGI(TAG, "Remote command: start continuous conversation");
         s_conversation_mode = true;
+        s_wake_listen_mode = false;
         s_next_conversation_record_ms = esp_timer_get_time() / 1000;
         return;
     }
     if (strcmp(command_type, "conversation_stop") == 0) {
         ESP_LOGI(TAG, "Remote command: stop continuous conversation");
+        s_conversation_mode = false;
+        return;
+    }
+    if (strcmp(command_type, "wake_listen_start") == 0) {
+        ESP_LOGI(TAG, "Remote command: start wake listening loop");
+        s_wake_listen_mode = true;
+        s_conversation_mode = false;
+        s_next_conversation_record_ms = esp_timer_get_time() / 1000;
+        return;
+    }
+    if (strcmp(command_type, "wake_listen_stop") == 0) {
+        ESP_LOGI(TAG, "Remote command: stop wake listening loop");
+        s_wake_listen_mode = false;
         s_conversation_mode = false;
         return;
     }
@@ -364,13 +383,37 @@ static void voice_node_main_loop(void)
             s_state == VOICE_NODE_STATE_WAKE_LISTENING &&
             now_ms >= s_next_conversation_record_ms
         ) {
-            bool keep_mic_open = record_and_upload_audio("Continuous conversation", true);
+            bool keep_mic_open = record_and_upload_audio(
+                "Continuous conversation",
+                true,
+                "voice_node");
             if (keep_mic_open) {
                 s_next_conversation_record_ms =
                     (esp_timer_get_time() / 1000) + VOICE_NODE_CONVERSATION_COOLDOWN_MS;
             } else {
                 ESP_LOGI(TAG, "Continuous conversation stopped by assistant response");
                 s_conversation_mode = false;
+            }
+            last_heartbeat_ms = -VOICE_NODE_HEARTBEAT_INTERVAL_MS;
+            last_command_poll_ms = -VOICE_NODE_COMMAND_POLL_INTERVAL_MS;
+            last_mic_log_ms = esp_timer_get_time() / 1000;
+        }
+
+        if (
+            s_wake_listen_mode &&
+            s_state == VOICE_NODE_STATE_WAKE_LISTENING &&
+            now_ms >= s_next_conversation_record_ms
+        ) {
+            bool keep_listening = record_and_upload_audio(
+                "Server wake listening",
+                false,
+                "voice_node_wake");
+            if (keep_listening) {
+                s_next_conversation_record_ms =
+                    (esp_timer_get_time() / 1000) + VOICE_NODE_CONVERSATION_COOLDOWN_MS;
+            } else {
+                ESP_LOGI(TAG, "Wake listening loop stopped by assistant response");
+                s_wake_listen_mode = false;
             }
             last_heartbeat_ms = -VOICE_NODE_HEARTBEAT_INTERVAL_MS;
             last_command_poll_ms = -VOICE_NODE_COMMAND_POLL_INTERVAL_MS;
@@ -388,7 +431,7 @@ static void voice_node_main_loop(void)
             last_mic_log_ms = esp_timer_get_time() / 1000;
         } else if (button_event == BUTTON_EVENT_SHORT_PRESS) {
             ESP_LOGI(TAG, "Button short press: record and upload one voice command");
-            (void)record_and_upload_audio("Button audio upload test", false);
+            (void)record_and_upload_audio("Button audio upload test", false, "voice_node");
             last_heartbeat_ms = -VOICE_NODE_HEARTBEAT_INTERVAL_MS;
             last_mic_log_ms = esp_timer_get_time() / 1000;
         }
@@ -412,7 +455,7 @@ static void run_audio_upload_test_once(void)
         vTaskDelay(pdMS_TO_TICKS(CONFIG_VOICE_NODE_AUDIO_UPLOAD_TEST_DELAY_MS));
     }
 
-    (void)record_and_upload_audio("Boot audio upload test", false);
+    (void)record_and_upload_audio("Boot audio upload test", false, "voice_node");
 }
 
 static void voice_node_task(void *params)

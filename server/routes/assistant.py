@@ -34,6 +34,6 @@ async def assistant_audio(
         audio=audio,
         device_id=device_id,
         pir_state=pir_state,
+        source=source,
         background_tasks=background_tasks,
     )
-

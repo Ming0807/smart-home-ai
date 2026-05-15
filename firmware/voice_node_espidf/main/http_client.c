@@ -327,6 +327,7 @@ esp_err_t voice_node_http_upload_audio(
     const uint8_t *wav_data,
     size_t wav_size,
     int pir_state,
+    const char *source,
     voice_node_upload_result_t *result)
 {
     if (wav_data == NULL || wav_size == 0) {
@@ -339,8 +340,9 @@ esp_err_t voice_node_http_upload_audio(
 
     char url[HTTP_URL_BUFFER_SIZE];
     build_url(url, sizeof(url), "/assistant/audio");
+    const char *upload_source = (source != NULL && source[0] != '\0') ? source : "voice_node";
 
-    char prefix[512];
+    char prefix[640];
     snprintf(
         prefix,
         sizeof(prefix),
@@ -352,7 +354,7 @@ esp_err_t voice_node_http_upload_audio(
         "%d\r\n"
         "--%s\r\n"
         "Content-Disposition: form-data; name=\"source\"\r\n\r\n"
-        "voice_node\r\n"
+        "%s\r\n"
         "--%s\r\n"
         "Content-Disposition: form-data; name=\"audio\"; filename=\"command.wav\"\r\n"
         "Content-Type: audio/wav\r\n\r\n",
@@ -361,6 +363,7 @@ esp_err_t voice_node_http_upload_audio(
         HTTP_MULTIPART_BOUNDARY,
         pir_state != 0 ? 1 : 0,
         HTTP_MULTIPART_BOUNDARY,
+        upload_source,
         HTTP_MULTIPART_BOUNDARY);
 
     char suffix[96];

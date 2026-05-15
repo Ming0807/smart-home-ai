@@ -182,6 +182,30 @@ def queue_voice_node_conversation_stop(
 
 
 @router.post(
+    "/commands/wake-listen-start",
+    response_model=VoiceNodeCommandQueueResponse,
+    status_code=status.HTTP_200_OK,
+)
+def queue_voice_node_wake_listen_start(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeCommandQueueResponse:
+    return voice_node_manager.queue_wake_listen_start(device_id=device_id)
+
+
+@router.post(
+    "/commands/wake-listen-stop",
+    response_model=VoiceNodeCommandQueueResponse,
+    status_code=status.HTTP_200_OK,
+)
+def queue_voice_node_wake_listen_stop(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeCommandQueueResponse:
+    return voice_node_manager.queue_wake_listen_stop(device_id=device_id)
+
+
+@router.post(
     "/commands/speech-test",
     response_model=VoiceNodeCommandQueueResponse,
     status_code=status.HTTP_200_OK,

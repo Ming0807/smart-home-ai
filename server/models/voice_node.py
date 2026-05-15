@@ -76,6 +76,8 @@ class VoiceNodeStatusResponse(BaseModel):
     device_id: str
     online: bool
     enabled: bool
+    wake_mode_enabled: bool = False
+    wake_conversation_active: bool = False
     state: VoiceNodeState | None = None
     firmware_version: str | None = None
     ip_address: str | None = None
@@ -227,6 +229,8 @@ VoiceNodeCommandType = Literal[
     "play_audio",
     "conversation_start",
     "conversation_stop",
+    "wake_listen_start",
+    "wake_listen_stop",
 ]
 
 

@@ -1,5 +1,16 @@
 # Voice Node Task Board
 
+## Update 2026-05-15 - Server-side board wake mode
+
+- [x] Added Voice Node command types `wake_listen_start` and `wake_listen_stop`.
+- [x] Added backend wake/session state for `voice-node-01`.
+- [x] Added server-side wake phrase detection for `สวัสดีน้องฟ้า`, `หวัดดีน้องฟ้า`, `น้องฟ้า`.
+- [x] Added sleep phrases so the board returns to idle wake listening: `ขอบคุณ`, `พอแล้ว`, `หยุดฟัง`, `เลิกคุย`, `น้องฟ้าพักก่อน`.
+- [x] Updated firmware upload source to distinguish normal uploads from wake-listening uploads.
+- [x] Added Web UI buttons to turn board wake listening on/off without touching browser mic.
+- [x] Build and flash firmware to `voice-node-01`.
+- [ ] Test: click `เปิด Wake บอร์ด`, say `สวัสดีน้องฟ้า`, continue one or two turns, then say `น้องฟ้าพักก่อน`.
+
 ## Update 2026-05-14 - Runtime tuning pass
 
 - [x] Added backend runtime config updates for `voice-node-01` through `POST /voice-node/config`.

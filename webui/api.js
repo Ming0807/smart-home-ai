@@ -262,6 +262,30 @@ async function queueVoiceNodeConversationStop() {
   return data;
 }
 
+async function queueVoiceNodeWakeListenStart() {
+  const { response, data } = await fetchJson(
+    "/voice-node/commands/wake-listen-start?device_id=voice-node-01",
+    { method: "POST" },
+    8000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "voice node wake listen start failed"));
+  }
+  return data;
+}
+
+async function queueVoiceNodeWakeListenStop() {
+  const { response, data } = await fetchJson(
+    "/voice-node/commands/wake-listen-stop?device_id=voice-node-01",
+    { method: "POST" },
+    8000
+  );
+  if (!response.ok) {
+    throw new Error(getApiErrorDetail(data, "voice node wake listen stop failed"));
+  }
+  return data;
+}
+
 function getApiErrorDetail(data, fallbackText) {
   if (typeof data?.detail === "string") {
     return data.detail;

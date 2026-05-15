@@ -113,6 +113,8 @@ class VoiceNodeManager:
         self._commands: dict[str, list[VoiceNodeCommandRecord]] = {}
         self._active_expected_text: dict[str, str] = {}
         self._runtime_config: dict[str, VoiceNodeRuntimeConfig] = {}
+        self._wake_mode_enabled: dict[str, bool] = {}
+        self._wake_conversation_active: dict[str, bool] = {}
 
     def record_heartbeat(
         self,
@@ -274,6 +276,11 @@ class VoiceNodeManager:
                 device_id=resolved_device_id,
                 online=False,
                 enabled=self._settings.voice_node_enabled,
+                wake_mode_enabled=self._wake_mode_enabled.get(resolved_device_id, False),
+                wake_conversation_active=self._wake_conversation_active.get(
+                    resolved_device_id,
+                    False,
+                ),
                 pending_command_count=pending_command_count,
             )
 
@@ -282,6 +289,11 @@ class VoiceNodeManager:
             device_id=resolved_device_id,
             online=seconds_since_heartbeat <= self._settings.voice_node_heartbeat_timeout_seconds,
             enabled=self._settings.voice_node_enabled,
+            wake_mode_enabled=self._wake_mode_enabled.get(resolved_device_id, False),
+            wake_conversation_active=self._wake_conversation_active.get(
+                resolved_device_id,
+                False,
+            ),
             state=record.state,  # type: ignore[arg-type]
             firmware_version=record.firmware_version,
             ip_address=record.ip_address,
@@ -317,6 +329,51 @@ class VoiceNodeManager:
             command=self._to_command_data(record),
             pending_command_count=pending_count,
         )
+
+    def queue_wake_listen_start(
+        self,
+        device_id: str | None = None,
+    ) -> VoiceNodeCommandQueueResponse:
+        resolved_device_id = self._resolve_device_id(device_id)
+        with self._lock:
+            self._wake_mode_enabled[resolved_device_id] = True
+            self._wake_conversation_active[resolved_device_id] = False
+        return self.queue_command("wake_listen_start", device_id=resolved_device_id)
+
+    def queue_wake_listen_stop(
+        self,
+        device_id: str | None = None,
+    ) -> VoiceNodeCommandQueueResponse:
+        resolved_device_id = self._resolve_device_id(device_id)
+        with self._lock:
+            self._wake_mode_enabled[resolved_device_id] = False
+            self._wake_conversation_active[resolved_device_id] = False
+        return self.queue_command("wake_listen_stop", device_id=resolved_device_id)
+
+    def is_wake_conversation_active(self, device_id: str | None = None) -> bool:
+        resolved_device_id = self._resolve_device_id(device_id)
+        with self._lock:
+            return self._wake_conversation_active.get(resolved_device_id, False)
+
+    def set_wake_mode_enabled(
+        self,
+        device_id: str | None,
+        enabled: bool,
+    ) -> None:
+        resolved_device_id = self._resolve_device_id(device_id)
+        with self._lock:
+            self._wake_mode_enabled[resolved_device_id] = enabled
+            if not enabled:
+                self._wake_conversation_active[resolved_device_id] = False
+
+    def set_wake_conversation_active(
+        self,
+        device_id: str | None,
+        active: bool,
+    ) -> None:
+        resolved_device_id = self._resolve_device_id(device_id)
+        with self._lock:
+            self._wake_conversation_active[resolved_device_id] = active
 
     def pop_next_command(self, device_id: str | None = None) -> VoiceNodeCommandPollResponse:
         resolved_device_id = self._resolve_device_id(device_id)

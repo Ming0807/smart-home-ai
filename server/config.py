@@ -79,7 +79,7 @@ class Settings(BaseModel):
     tts_output_dir: str = Field(default="static")
     voice_node_enabled: bool = Field(default=True)
     voice_node_default_id: str = Field(default="voice-node-01")
-    voice_node_wake_word: str = Field(default="Hi ESP")
+    voice_node_wake_word: str = Field(default="สวัสดีน้องฟ้า")
     voice_node_audio_format: str = Field(default="wav")
     voice_node_reply_audio_format: str = Field(default="wav")
     voice_node_sample_rate: int = Field(default=16000)
@@ -256,7 +256,7 @@ def get_settings() -> Settings:
         tts_output_dir=getenv("TTS_OUTPUT_DIR", "static"),
         voice_node_enabled=_get_bool_env("VOICE_NODE_ENABLED", True),
         voice_node_default_id=getenv("VOICE_NODE_DEFAULT_ID", "voice-node-01"),
-        voice_node_wake_word=getenv("VOICE_NODE_WAKE_WORD", "Hi ESP"),
+        voice_node_wake_word=getenv("VOICE_NODE_WAKE_WORD", "สวัสดีน้องฟ้า"),
         voice_node_audio_format=getenv("VOICE_NODE_AUDIO_FORMAT", "wav"),
         voice_node_reply_audio_format=getenv("VOICE_NODE_REPLY_AUDIO_FORMAT", "wav"),
         voice_node_sample_rate=_get_int_env("VOICE_NODE_SAMPLE_RATE", 16000),

@@ -186,6 +186,42 @@ voiceNodeConversationStopButton?.addEventListener("click", async (event) => {
     voiceNodeConversationStopButton.disabled = false;
   }
 });
+voiceNodeWakeStartButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeWakeStartButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "สั่งให้บอร์ดรอฟังคำปลุก สวัสดีน้องฟ้า แล้ว";
+  }
+  try {
+    await queueVoiceNodeWakeListenStart();
+    await refreshVoiceNodePanel();
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "เปิด Wake บอร์ดไม่สำเร็จ");
+    }
+  } finally {
+    voiceNodeWakeStartButton.disabled = false;
+  }
+});
+voiceNodeWakeStopButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeWakeStopButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "ส่งคำสั่งปิด Wake บอร์ดแล้ว";
+  }
+  try {
+    await queueVoiceNodeWakeListenStop();
+    await refreshVoiceNodePanel();
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "ปิด Wake บอร์ดไม่สำเร็จ");
+    }
+  } finally {
+    voiceNodeWakeStopButton.disabled = false;
+  }
+});
 voiceNodeClearHistoryButton?.addEventListener("click", async (event) => {
   event.preventDefault();
   event.stopPropagation();
