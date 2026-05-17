@@ -26,6 +26,7 @@ from server.models.voice_node import (
     VoiceNodeHeartbeatRequest,
     VoiceNodePlaybackStatusRequest,
     VoiceNodeStatusResponse,
+    VoiceNodeStreamStatusResponse,
 )
 
 
@@ -80,6 +81,33 @@ class VoiceNodePlaybackRecord:
 
 
 @dataclass(frozen=True)
+class VoiceNodeStreamRecord:
+    device_id: str
+    connected: bool
+    connected_at: datetime | None
+    disconnected_at: datetime | None
+    last_frame_at: datetime | None
+    frame_count: int
+    total_bytes: int
+    sample_rate_hz: int
+    channels: int
+    bits_per_sample: int
+    last_peak_ratio: float | None = None
+    last_rms_ratio: float | None = None
+    vad_rms_threshold: float = 0.025
+    vad_start_frames: int = 3
+    vad_end_frames: int = 10
+    speech_candidate_frames: int = 0
+    silence_frame_count: int = 0
+    speech_active: bool = False
+    speech_frame_count: int = 0
+    speech_bytes: int = 0
+    utterance_count: int = 0
+    last_speech_at: datetime | None = None
+    last_error: str | None = None
+
+
+@dataclass(frozen=True)
 class VoiceNodeCommandRecord:
     command_id: str
     device_id: str
@@ -115,6 +143,7 @@ class VoiceNodeManager:
         self._runtime_config: dict[str, VoiceNodeRuntimeConfig] = {}
         self._wake_mode_enabled: dict[str, bool] = {}
         self._wake_conversation_active: dict[str, bool] = {}
+        self._stream_status: dict[str, VoiceNodeStreamRecord] = {}
 
     def record_heartbeat(
         self,
@@ -188,6 +217,204 @@ class VoiceNodeManager:
                 if history and history[0].received_at == latest_audio.received_at:
                     history[0] = updated_audio
         return now
+
+    def record_stream_open(
+        self,
+        device_id: str | None,
+        sample_rate_hz: int = 16000,
+        channels: int = 1,
+        bits_per_sample: int = 16,
+    ) -> datetime:
+        resolved_device_id = self._resolve_device_id(device_id)
+        now = datetime.now(timezone.utc)
+        with self._lock:
+            self._stream_status[resolved_device_id] = VoiceNodeStreamRecord(
+                device_id=resolved_device_id,
+                connected=True,
+                connected_at=now,
+                disconnected_at=None,
+                last_frame_at=None,
+                frame_count=0,
+                total_bytes=0,
+                sample_rate_hz=sample_rate_hz,
+                channels=channels,
+                bits_per_sample=bits_per_sample,
+                vad_rms_threshold=self._settings.voice_node_stream_vad_rms_threshold,
+                vad_start_frames=self._settings.voice_node_stream_vad_start_frames,
+                vad_end_frames=self._settings.voice_node_stream_vad_end_frames,
+            )
+        return now
+
+    def record_stream_chunk(
+        self,
+        device_id: str | None,
+        chunk: bytes,
+        sample_rate_hz: int = 16000,
+        channels: int = 1,
+        bits_per_sample: int = 16,
+    ) -> datetime:
+        resolved_device_id = self._resolve_device_id(device_id)
+        now = datetime.now(timezone.utc)
+        peak_ratio, rms_ratio = self._analyze_pcm16_chunk(chunk)
+        vad_threshold = self._settings.voice_node_stream_vad_rms_threshold
+        vad_start_frames = max(1, self._settings.voice_node_stream_vad_start_frames)
+        vad_end_frames = max(1, self._settings.voice_node_stream_vad_end_frames)
+        is_speech_frame = rms_ratio is not None and rms_ratio >= vad_threshold
+        with self._lock:
+            current = self._stream_status.get(resolved_device_id)
+            if current is None:
+                current = VoiceNodeStreamRecord(
+                    device_id=resolved_device_id,
+                    connected=True,
+                    connected_at=now,
+                    disconnected_at=None,
+                    last_frame_at=None,
+                    frame_count=0,
+                    total_bytes=0,
+                    sample_rate_hz=sample_rate_hz,
+                    channels=channels,
+                    bits_per_sample=bits_per_sample,
+                    vad_rms_threshold=vad_threshold,
+                    vad_start_frames=vad_start_frames,
+                    vad_end_frames=vad_end_frames,
+                )
+            utterance_count = current.utterance_count
+            speech_candidate_frames = (
+                current.speech_candidate_frames + 1 if is_speech_frame else 0
+            )
+            silence_frame_count = 0
+            speech_active = current.speech_active
+            just_started = False
+            if not speech_active and speech_candidate_frames >= vad_start_frames:
+                speech_active = True
+                just_started = True
+                utterance_count += 1
+            if speech_active and not is_speech_frame:
+                silence_frame_count = current.silence_frame_count + 1
+                if silence_frame_count >= vad_end_frames:
+                    speech_active = False
+                    speech_candidate_frames = 0
+            elif is_speech_frame:
+                silence_frame_count = 0
+
+            speech_frame_increment = 0
+            speech_byte_increment = 0
+            if just_started:
+                speech_frame_increment = speech_candidate_frames
+                speech_byte_increment = len(chunk) * speech_candidate_frames
+            elif speech_active and is_speech_frame:
+                speech_frame_increment = 1
+                speech_byte_increment = len(chunk)
+            self._stream_status[resolved_device_id] = replace(
+                current,
+                connected=True,
+                last_frame_at=now,
+                disconnected_at=None,
+                frame_count=current.frame_count + 1,
+                total_bytes=current.total_bytes + len(chunk),
+                sample_rate_hz=sample_rate_hz,
+                channels=channels,
+                bits_per_sample=bits_per_sample,
+                last_peak_ratio=peak_ratio,
+                last_rms_ratio=rms_ratio,
+                vad_rms_threshold=vad_threshold,
+                vad_start_frames=vad_start_frames,
+                vad_end_frames=vad_end_frames,
+                speech_candidate_frames=speech_candidate_frames,
+                silence_frame_count=silence_frame_count,
+                speech_active=speech_active,
+                speech_frame_count=current.speech_frame_count + speech_frame_increment,
+                speech_bytes=current.speech_bytes + speech_byte_increment,
+                utterance_count=utterance_count,
+                last_speech_at=now if speech_frame_increment else current.last_speech_at,
+                last_error=None,
+            )
+        return now
+
+    def record_stream_close(
+        self,
+        device_id: str | None,
+        error: str | None = None,
+    ) -> datetime:
+        resolved_device_id = self._resolve_device_id(device_id)
+        now = datetime.now(timezone.utc)
+        with self._lock:
+            current = self._stream_status.get(resolved_device_id)
+            if current is None:
+                current = VoiceNodeStreamRecord(
+                    device_id=resolved_device_id,
+                    connected=False,
+                    connected_at=None,
+                    disconnected_at=now,
+                    last_frame_at=None,
+                    frame_count=0,
+                    total_bytes=0,
+                    sample_rate_hz=self._settings.voice_node_sample_rate,
+                    channels=1,
+                    bits_per_sample=16,
+                    vad_rms_threshold=self._settings.voice_node_stream_vad_rms_threshold,
+                    vad_start_frames=self._settings.voice_node_stream_vad_start_frames,
+                    vad_end_frames=self._settings.voice_node_stream_vad_end_frames,
+                    last_error=error,
+                )
+            self._stream_status[resolved_device_id] = replace(
+                current,
+                connected=False,
+                speech_active=False,
+                silence_frame_count=0,
+                disconnected_at=now,
+                last_error=error,
+            )
+        return now
+
+    def get_stream_status(self, device_id: str | None = None) -> VoiceNodeStreamStatusResponse:
+        resolved_device_id = self._resolve_device_id(device_id)
+        with self._lock:
+            record = self._stream_status.get(resolved_device_id)
+
+        if record is None:
+            return VoiceNodeStreamStatusResponse(device_id=resolved_device_id)
+
+        bytes_per_second = (
+            record.sample_rate_hz
+            * max(1, record.channels)
+            * max(1, record.bits_per_sample // 8)
+        )
+        estimated_audio_seconds = (
+            round(record.total_bytes / bytes_per_second, 2) if bytes_per_second > 0 else 0.0
+        )
+        speech_audio_seconds = (
+            round(record.speech_bytes / bytes_per_second, 2) if bytes_per_second > 0 else 0.0
+        )
+        return VoiceNodeStreamStatusResponse(
+            device_id=resolved_device_id,
+            connected=record.connected,
+            connected_at=record.connected_at,
+            disconnected_at=record.disconnected_at,
+            last_frame_at=record.last_frame_at,
+            seconds_since_last_frame=(
+                self._seconds_since(record.last_frame_at) if record.last_frame_at else None
+            ),
+            frame_count=record.frame_count,
+            total_bytes=record.total_bytes,
+            estimated_audio_seconds=estimated_audio_seconds,
+            sample_rate_hz=record.sample_rate_hz,
+            channels=record.channels,
+            bits_per_sample=record.bits_per_sample,
+            last_peak_ratio=record.last_peak_ratio,
+            last_rms_ratio=record.last_rms_ratio,
+            vad_rms_threshold=record.vad_rms_threshold,
+            vad_start_frames=record.vad_start_frames,
+            vad_end_frames=record.vad_end_frames,
+            speech_candidate_frames=record.speech_candidate_frames,
+            silence_frame_count=record.silence_frame_count,
+            speech_active=record.speech_active,
+            speech_frame_count=record.speech_frame_count,
+            speech_audio_seconds=speech_audio_seconds,
+            utterance_count=record.utterance_count,
+            last_speech_at=record.last_speech_at,
+            last_error=record.last_error,
+        )
 
     def get_config(self, device_id: str | None = None) -> VoiceNodeConfigResponse:
         resolved_device_id = self._resolve_device_id(device_id)
@@ -865,6 +1092,20 @@ class VoiceNodeManager:
         if not notes:
             notes.append("audio level looks usable")
         return quality, notes
+
+    @staticmethod
+    def _analyze_pcm16_chunk(chunk: bytes) -> tuple[float | None, float | None]:
+        if len(chunk) < 2:
+            return None, None
+        even_length = len(chunk) - (len(chunk) % 2)
+        samples = array("h")
+        samples.frombytes(chunk[:even_length])
+        if not samples:
+            return None, None
+        peak = max(abs(sample) for sample in samples)
+        sum_square = sum(float(sample) * float(sample) for sample in samples)
+        rms = (sum_square / len(samples)) ** 0.5
+        return round(peak / 32767, 3), round(rms / 32767, 3)
 
     @staticmethod
     def _wav_duration_ms(audio_bytes: bytes) -> int | None:

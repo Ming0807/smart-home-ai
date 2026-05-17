@@ -23,10 +23,20 @@ typedef struct {
     int vad_silence_stop_ms;
 } mic_record_config_t;
 
+typedef esp_err_t (*mic_pcm_chunk_handler_t)(
+    const uint8_t *data,
+    size_t data_size,
+    void *user_data);
+
 esp_err_t mic_reader_init(void);
 esp_err_t mic_reader_read_level(mic_level_stats_t *stats);
 esp_err_t mic_reader_record_wav(
     uint8_t **wav_data,
     size_t *wav_size,
     const mic_record_config_t *record_config);
+esp_err_t mic_reader_stream_pcm_seconds(
+    int stream_seconds,
+    int record_gain,
+    mic_pcm_chunk_handler_t chunk_handler,
+    void *user_data);
 void mic_reader_free_wav(uint8_t *wav_data);

@@ -13,6 +13,7 @@
 #include "http_client.h"
 #include "mic_reader.h"
 #include "speaker_player.h"
+#include "stream_client.h"
 #include "voice_node_config.h"
 #include "voice_state.h"
 #include "wifi_manager.h"
@@ -23,6 +24,7 @@ static const UBaseType_t VOICE_NODE_TASK_PRIORITY = 5;
 static const int64_t VOICE_NODE_COMMAND_POLL_INTERVAL_MS = 1500;
 static const int64_t VOICE_NODE_CONFIG_REFRESH_INTERVAL_MS = 10000;
 static const int64_t VOICE_NODE_CONVERSATION_COOLDOWN_MS = 800;
+static const int64_t VOICE_NODE_WAKE_IDLE_RETRY_MS = 2500;
 static const int VOICE_NODE_RECORD_START_SETTLE_MS = 350;
 
 static voice_node_state_t s_state = VOICE_NODE_STATE_BOOT;
@@ -153,9 +155,14 @@ static esp_err_t play_reply_audio_streaming(const char *reply_audio_url)
 static bool record_and_upload_audio(
     const char *reason,
     bool conversation_turn,
-    const char *upload_source)
+    const char *upload_source,
+    bool play_record_cues,
+    bool *reply_audio_played)
 {
     ESP_LOGI(TAG, "%s flow started", reason);
+    if (reply_audio_played != NULL) {
+        *reply_audio_played = false;
+    }
     if (!VOICE_NODE_MIC_ENABLED) {
         ESP_LOGW(TAG, "%s needs microphone enabled", reason);
         return false;
@@ -166,12 +173,14 @@ static bool record_and_upload_audio(
     }
 
     esp_err_t err = ESP_OK;
-    set_state(VOICE_NODE_STATE_BEEPING);
-    err = speaker_player_play_record_start_cue();
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Record start cue failed: %s", esp_err_to_name(err));
+    if (play_record_cues) {
+        set_state(VOICE_NODE_STATE_BEEPING);
+        err = speaker_player_play_record_start_cue();
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "Record start cue failed: %s", esp_err_to_name(err));
+        }
+        vTaskDelay(pdMS_TO_TICKS(VOICE_NODE_RECORD_START_SETTLE_MS));
     }
-    vTaskDelay(pdMS_TO_TICKS(VOICE_NODE_RECORD_START_SETTLE_MS));
 
     set_state(VOICE_NODE_STATE_RECORDING_COMMAND);
     uint8_t *wav_data = NULL;
@@ -194,9 +203,11 @@ static bool record_and_upload_audio(
         return false;
     }
     ESP_LOGI(TAG, "Record done: wav_size=%u", (unsigned int)wav_size);
-    err = speaker_player_play_record_end_cue();
-    if (err != ESP_OK) {
-        ESP_LOGW(TAG, "Record end cue failed: %s", esp_err_to_name(err));
+    if (play_record_cues) {
+        err = speaker_player_play_record_end_cue();
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "Record end cue failed: %s", esp_err_to_name(err));
+        }
     }
 
     set_state(VOICE_NODE_STATE_UPLOADING_AUDIO);
@@ -220,6 +231,9 @@ static bool record_and_upload_audio(
         upload_result.keep_mic_open);
 
     if (upload_result.reply_audio_url[0] != '\0') {
+        if (reply_audio_played != NULL) {
+            *reply_audio_played = true;
+        }
         set_state(VOICE_NODE_STATE_WAITING_SERVER_REPLY);
         (void)play_reply_audio_streaming(upload_result.reply_audio_url);
     } else {
@@ -264,7 +278,12 @@ static void poll_remote_commands(void)
     }
     if (strcmp(command_type, "record_once") == 0) {
         ESP_LOGI(TAG, "Remote command: record one voice command");
-        (void)record_and_upload_audio("Remote UI audio upload test", false, "voice_node");
+        (void)record_and_upload_audio(
+            "Remote UI audio upload test",
+            false,
+            "voice_node",
+            true,
+            NULL);
         return;
     }
     if (strcmp(command_type, "conversation_start") == 0) {
@@ -290,6 +309,33 @@ static void poll_remote_commands(void)
         ESP_LOGI(TAG, "Remote command: stop wake listening loop");
         s_wake_listen_mode = false;
         s_conversation_mode = false;
+        return;
+    }
+    if (strcmp(command_type, "stream_test_start") == 0 || strcmp(command_type, "stream_process_start") == 0) {
+        const bool process_on_server = strcmp(command_type, "stream_process_start") == 0;
+        ESP_LOGI(
+            TAG,
+            "Remote command: start PCM stream process=%d",
+            process_on_server);
+        if (process_on_server) {
+            (void)speaker_player_play_record_start_cue();
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+        const voice_node_state_t previous_state = s_state;
+        set_state(VOICE_NODE_STATE_RECORDING_COMMAND);
+        err = voice_node_stream_pcm_diagnostics(
+            process_on_server ? 7 : 5,
+            s_server_config.mic_record_gain,
+            process_on_server);
+        if (process_on_server) {
+            (void)speaker_player_play_record_end_cue();
+        }
+        if (err != ESP_OK) {
+            ESP_LOGW(TAG, "PCM stream failed: %s", esp_err_to_name(err));
+        }
+        set_state(previous_state == VOICE_NODE_STATE_RECORDING_COMMAND
+            ? VOICE_NODE_STATE_WAKE_LISTENING
+            : previous_state);
         return;
     }
     if (strcmp(command_type, "play_audio") == 0) {
@@ -383,10 +429,13 @@ static void voice_node_main_loop(void)
             s_state == VOICE_NODE_STATE_WAKE_LISTENING &&
             now_ms >= s_next_conversation_record_ms
         ) {
+            bool reply_audio_played = false;
             bool keep_mic_open = record_and_upload_audio(
                 "Continuous conversation",
                 true,
-                "voice_node");
+                "voice_node",
+                true,
+                &reply_audio_played);
             if (keep_mic_open) {
                 s_next_conversation_record_ms =
                     (esp_timer_get_time() / 1000) + VOICE_NODE_CONVERSATION_COOLDOWN_MS;
@@ -404,13 +453,19 @@ static void voice_node_main_loop(void)
             s_state == VOICE_NODE_STATE_WAKE_LISTENING &&
             now_ms >= s_next_conversation_record_ms
         ) {
+            bool reply_audio_played = false;
             bool keep_listening = record_and_upload_audio(
                 "Server wake listening",
                 false,
-                "voice_node_wake");
+                "voice_node_wake",
+                false,
+                &reply_audio_played);
             if (keep_listening) {
+                const int64_t cooldown_ms = reply_audio_played
+                    ? VOICE_NODE_CONVERSATION_COOLDOWN_MS
+                    : VOICE_NODE_WAKE_IDLE_RETRY_MS;
                 s_next_conversation_record_ms =
-                    (esp_timer_get_time() / 1000) + VOICE_NODE_CONVERSATION_COOLDOWN_MS;
+                    (esp_timer_get_time() / 1000) + cooldown_ms;
             } else {
                 ESP_LOGI(TAG, "Wake listening loop stopped by assistant response");
                 s_wake_listen_mode = false;
@@ -431,7 +486,12 @@ static void voice_node_main_loop(void)
             last_mic_log_ms = esp_timer_get_time() / 1000;
         } else if (button_event == BUTTON_EVENT_SHORT_PRESS) {
             ESP_LOGI(TAG, "Button short press: record and upload one voice command");
-            (void)record_and_upload_audio("Button audio upload test", false, "voice_node");
+            (void)record_and_upload_audio(
+                "Button audio upload test",
+                false,
+                "voice_node",
+                true,
+                NULL);
             last_heartbeat_ms = -VOICE_NODE_HEARTBEAT_INTERVAL_MS;
             last_mic_log_ms = esp_timer_get_time() / 1000;
         }
@@ -455,7 +515,12 @@ static void run_audio_upload_test_once(void)
         vTaskDelay(pdMS_TO_TICKS(CONFIG_VOICE_NODE_AUDIO_UPLOAD_TEST_DELAY_MS));
     }
 
-    (void)record_and_upload_audio("Boot audio upload test", false, "voice_node");
+    (void)record_and_upload_audio(
+        "Boot audio upload test",
+        false,
+        "voice_node",
+        true,
+        NULL);
 }
 
 static void voice_node_task(void *params)

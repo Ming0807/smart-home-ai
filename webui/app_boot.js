@@ -222,6 +222,47 @@ voiceNodeWakeStopButton?.addEventListener("click", async (event) => {
     voiceNodeWakeStopButton.disabled = false;
   }
 });
+voiceNodeStreamTestButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeStreamTestButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "ส่งคำสั่ง PCM stream test แล้ว รอดู Stream stats...";
+  }
+  try {
+    await queueVoiceNodeStreamTestStart();
+    await refreshVoiceNodePanel();
+    window.setTimeout(() => void refreshVoiceNodePanel(), 2500);
+    window.setTimeout(() => void refreshVoiceNodePanel(), 6500);
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "ส่งคำสั่ง PCM stream test ไม่สำเร็จ");
+    }
+  } finally {
+    voiceNodeStreamTestButton.disabled = false;
+  }
+});
+voiceNodeStreamProcessButton?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  voiceNodeStreamProcessButton.disabled = true;
+  if (voiceNodeRefreshStatus) {
+    voiceNodeRefreshStatus.textContent = "ส่งคำสั่ง PCM STT test แล้ว รอเสียงติ๊ดจบสักครู่ จากนั้นพูดภายใน 7 วินาที...";
+  }
+  try {
+    await queueVoiceNodeStreamProcessStart();
+    await refreshVoiceNodePanel();
+    window.setTimeout(() => void refreshVoiceNodePanel(), 7000);
+    window.setTimeout(() => void refreshVoiceNodePanel(), 12000);
+    window.setTimeout(() => void refreshVoiceNodePanel(), 22000);
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(error, "ส่งคำสั่ง PCM STT test ไม่สำเร็จ");
+    }
+  } finally {
+    voiceNodeStreamProcessButton.disabled = false;
+  }
+});
 voiceNodeClearHistoryButton?.addEventListener("click", async (event) => {
   event.preventDefault();
   event.stopPropagation();

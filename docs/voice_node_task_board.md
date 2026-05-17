@@ -1,5 +1,22 @@
 # Voice Node Task Board
 
+## Update 2026-05-15 - Streaming upgrade plan
+
+- [x] Added `docs/voice_node_streaming_plan.md`.
+- [x] Phase S0: add backend WebSocket PCM diagnostics without touching current multipart upload.
+- [x] Phase S1 code: add `stream_test_start` command, Web UI button, firmware PCM WebSocket sender, and firmware build validation.
+- [x] Phase S1 hardware test: flash firmware and verify Stream stats updates from `voice-node-01`.
+- [x] Phase S2 baseline: add server-side RMS VAD diagnostics for PCM stream.
+- [x] Phase S2 smoothing: require stable speech/silence frames so one 5-second stream is not split into many utterances.
+- [x] Phase S2 tuning: raise default stream RMS threshold to reduce false speech while the room is quiet.
+- [x] Phase S3 backend opt-in: add `process=true` stream path into existing STT/chat/TTS pipeline.
+- [x] Phase S3 hardware/UI test command: add `PCM STT test` command/button for processed stream tests.
+- [x] Phase S3 real speech validation: press `PCM STT test`, speak near INMP441, verify latest STT/AI reply in the Voice Node panel.
+- [x] Phase S4 baseline: add safe server-side stream preprocessing without new dependencies.
+- [ ] Phase S4 hardware validation: run `PCM STT test` 5-10 rounds and compare STT score before adding heavier noise reduction.
+- [ ] Phase S4 optional: evaluate noise reduction (`noisereduce` first, DeepFilterNet later).
+- [ ] Phase S5: make streaming mode optional in UI while keeping upload mode as fallback.
+
 ## Update 2026-05-15 - Server-side board wake mode
 
 - [x] Added Voice Node command types `wake_listen_start` and `wake_listen_stop`.
@@ -30,18 +47,22 @@
 - [x] Added firmware continuous conversation mode: record -> upload -> play reply -> record again only when `keep_mic_open=true`.
 - [x] Added Web UI buttons `เริ่มคุยผ่านบอร์ด` and `หยุดคุยผ่านบอร์ด`.
 - [x] Built and flashed firmware to `voice-node-01` on COM10.
+- [x] Fixed passive wake-listening loop so it no longer plays record cues every silent window.
+- [x] Fixed server wake-state wiring so stale wake uploads do not re-enable wake mode after a stop command.
 - [ ] Test with real speech: start board conversation, say `สวัสดี`, continue one more turn, then say `ขอบคุณ` or click stop.
 
 Important:
 - This does not touch browser mic.
 - This is not full ESP-SR WakeNet yet. It is the safer hands-free conversation bridge before adding real wake word.
 - Use the stop button if STT hears silence or keeps looping unexpectedly.
+- For stable continuous conversation today, use `เริ่มคุยผ่านบอร์ด`.
+- Board wake mode is now silent while waiting for the wake phrase, so it should not create repeated beep loops.
 
 Suggested first tuning values:
 
 ```text
-record_seconds=6
-mic_record_gain=32
+record_seconds=7
+mic_record_gain=24
 vad_enabled=true
 vad_threshold=40
 vad_silence_stop_ms=900

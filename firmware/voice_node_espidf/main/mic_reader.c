@@ -305,6 +305,77 @@ esp_err_t mic_reader_record_wav(
     return ESP_OK;
 }
 
+esp_err_t mic_reader_stream_pcm_seconds(
+    int stream_seconds,
+    int record_gain,
+    mic_pcm_chunk_handler_t chunk_handler,
+    void *user_data)
+{
+    if (chunk_handler == NULL) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    if (!VOICE_NODE_MIC_ENABLED || !s_mic_ready) {
+        return ESP_ERR_INVALID_STATE;
+    }
+
+    const int sample_rate = CONFIG_VOICE_NODE_MIC_SAMPLE_RATE;
+    const int seconds = clamp_int(stream_seconds, 1, 10);
+    const int gain = clamp_int(record_gain, 1, 128);
+    const int total_samples = sample_rate * seconds;
+    int samples_streamed = 0;
+    int32_t samples[MIC_SAMPLE_BUFFER_COUNT] = { 0 };
+    int16_t pcm[MIC_SAMPLE_BUFFER_COUNT] = { 0 };
+
+    while (samples_streamed < total_samples) {
+        size_t bytes_read = 0;
+        esp_err_t err = i2s_channel_read(
+            s_rx_handle,
+            samples,
+            sizeof(samples),
+            &bytes_read,
+            pdMS_TO_TICKS(500));
+        if (err != ESP_OK) {
+            return err;
+        }
+
+        int sample_count = bytes_read / sizeof(samples[0]);
+        if (sample_count <= 0) {
+            continue;
+        }
+
+        const int remaining = total_samples - samples_streamed;
+        if (sample_count > remaining) {
+            sample_count = remaining;
+        }
+
+        double mean = 0.0;
+        for (int index = 0; index < sample_count; index++) {
+            mean += (double)(samples[index] >> 16);
+        }
+        mean /= (double)sample_count;
+
+        for (int index = 0; index < sample_count; index++) {
+            const double centered = (double)(samples[index] >> 16) - mean;
+            const int amplified = (int)(centered * gain);
+            pcm[index] = clamp_i16(amplified);
+        }
+
+        err = chunk_handler((const uint8_t *)pcm, (size_t)sample_count * sizeof(pcm[0]), user_data);
+        if (err != ESP_OK) {
+            return err;
+        }
+        samples_streamed += sample_count;
+    }
+
+    ESP_LOGI(
+        TAG,
+        "Streamed PCM diagnostics: seconds=%d samples=%d gain=%d",
+        seconds,
+        samples_streamed,
+        gain);
+    return ESP_OK;
+}
+
 void mic_reader_free_wav(uint8_t *wav_data)
 {
     free(wav_data);

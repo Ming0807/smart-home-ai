@@ -171,6 +171,14 @@ async function fetchVoiceNodeAudioStatus() {
   return data;
 }
 
+async function fetchVoiceNodeStreamStatus() {
+  const { response, data } = await fetchJson("/voice-node/audio/stream/status?device_id=voice-node-01", {}, 8000);
+  if (!response.ok) {
+    throw new Error("voice node stream status failed");
+  }
+  return data;
+}
+
 async function fetchVoiceNodeAudioHistory() {
   const { response, data } = await fetchJson("/voice-node/audio/history?device_id=voice-node-01", {}, 8000);
   if (!response.ok) {
@@ -282,6 +290,30 @@ async function queueVoiceNodeWakeListenStop() {
   );
   if (!response.ok) {
     throw new Error(getApiErrorDetail(data, "voice node wake listen stop failed"));
+  }
+  return data;
+}
+
+async function queueVoiceNodeStreamTestStart() {
+  const { response, data } = await fetchJson(
+    "/voice-node/commands/stream-test-start?device_id=voice-node-01",
+    { method: "POST" },
+    8000
+  );
+  if (!response.ok) {
+    throw new Error("voice node stream test command failed");
+  }
+  return data;
+}
+
+async function queueVoiceNodeStreamProcessStart() {
+  const { response, data } = await fetchJson(
+    "/voice-node/commands/stream-process-start?device_id=voice-node-01",
+    { method: "POST" },
+    8000
+  );
+  if (!response.ok) {
+    throw new Error("voice node stream process command failed");
   }
   return data;
 }

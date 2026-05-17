@@ -65,16 +65,36 @@ class AssistantAudioService:
         source: str,
         background_tasks: BackgroundTasks,
     ) -> AssistantAudioResponse:
+        audio_bytes = await audio.read()
+        return await self.handle_audio_bytes(
+            audio_bytes=audio_bytes,
+            filename=audio.filename,
+            content_type=audio.content_type,
+            device_id=device_id,
+            pir_state=pir_state,
+            source=source,
+            background_tasks=background_tasks,
+        )
+
+    async def handle_audio_bytes(
+        self,
+        audio_bytes: bytes,
+        filename: str | None,
+        content_type: str | None,
+        device_id: str,
+        pir_state: int,
+        source: str,
+        background_tasks: BackgroundTasks,
+    ) -> AssistantAudioResponse:
         timer = start_timer()
         status_text = "ok"
 
         try:
-            audio_bytes = await audio.read()
             audio_data, status_text = await asyncio.to_thread(
                 self._process_audio_bytes,
                 audio_bytes,
-                audio.filename,
-                audio.content_type,
+                filename,
+                content_type,
                 device_id,
                 pir_state,
                 source,
@@ -93,6 +113,44 @@ class AssistantAudioService:
                 device_id=device_id,
                 status=status_text,
             )
+
+    def handle_no_speech_audio_bytes(
+        self,
+        audio_bytes: bytes,
+        device_id: str,
+        content_type: str | None,
+        background_tasks: BackgroundTasks,
+    ) -> AssistantAudioResponse:
+        voice_data = self._voice_conversation_service.build_stt_unavailable_response(
+            background_tasks=background_tasks,
+            audio_mode="none",
+        ).model_copy(
+            update={
+                "reply": "ยังไม่ได้ยินเสียงพูดชัด ๆ ลองพูดหลังเสียงติ๊ดให้ใกล้ไมค์อีกครั้งนะ",
+                "keep_mic_open": False,
+            }
+        )
+        reply_audio_url = self._synthesize_voice_node_reply(voice_data.reply)
+        audio_data = AssistantAudioData(
+            heard_text="",
+            reply=voice_data.reply,
+            intent=voice_data.intent,
+            source=voice_data.source,
+            action=voice_data.action,
+            keep_mic_open=voice_data.keep_mic_open,
+            reply_audio_url=self._resolve_reply_audio_url(reply_audio_url),
+            reply_audio_format=self._settings.voice_node_reply_audio_format,
+        )
+        self._voice_node_manager.record_audio_result(
+            device_id=device_id,
+            stt_ok=False,
+            stt_error="no speech detected",
+            stt_raw_text="",
+            data=audio_data,
+            uploaded_audio_bytes=audio_bytes,
+            uploaded_audio_content_type=content_type,
+        )
+        return AssistantAudioResponse(data=audio_data)
 
     def _process_audio_bytes(
         self,
@@ -114,7 +172,6 @@ class AssistantAudioService:
         if not stt_result.ok:
             status_text = "stt_fallback"
             if is_wake_upload:
-                self._voice_node_manager.set_wake_mode_enabled(device_id, True)
                 audio_data = self._build_silent_wake_response(device_id=device_id)
                 self._voice_node_manager.record_audio_result(
                     device_id=device_id,
@@ -141,7 +198,6 @@ class AssistantAudioService:
         else:
             normalized_text = normalize_voice_node_transcript(stt_result.text)
             if is_wake_upload:
-                self._voice_node_manager.set_wake_mode_enabled(device_id, True)
                 audio_data = self._handle_wake_upload(
                     heard_text=normalized_text,
                     device_id=device_id,

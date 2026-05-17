@@ -123,6 +123,34 @@ class VoiceNodeAudioStatusResponse(BaseModel):
     playback_audio_size_bytes: int | None = None
 
 
+class VoiceNodeStreamStatusResponse(BaseModel):
+    device_id: str
+    connected: bool = False
+    connected_at: datetime | None = None
+    disconnected_at: datetime | None = None
+    last_frame_at: datetime | None = None
+    seconds_since_last_frame: int | None = None
+    frame_count: int = 0
+    total_bytes: int = 0
+    estimated_audio_seconds: float = 0.0
+    sample_rate_hz: int = 16000
+    channels: int = 1
+    bits_per_sample: int = 16
+    last_peak_ratio: float | None = None
+    last_rms_ratio: float | None = None
+    vad_rms_threshold: float = 0.025
+    vad_start_frames: int = 3
+    vad_end_frames: int = 10
+    speech_candidate_frames: int = 0
+    silence_frame_count: int = 0
+    speech_active: bool = False
+    speech_frame_count: int = 0
+    speech_audio_seconds: float = 0.0
+    utterance_count: int = 0
+    last_speech_at: datetime | None = None
+    last_error: str | None = None
+
+
 class VoiceNodeAudioHistoryItem(BaseModel):
     received_at: datetime
     seconds_since_received: int
@@ -231,6 +259,8 @@ VoiceNodeCommandType = Literal[
     "conversation_stop",
     "wake_listen_start",
     "wake_listen_stop",
+    "stream_test_start",
+    "stream_process_start",
 ]
 
 

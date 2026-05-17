@@ -88,7 +88,7 @@ class Settings(BaseModel):
     voice_node_wav_target_peak: float = Field(default=0.88)
     voice_node_wav_max_gain: float = Field(default=2.2)
     voice_node_record_seconds: int = Field(default=4)
-    voice_node_mic_record_gain: int = Field(default=32)
+    voice_node_mic_record_gain: int = Field(default=24)
     voice_node_vad_enabled: bool = Field(default=True)
     voice_node_vad_threshold: int = Field(default=40)
     voice_node_vad_min_record_ms: int = Field(default=1500)
@@ -96,6 +96,11 @@ class Settings(BaseModel):
     voice_node_timeout_seconds: float = Field(default=30.0)
     voice_node_heartbeat_timeout_seconds: int = Field(default=60)
     voice_node_command_ttl_seconds: int = Field(default=30)
+    voice_node_stream_vad_rms_threshold: float = Field(default=0.025)
+    voice_node_stream_vad_start_frames: int = Field(default=3)
+    voice_node_stream_vad_end_frames: int = Field(default=10)
+    voice_node_stream_preprocess: bool = Field(default=True)
+    voice_node_stream_trim_padding_ms: int = Field(default=250)
     stt_provider: str = Field(default="faster_whisper")
     stt_model: str = Field(default="small")
     stt_language: str = Field(default="th")
@@ -265,7 +270,7 @@ def get_settings() -> Settings:
         voice_node_wav_target_peak=_get_float_env("VOICE_NODE_WAV_TARGET_PEAK", 0.88),
         voice_node_wav_max_gain=_get_float_env("VOICE_NODE_WAV_MAX_GAIN", 2.2),
         voice_node_record_seconds=_get_int_env("VOICE_NODE_RECORD_SECONDS", 4),
-        voice_node_mic_record_gain=_get_int_env("VOICE_NODE_MIC_RECORD_GAIN", 32),
+        voice_node_mic_record_gain=_get_int_env("VOICE_NODE_MIC_RECORD_GAIN", 24),
         voice_node_vad_enabled=_get_bool_env("VOICE_NODE_VAD_ENABLED", True),
         voice_node_vad_threshold=_get_int_env("VOICE_NODE_VAD_THRESHOLD", 40),
         voice_node_vad_min_record_ms=_get_int_env("VOICE_NODE_VAD_MIN_RECORD_MS", 1500),
@@ -276,6 +281,23 @@ def get_settings() -> Settings:
             60,
         ),
         voice_node_command_ttl_seconds=_get_int_env("VOICE_NODE_COMMAND_TTL_SECONDS", 30),
+        voice_node_stream_vad_rms_threshold=_get_float_env(
+            "VOICE_NODE_STREAM_VAD_RMS_THRESHOLD",
+            0.025,
+        ),
+        voice_node_stream_vad_start_frames=_get_int_env(
+            "VOICE_NODE_STREAM_VAD_START_FRAMES",
+            3,
+        ),
+        voice_node_stream_vad_end_frames=_get_int_env(
+            "VOICE_NODE_STREAM_VAD_END_FRAMES",
+            10,
+        ),
+        voice_node_stream_preprocess=_get_bool_env("VOICE_NODE_STREAM_PREPROCESS", True),
+        voice_node_stream_trim_padding_ms=_get_int_env(
+            "VOICE_NODE_STREAM_TRIM_PADDING_MS",
+            250,
+        ),
         stt_provider=getenv("STT_PROVIDER", "faster_whisper"),
         stt_model=getenv("STT_MODEL", "small"),
         stt_language=getenv("STT_LANGUAGE", "th"),

@@ -5,6 +5,7 @@ idf_component_register(
         "http_client.c"
         "mic_reader.c"
         "speaker_player.c"
+        "stream_client.c"
         "wifi_manager.c"
     INCLUDE_DIRS
         "."
@@ -15,6 +16,7 @@ idf_component_register(
         esp_wifi
         esp_driver_gpio
         esp_driver_i2s
+        esp_websocket_client
         json
         nvs_flash
 )

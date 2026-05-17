@@ -1,6 +1,16 @@
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
 
 from server.config import Settings, get_settings
 from server.models.voice_node import (
@@ -17,9 +27,12 @@ from server.models.voice_node import (
     VoiceNodePlaybackStatusRequest,
     VoiceNodePlaybackStatusResponse,
     VoiceNodeStatusResponse,
+    VoiceNodeStreamStatusResponse,
 )
+from server.services.assistant_audio_service import get_assistant_audio_service
 from server.services.tts_service import TTSService, get_tts_service
 from server.services.voice_node_manager import VoiceNodeManager, get_voice_node_manager
+from server.utils.pcm_audio import pcm16_to_wav_bytes, prepare_pcm16_for_stt
 
 router = APIRouter(prefix="/voice-node", tags=["voice-node"])
 
@@ -80,6 +93,117 @@ def voice_node_audio_status(
     voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
 ) -> VoiceNodeAudioStatusResponse:
     return voice_node_manager.get_audio_status(device_id=device_id)
+
+
+@router.get(
+    "/audio/stream/status",
+    response_model=VoiceNodeStreamStatusResponse,
+)
+def voice_node_audio_stream_status(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeStreamStatusResponse:
+    return voice_node_manager.get_stream_status(device_id=device_id)
+
+
+@router.websocket("/audio/stream")
+async def voice_node_audio_stream(
+    websocket: WebSocket,
+    device_id: str = Query(default="voice-node-01", min_length=1, max_length=64),
+    sample_rate: int = Query(default=16000, ge=8000, le=48000),
+    channels: int = Query(default=1, ge=1, le=2),
+    bits_per_sample: int = Query(default=16, ge=8, le=32),
+    process: bool = Query(default=False),
+    pir_state: int = Query(default=1, ge=0, le=1),
+) -> None:
+    voice_node_manager = get_voice_node_manager()
+    assistant_audio_service = get_assistant_audio_service()
+    settings = get_settings()
+    pcm_buffer = bytearray()
+    await websocket.accept()
+    voice_node_manager.record_stream_open(
+        device_id=device_id,
+        sample_rate_hz=sample_rate,
+        channels=channels,
+        bits_per_sample=bits_per_sample,
+    )
+    await websocket.send_json({"status": "ok", "mode": "pcm_stream_diagnostics"})
+
+    close_error: str | None = None
+    try:
+        while True:
+            message = await websocket.receive()
+            if message.get("type") == "websocket.disconnect":
+                break
+            chunk = message.get("bytes")
+            if chunk is not None:
+                if process:
+                    pcm_buffer.extend(chunk)
+                voice_node_manager.record_stream_chunk(
+                    device_id=device_id,
+                    chunk=chunk,
+                    sample_rate_hz=sample_rate,
+                    channels=channels,
+                    bits_per_sample=bits_per_sample,
+                )
+                continue
+            text = (message.get("text") or "").strip().lower()
+            if text == "ping":
+                await websocket.send_json({"status": "ok"})
+    except WebSocketDisconnect:
+        pass
+    except Exception as exc:
+        close_error = exc.__class__.__name__
+        raise
+    finally:
+        voice_node_manager.record_stream_close(device_id=device_id, error=close_error)
+        if process and pcm_buffer and bits_per_sample == 16:
+            stream_status = voice_node_manager.get_stream_status(device_id=device_id)
+            pcm_bytes = bytes(pcm_buffer)
+            if settings.voice_node_stream_preprocess and stream_status.speech_audio_seconds >= 0.4:
+                pcm_bytes = prepare_pcm16_for_stt(
+                    pcm_bytes=pcm_bytes,
+                    sample_rate_hz=sample_rate,
+                    vad_rms_threshold=stream_status.vad_rms_threshold,
+                    trim_padding_ms=settings.voice_node_stream_trim_padding_ms,
+                    target_peak=settings.stt_normalize_target_peak,
+                    max_gain=settings.stt_normalize_max_gain,
+                )
+            wav_bytes = pcm16_to_wav_bytes(
+                pcm_bytes=pcm_bytes,
+                sample_rate_hz=sample_rate,
+                channels=channels,
+            )
+            try:
+                if stream_status.speech_audio_seconds < 0.4:
+                    assistant_response = assistant_audio_service.handle_no_speech_audio_bytes(
+                        audio_bytes=wav_bytes,
+                        device_id=device_id,
+                        content_type="audio/wav",
+                        background_tasks=BackgroundTasks(),
+                    )
+                else:
+                    assistant_response = await assistant_audio_service.handle_audio_bytes(
+                        audio_bytes=wav_bytes,
+                        filename="stream_command.wav",
+                        content_type="audio/wav",
+                        device_id=device_id,
+                        pir_state=pir_state,
+                        source="voice_node_stream",
+                        background_tasks=BackgroundTasks(),
+                    )
+                if assistant_response.data.reply_audio_url:
+                    voice_node_manager.queue_command(
+                        "play_audio",
+                        device_id=device_id,
+                        audio_url=assistant_response.data.reply_audio_url,
+                    )
+            except Exception as exc:
+                voice_node_manager.record_stream_close(
+                    device_id=device_id,
+                    error=f"process:{exc.__class__.__name__}",
+                )
+                raise
 
 
 @router.get(
@@ -203,6 +327,30 @@ def queue_voice_node_wake_listen_stop(
     voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
 ) -> VoiceNodeCommandQueueResponse:
     return voice_node_manager.queue_wake_listen_stop(device_id=device_id)
+
+
+@router.post(
+    "/commands/stream-test-start",
+    response_model=VoiceNodeCommandQueueResponse,
+    status_code=status.HTTP_200_OK,
+)
+def queue_voice_node_stream_test_start(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeCommandQueueResponse:
+    return voice_node_manager.queue_command("stream_test_start", device_id=device_id)
+
+
+@router.post(
+    "/commands/stream-process-start",
+    response_model=VoiceNodeCommandQueueResponse,
+    status_code=status.HTTP_200_OK,
+)
+def queue_voice_node_stream_process_start(
+    device_id: str | None = Query(default=None, min_length=1, max_length=64),
+    voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+) -> VoiceNodeCommandQueueResponse:
+    return voice_node_manager.queue_command("stream_process_start", device_id=device_id)
 
 
 @router.post(

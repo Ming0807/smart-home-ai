@@ -94,10 +94,11 @@ async function refreshVoiceNodePanel() {
   }
 
   try {
-    const [nodeStatus, nodeConfig, audioStatus, audioHistory, audioReport] = await Promise.all([
+    const [nodeStatus, nodeConfig, audioStatus, streamStatus, audioHistory, audioReport] = await Promise.all([
       fetchVoiceNodeStatus(),
       fetchVoiceNodeConfig(),
       fetchVoiceNodeAudioStatus(),
+      fetchVoiceNodeStreamStatus(),
       fetchVoiceNodeAudioHistory(),
       fetchVoiceNodeAudioReport(),
     ]);
@@ -120,6 +121,7 @@ async function refreshVoiceNodePanel() {
         : "Wake: off",
       `คิวคำสั่ง ${nodeStatus.pending_command_count || 0}`,
     ].join(" | ");
+    renderVoiceNodeStreamStatus(streamStatus);
 
     if (!audioStatus.has_result) {
       voiceNodeAudioTime.textContent = "ยังไม่มีการอัปโหลดเสียง";
@@ -239,6 +241,7 @@ async function refreshVoiceNodePanel() {
     voiceNodeState.textContent = "-";
     voiceNodeAudioTime.textContent = "-";
     voiceNodeAudioSize.textContent = "-";
+    renderVoiceNodeStreamStatus(null);
     voiceNodeSttStatus.textContent = getReadableErrorMessage(error, "โหลดไม่สำเร็จ");
     if (voiceNodeSttRaw) {
       voiceNodeSttRaw.textContent = "-";
@@ -311,6 +314,50 @@ function renderVoiceNodeReport(report) {
   voiceNodeReportSummary.textContent = `${parts.join(" | ")} — ${(report.notes || []).join(" / ")}`;
 }
 
+function renderVoiceNodeStreamStatus(streamStatus) {
+  if (!voiceNodeStreamStatus || !voiceNodeStreamStats) {
+    return;
+  }
+
+  if (!streamStatus) {
+    voiceNodeStreamStatus.textContent = "-";
+    voiceNodeStreamStats.textContent = "-";
+    return;
+  }
+
+  voiceNodeStreamStatus.textContent = streamStatus.connected
+    ? "connected"
+    : streamStatus.last_frame_at
+      ? `idle ${formatHeartbeatStatus(streamStatus.last_frame_at, streamStatus.seconds_since_last_frame)}`
+      : "not connected";
+
+  const parts = [
+    `${streamStatus.frame_count || 0} frames`,
+    `${streamStatus.total_bytes || 0} bytes`,
+    `${Number(streamStatus.estimated_audio_seconds || 0).toFixed(1)}s`,
+  ];
+  if (streamStatus.last_peak_ratio !== null && streamStatus.last_peak_ratio !== undefined) {
+    parts.push(`peak ${formatRatioPercent(streamStatus.last_peak_ratio)}`);
+  }
+  if (streamStatus.last_rms_ratio !== null && streamStatus.last_rms_ratio !== undefined) {
+    parts.push(`rms ${formatRatioPercent(streamStatus.last_rms_ratio)}`);
+  }
+  parts.push(streamStatus.speech_active ? "speech" : "silence");
+  if (streamStatus.utterance_count) {
+    parts.push(`${streamStatus.utterance_count} utterance`);
+  }
+  if (streamStatus.speech_audio_seconds) {
+    parts.push(`speech ${Number(streamStatus.speech_audio_seconds).toFixed(1)}s`);
+  }
+  if (streamStatus.vad_start_frames && streamStatus.vad_end_frames) {
+    parts.push(`vad ${streamStatus.vad_start_frames}/${streamStatus.vad_end_frames}`);
+  }
+  if (streamStatus.last_error) {
+    parts.push(`error ${streamStatus.last_error}`);
+  }
+  voiceNodeStreamStats.textContent = parts.join(" | ");
+}
+
 function renderVoiceNodeTuning(config) {
   if (!config || !voiceNodeTuningForm) {
     return;
@@ -325,7 +372,7 @@ function renderVoiceNodeTuning(config) {
     voiceNodeTuningRecordSeconds.value = String(config.record_seconds ?? 4);
   }
   if (voiceNodeTuningGain) {
-    voiceNodeTuningGain.value = String(config.mic_record_gain ?? 32);
+    voiceNodeTuningGain.value = String(config.mic_record_gain ?? 24);
   }
   if (voiceNodeTuningVadEnabled) {
     voiceNodeTuningVadEnabled.checked = Boolean(config.vad_enabled);
