@@ -1,5 +1,25 @@
 # Voice Node Task Board
 
+## Update 2026-05-19 - Voice Node IP rescue and offline diagnosis
+
+- [x] Added `check_voice_node_network.ps1` to show current notebook LAN IPs, the firmware server URL from `sdkconfig`, FastAPI reachability on that IP, and `voice-node-01` online status.
+- [x] Updated `check_demo_status.ps1` to show notebook LAN URLs and warn when the Voice Node firmware target IP does not belong to this notebook.
+- [x] Updated `fix_voice_node_ip_alias_admin.ps1` to auto-detect the firmware target IP from `firmware/voice_node_espidf/sdkconfig` and add it as a Windows IP alias when run as Administrator.
+- [x] Updated `start_demo.ps1` to print LAN URLs and the Voice Node network diagnostic hint at startup.
+- [x] Updated `idf_configure_local.ps1` so future firmware reconfig chooses a real active notebook IP instead of an old IP alias.
+- [x] Reconfigured firmware to `http://192.168.16.114:8000`, built successfully, and flashed `voice-node-01` on COM10.
+- [x] Confirmed `voice-node-01` is online again in `WAKE_LISTENING` at board IP `192.168.16.226`.
+- [ ] Hardware wake test: with only server/LLM running, say `สวัสดีน้องฟ้า`, wait for the cue, then continue one real command.
+
+## Update 2026-05-19 - Standalone server wake supervisor
+
+- [x] Added server-side auto wake: when `voice-node-01` heartbeats and no voice mode is active, the server queues `wake_listen_start`.
+- [x] Added `VOICE_NODE_AUTO_WAKE_ENABLED=true` config support.
+- [x] Preserved the original `เริ่มคุยผ่านบอร์ด` button and `conversation_start` flow as the highest-accuracy path.
+- [x] Wake word now acts as a handoff: after detecting `น้องฟ้า`, the server queues `conversation_start` so the next turn uses the proven beep + board VAD flow.
+- [x] Silent wake misses are no longer recorded into the normal audio report/history, so demo reports focus on real turns.
+- [ ] Hardware test: restart server without opening Web UI, wait for heartbeat, say `สวัสดีน้องฟ้า`, confirm the next turn has the usual cue beep and board-talk accuracy.
+
 ## Update 2026-05-15 - Streaming upgrade plan
 
 - [x] Added `docs/voice_node_streaming_plan.md`.
@@ -15,7 +35,12 @@
 - [x] Phase S4 baseline: add safe server-side stream preprocessing without new dependencies.
 - [ ] Phase S4 hardware validation: run `PCM STT test` 5-10 rounds and compare STT score before adding heavier noise reduction.
 - [ ] Phase S4 optional: evaluate noise reduction (`noisereduce` first, DeepFilterNet later).
-- [ ] Phase S5: make streaming mode optional in UI while keeping upload mode as fallback.
+- [x] Phase S5 decision: keep `เริ่มคุยผ่านบอร์ด` as the recommended conversation path because board-side VAD ends recording naturally and gives better STT accuracy.
+- [ ] Phase S5 optional: keep PCM stream/STT only as diagnostics until server-side streaming quality matches board-side upload mode.
+- [x] Phase S5 telemetry: show board conversation mode, blank heard text, fallback rounds, and keep-mic-open rounds in status/report so continuous-talk failures are easier to diagnose.
+- [x] Phase S5 readiness pass: include Voice Node status/report in `check_demo_status.ps1` and prevent stale expired conversation-start commands from leaving board-talk status enabled.
+- [x] Phase S5 test helper: add `prepare_voice_node_board_talk_test.ps1` to apply recommended tuning, clear history, start board-talk mode, and print the short manual test script.
+- [x] Phase S5 wake helper: add `prepare_voice_node_wake_test.ps1` and label the Web UI wake button as board wake + continuous conversation, while preserving the existing working board-talk path.
 
 ## Update 2026-05-15 - Server-side board wake mode
 

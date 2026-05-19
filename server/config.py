@@ -78,6 +78,8 @@ class Settings(BaseModel):
     tts_default_voice: str = Field(default="th-TH-PremwadeeNeural")
     tts_output_dir: str = Field(default="static")
     voice_node_enabled: bool = Field(default=True)
+    voice_node_auto_wake_enabled: bool = Field(default=True)
+    voice_node_auto_wake_refresh_seconds: int = Field(default=60)
     voice_node_default_id: str = Field(default="voice-node-01")
     voice_node_wake_word: str = Field(default="สวัสดีน้องฟ้า")
     voice_node_audio_format: str = Field(default="wav")
@@ -260,6 +262,11 @@ def get_settings() -> Settings:
         tts_default_voice=getenv("TTS_DEFAULT_VOICE", "th-TH-PremwadeeNeural"),
         tts_output_dir=getenv("TTS_OUTPUT_DIR", "static"),
         voice_node_enabled=_get_bool_env("VOICE_NODE_ENABLED", True),
+        voice_node_auto_wake_enabled=_get_bool_env("VOICE_NODE_AUTO_WAKE_ENABLED", True),
+        voice_node_auto_wake_refresh_seconds=_get_int_env(
+            "VOICE_NODE_AUTO_WAKE_REFRESH_SECONDS",
+            60,
+        ),
         voice_node_default_id=getenv("VOICE_NODE_DEFAULT_ID", "voice-node-01"),
         voice_node_wake_word=getenv("VOICE_NODE_WAKE_WORD", "สวัสดีน้องฟ้า"),
         voice_node_audio_format=getenv("VOICE_NODE_AUDIO_FORMAT", "wav"),

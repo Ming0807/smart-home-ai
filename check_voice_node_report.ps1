@@ -40,11 +40,13 @@ try {
 
     Write-Host "Voice Node: $($status.device_id)"
     Write-Host "Online: $($status.online) | State: $($status.state) | IP: $($status.ip_address)"
+    Write-Host "Modes: board_talk=$($status.conversation_mode_enabled) | wake=$($status.wake_mode_enabled) | wake_active=$($status.wake_conversation_active)"
     Write-Host "Heartbeat: $($status.seconds_since_heartbeat) seconds ago"
     Write-Host "Tuning: record=$($config.record_seconds)s | gain=$($config.mic_record_gain) | vad=$($config.vad_enabled) | threshold=$($config.vad_threshold) | silence=$($config.vad_silence_stop_ms)ms"
     Write-Host ""
     Write-Host "Test rounds: $($report.total_items)"
     Write-Host "STT success: $(Get-PercentText $report.stt_success_rate) ($($report.stt_success_count)/$($report.total_items))"
+    Write-Host "Blank heard text: $($report.blank_heard_count)"
     if ($null -ne $report.average_similarity) {
         Write-Host "Average STT score: $(Get-PercentText $report.average_similarity) ($($report.high_score_count) high-score rounds, $($report.low_score_count) low-score rounds)"
     } else {
@@ -53,6 +55,8 @@ try {
     $audioQualityOkRate = Get-ValueOrDefault $report.audio_quality_ok_rate 0
     $audioQualityOkCount = Get-ValueOrDefault $report.audio_quality_ok_count 0
     Write-Host "Playback success: $(Get-PercentText $report.playback_success_rate) ($($report.playback_success_count) reported ok)"
+    Write-Host "Keep mic open rounds: $($report.keep_mic_open_count)"
+    Write-Host "Fallback rounds: $($report.fallback_count)"
     Write-Host "Audio quality OK: $(Get-PercentText $audioQualityOkRate) ($audioQualityOkCount/$($report.total_items))"
     if ($null -ne $report.average_peak_ratio) {
         Write-Host "Average peak: $(Get-PercentText $report.average_peak_ratio)"
@@ -88,11 +92,14 @@ try {
             $durationText = if ($null -ne $item.uploaded_audio_duration_ms) { "{0:N1}s" -f ($item.uploaded_audio_duration_ms / 1000) } else { "-" }
             $peakText = if ($null -ne $item.uploaded_audio_peak_ratio) { Get-PercentText $item.uploaded_audio_peak_ratio } else { "-" }
             $rmsText = if ($null -ne $item.uploaded_audio_rms_ratio) { Get-PercentText $item.uploaded_audio_rms_ratio } else { "-" }
-            Write-Host ("{0}. STT={1} score={2} quality={3} duration={4} peak={5} rms={6}" -f $index, $item.stt_ok, $scoreText, $qualityText, $durationText, $peakText, $rmsText)
+            Write-Host ("{0}. STT={1} score={2} quality={3} duration={4} peak={5} rms={6} intent={7} source={8} keep_open={9} playback={10}" -f $index, $item.stt_ok, $scoreText, $qualityText, $durationText, $peakText, $rmsText, $item.intent, $item.source, $item.keep_mic_open, $item.playback_ok)
             if ($item.expected_text) {
                 Write-Host "   Expected: $($item.expected_text)"
             }
             Write-Host "   Heard: $($item.heard_text)"
+            if ($item.reply) {
+                Write-Host "   Reply: $($item.reply)"
+            }
             if ($item.uploaded_audio_quality_notes -and $item.uploaded_audio_quality_notes.Count -gt 0) {
                 Write-Host "   Audio note: $($item.uploaded_audio_quality_notes -join ' / ')"
             }

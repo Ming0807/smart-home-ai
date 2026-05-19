@@ -173,15 +173,6 @@ class AssistantAudioService:
             status_text = "stt_fallback"
             if is_wake_upload:
                 audio_data = self._build_silent_wake_response(device_id=device_id)
-                self._voice_node_manager.record_audio_result(
-                    device_id=device_id,
-                    stt_ok=False,
-                    stt_error=stt_result.error,
-                    stt_raw_text=stt_result.raw_text,
-                    data=audio_data,
-                    uploaded_audio_bytes=audio_bytes,
-                    uploaded_audio_content_type=content_type,
-                )
                 return audio_data, status_text
 
             voice_data = self._voice_conversation_service.build_stt_unavailable_response(
@@ -203,15 +194,16 @@ class AssistantAudioService:
                     device_id=device_id,
                     background_tasks=background_tasks,
                 )
-                self._voice_node_manager.record_audio_result(
-                    device_id=device_id,
-                    stt_ok=stt_result.ok,
-                    stt_error=stt_result.error,
-                    stt_raw_text=stt_result.raw_text,
-                    data=audio_data,
-                    uploaded_audio_bytes=audio_bytes,
-                    uploaded_audio_content_type=content_type,
-                )
+                if self._should_record_wake_audio(audio_data):
+                    self._voice_node_manager.record_audio_result(
+                        device_id=device_id,
+                        stt_ok=stt_result.ok,
+                        stt_error=stt_result.error,
+                        stt_raw_text=stt_result.raw_text,
+                        data=audio_data,
+                        uploaded_audio_bytes=audio_bytes,
+                        uploaded_audio_content_type=content_type,
+                    )
                 return audio_data, status_text
 
             voice_data = self._voice_conversation_service.handle_turn(
@@ -252,6 +244,7 @@ class AssistantAudioService:
         cleaned_text = heard_text.strip()
         active = self._voice_node_manager.is_wake_conversation_active(device_id)
         wake_remainder = self._extract_wake_remainder(cleaned_text)
+        activated_by_wake = False
 
         if not active:
             if wake_remainder is None:
@@ -261,8 +254,10 @@ class AssistantAudioService:
                 )
 
             self._voice_node_manager.set_wake_conversation_active(device_id, True)
+            activated_by_wake = True
             cleaned_text = wake_remainder.strip()
             if not cleaned_text:
+                self._handoff_wake_to_board_talk(device_id)
                 return self._build_wake_response(
                     heard_text=heard_text,
                     reply=VOICE_NODE_WAKE_ACK_REPLY,
@@ -276,6 +271,9 @@ class AssistantAudioService:
                 reply=VOICE_NODE_SLEEP_REPLY,
                 keep_mic_open=True,
             )
+
+        if activated_by_wake:
+            self._handoff_wake_to_board_talk(device_id)
 
         if not cleaned_text:
             return self._build_silent_wake_response(device_id=device_id)
@@ -300,6 +298,14 @@ class AssistantAudioService:
             reply_audio_url=self._resolve_reply_audio_url(reply_audio_url),
             reply_audio_format=self._settings.voice_node_reply_audio_format,
         )
+
+    def _handoff_wake_to_board_talk(self, device_id: str) -> None:
+        """After wake word detection, switch the board back to the proven beep + VAD path."""
+        self._voice_node_manager.queue_command("conversation_start", device_id=device_id)
+
+    @staticmethod
+    def _should_record_wake_audio(audio_data: AssistantAudioData) -> bool:
+        return bool(audio_data.reply.strip() or audio_data.reply_audio_url)
 
     def _build_silent_wake_response(
         self,

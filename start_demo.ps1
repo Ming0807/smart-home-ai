@@ -278,6 +278,18 @@ function Warmup-Llm {
     }
 }
 
+function Get-LanUrls {
+    $ips = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.IPAddress -notlike "127.*" -and
+            $_.IPAddress -notlike "169.254.*" -and
+            $_.AddressState -eq "Preferred"
+        } |
+        Select-Object -ExpandProperty IPAddress
+
+    return @($ips | ForEach-Object { "http://${_}:$Port/" })
+}
+
 Write-Host "AI Smart Home Demo Startup" -ForegroundColor White
 Write-Host "Project: $ProjectRoot"
 
@@ -308,3 +320,8 @@ if (-not $SkipBrowser) {
 
 Write-Host ""
 Write-Host "Demo is ready: http://127.0.0.1:$Port/" -ForegroundColor Green
+$lanUrls = Get-LanUrls
+if ($lanUrls.Count -gt 0) {
+    Write-Host "LAN URL for ESP32/phone: $($lanUrls -join ', ')" -ForegroundColor Green
+}
+Write-Host "If Voice Node is offline after an IP change, run: .\check_voice_node_network.ps1" -ForegroundColor Yellow

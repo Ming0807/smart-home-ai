@@ -63,7 +63,16 @@ function Set-SdkconfigDisabled([string[]]$Lines, [string]$Key) {
 
 if ([string]::IsNullOrWhiteSpace($ServerUrl)) {
     $ip = Get-NetIPAddress -AddressFamily IPv4 |
-        Where-Object { $_.IPAddress -notlike "127.*" -and $_.PrefixOrigin -ne "WellKnown" } |
+        Where-Object {
+            $_.IPAddress -notlike "127.*" -and
+            $_.IPAddress -notlike "169.254.*" -and
+            $_.PrefixOrigin -ne "WellKnown" -and
+            $_.SkipAsSource -eq $false -and
+            $_.AddressState -eq "Preferred"
+        } |
+        Sort-Object {
+            if ($_.InterfaceAlias -eq "Wi-Fi") { 0 } else { 1 }
+        } |
         Select-Object -First 1 -ExpandProperty IPAddress
     if ([string]::IsNullOrWhiteSpace($ip)) {
         throw "Could not detect notebook LAN IPv4. Pass -ServerUrl manually."

@@ -76,6 +76,7 @@ class VoiceNodeStatusResponse(BaseModel):
     device_id: str
     online: bool
     enabled: bool
+    conversation_mode_enabled: bool = False
     wake_mode_enabled: bool = False
     wake_conversation_active: bool = False
     state: VoiceNodeState | None = None
@@ -189,10 +190,13 @@ class VoiceNodeAudioReportResponse(BaseModel):
     total_items: int
     stt_success_count: int
     stt_success_rate: float
+    blank_heard_count: int
     scored_count: int
     average_similarity: float | None = None
     high_score_count: int
     low_score_count: int
+    keep_mic_open_count: int
+    fallback_count: int
     playback_success_count: int
     playback_success_rate: float
     average_uploaded_duration_ms: int | None = None

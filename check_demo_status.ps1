@@ -61,6 +61,30 @@ function Invoke-JsonCheck {
     }
 }
 
+function Get-VoiceNodeFirmwareServerUrl {
+    $sdkconfigPath = Join-Path $ProjectRoot "firmware\voice_node_espidf\sdkconfig"
+    if (-not (Test-Path $sdkconfigPath)) {
+        return ""
+    }
+
+    $line = Get-Content -Path $sdkconfigPath |
+        Where-Object { $_ -match '^\s*CONFIG_VOICE_NODE_SERVER_BASE_URL=' } |
+        Select-Object -Last 1
+    if (-not $line) {
+        return ""
+    }
+
+    return ($line -replace '^\s*CONFIG_VOICE_NODE_SERVER_BASE_URL=', '').Trim('"')
+}
+
+function Get-UrlHost {
+    param([string]$Url)
+    if ($Url -match '^https?://(?<host>[^/:]+)(:\d+)?') {
+        return $Matches.host
+    }
+    return ""
+}
+
 Write-Host "AI Smart Home Demo Status" -ForegroundColor White
 Write-Host "Project: $ProjectRoot"
 Write-Host ""
@@ -85,6 +109,17 @@ if ($ollamaTags) {
 
 $health = Invoke-JsonCheck -Uri "http://127.0.0.1:$Port/health"
 Write-Status -Name "FastAPI health" -Ok ([bool]$health) -Detail "http://127.0.0.1:$Port/health"
+
+$lanIps = @(Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+    Where-Object {
+        $_.IPAddress -notlike "127.*" -and
+        $_.IPAddress -notlike "169.254.*" -and
+        $_.AddressState -eq "Preferred"
+    } |
+    Select-Object -ExpandProperty IPAddress)
+if ($lanIps.Count -gt 0) {
+    Write-Status -Name "Notebook LAN URL(s)" -Ok $true -Detail (($lanIps | ForEach-Object { "http://${_}:$Port" }) -join ", ")
+}
 
 $ready = Invoke-JsonCheck -Uri "http://127.0.0.1:$Port/ready"
 Write-Status -Name "FastAPI ready" -Ok ([bool]$ready) -Detail "http://127.0.0.1:$Port/ready"
@@ -115,4 +150,33 @@ if ($voice) {
 }
 else {
     Write-Status -Name "Voice/TTS status" -Ok $false -Detail "No response"
+}
+
+$voiceNodeStatus = Invoke-JsonCheck -Uri "http://127.0.0.1:$Port/voice-node/status?device_id=voice-node-01" -TimeoutSeconds 10
+if ($voiceNodeStatus) {
+    $detail = "online=$($voiceNodeStatus.online), state=$($voiceNodeStatus.state), board_talk=$($voiceNodeStatus.conversation_mode_enabled), ip=$($voiceNodeStatus.ip_address)"
+    Write-Status -Name "Voice Node status" -Ok ([bool]$voiceNodeStatus.online) -Detail $detail
+    if (-not $voiceNodeStatus.online) {
+        $firmwareUrl = Get-VoiceNodeFirmwareServerUrl
+        $firmwareHost = Get-UrlHost $firmwareUrl
+        if ($firmwareUrl) {
+            $ownsFirmwareHost = [bool]($lanIps | Where-Object { $_ -eq $firmwareHost })
+            Write-Status -Name "Voice Node firmware target" -Ok $ownsFirmwareHost -Detail $firmwareUrl
+            if (-not $ownsFirmwareHost -and $firmwareHost) {
+                Write-Status -Name "Voice Node IP hint" -Ok $false -Detail "Run .\check_voice_node_network.ps1"
+            }
+        }
+    }
+}
+else {
+    Write-Status -Name "Voice Node status" -Ok $false -Detail "No response"
+}
+
+$voiceNodeReport = Invoke-JsonCheck -Uri "http://127.0.0.1:$Port/voice-node/audio/report?device_id=voice-node-01" -TimeoutSeconds 10
+if ($voiceNodeReport) {
+    $detail = "rounds=$($voiceNodeReport.total_items), stt=$([Math]::Round($voiceNodeReport.stt_success_rate * 100))%, playback=$([Math]::Round($voiceNodeReport.playback_success_rate * 100))%, blank=$($voiceNodeReport.blank_heard_count), fallback=$($voiceNodeReport.fallback_count)"
+    Write-Status -Name "Voice Node report" -Ok ([bool]$voiceNodeReport.ready_for_demo) -Detail $detail
+}
+else {
+    Write-Status -Name "Voice Node report" -Ok $false -Detail "No response"
 }

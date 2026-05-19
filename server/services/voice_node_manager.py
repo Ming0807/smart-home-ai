@@ -141,8 +141,11 @@ class VoiceNodeManager:
         self._commands: dict[str, list[VoiceNodeCommandRecord]] = {}
         self._active_expected_text: dict[str, str] = {}
         self._runtime_config: dict[str, VoiceNodeRuntimeConfig] = {}
+        self._conversation_mode_enabled: dict[str, bool] = {}
         self._wake_mode_enabled: dict[str, bool] = {}
         self._wake_conversation_active: dict[str, bool] = {}
+        self._auto_wake_suspended: dict[str, bool] = {}
+        self._last_auto_wake_at: dict[str, datetime] = {}
         self._stream_status: dict[str, VoiceNodeStreamRecord] = {}
 
     def record_heartbeat(
@@ -158,6 +161,7 @@ class VoiceNodeManager:
                 ip_address=request.ip_address,
                 last_seen_at=now,
             )
+            self._ensure_auto_wake_unlocked(request.device_id)
         return now
 
     def record_audio_result(
@@ -172,8 +176,12 @@ class VoiceNodeManager:
     ) -> datetime:
         resolved_device_id = self._resolve_device_id(device_id)
         now = datetime.now(timezone.utc)
+        should_auto_wake = False
         with self._lock:
             expected_text = self._active_expected_text.pop(resolved_device_id, None)
+            if self._conversation_mode_enabled.get(resolved_device_id) and not data.keep_mic_open:
+                self._conversation_mode_enabled[resolved_device_id] = False
+                should_auto_wake = True
         similarity = self._calculate_similarity(expected_text, data.heard_text)
         audio_metrics = self._analyze_wav_audio(uploaded_audio_bytes)
         record = VoiceNodeAudioRecord(
@@ -194,6 +202,8 @@ class VoiceNodeManager:
             history = self._audio_history.setdefault(resolved_device_id, [])
             history.insert(0, record)
             del history[10:]
+            if should_auto_wake:
+                self._ensure_auto_wake_unlocked(resolved_device_id)
         return now
 
     def record_playback_status(self, request: VoiceNodePlaybackStatusRequest) -> datetime:
@@ -503,6 +513,10 @@ class VoiceNodeManager:
                 device_id=resolved_device_id,
                 online=False,
                 enabled=self._settings.voice_node_enabled,
+                conversation_mode_enabled=self._conversation_mode_enabled.get(
+                    resolved_device_id,
+                    False,
+                ),
                 wake_mode_enabled=self._wake_mode_enabled.get(resolved_device_id, False),
                 wake_conversation_active=self._wake_conversation_active.get(
                     resolved_device_id,
@@ -516,6 +530,10 @@ class VoiceNodeManager:
             device_id=resolved_device_id,
             online=seconds_since_heartbeat <= self._settings.voice_node_heartbeat_timeout_seconds,
             enabled=self._settings.voice_node_enabled,
+            conversation_mode_enabled=self._conversation_mode_enabled.get(
+                resolved_device_id,
+                False,
+            ),
             wake_mode_enabled=self._wake_mode_enabled.get(resolved_device_id, False),
             wake_conversation_active=self._wake_conversation_active.get(
                 resolved_device_id,
@@ -547,6 +565,18 @@ class VoiceNodeManager:
         )
         with self._lock:
             self._drop_expired_commands_unlocked(resolved_device_id)
+            if command_type == "conversation_start":
+                self._auto_wake_suspended[resolved_device_id] = False
+                self._conversation_mode_enabled[resolved_device_id] = True
+                self._wake_mode_enabled[resolved_device_id] = False
+                self._wake_conversation_active[resolved_device_id] = False
+            elif command_type == "conversation_stop":
+                self._auto_wake_suspended[resolved_device_id] = True
+                self._conversation_mode_enabled[resolved_device_id] = False
+            elif command_type in {"wake_listen_start", "stream_test_start", "stream_process_start"}:
+                self._conversation_mode_enabled[resolved_device_id] = False
+                if command_type == "wake_listen_start":
+                    self._last_auto_wake_at[resolved_device_id] = record.created_at
             queue = self._commands.setdefault(resolved_device_id, [])
             queue.append(record)
             pending_count = len(queue)
@@ -563,6 +593,8 @@ class VoiceNodeManager:
     ) -> VoiceNodeCommandQueueResponse:
         resolved_device_id = self._resolve_device_id(device_id)
         with self._lock:
+            self._auto_wake_suspended[resolved_device_id] = False
+            self._conversation_mode_enabled[resolved_device_id] = False
             self._wake_mode_enabled[resolved_device_id] = True
             self._wake_conversation_active[resolved_device_id] = False
         return self.queue_command("wake_listen_start", device_id=resolved_device_id)
@@ -573,8 +605,10 @@ class VoiceNodeManager:
     ) -> VoiceNodeCommandQueueResponse:
         resolved_device_id = self._resolve_device_id(device_id)
         with self._lock:
+            self._auto_wake_suspended[resolved_device_id] = True
             self._wake_mode_enabled[resolved_device_id] = False
             self._wake_conversation_active[resolved_device_id] = False
+            self._last_auto_wake_at.pop(resolved_device_id, None)
         return self.queue_command("wake_listen_stop", device_id=resolved_device_id)
 
     def is_wake_conversation_active(self, device_id: str | None = None) -> bool:
@@ -592,6 +626,8 @@ class VoiceNodeManager:
             self._wake_mode_enabled[resolved_device_id] = enabled
             if not enabled:
                 self._wake_conversation_active[resolved_device_id] = False
+            else:
+                self._conversation_mode_enabled[resolved_device_id] = False
 
     def set_wake_conversation_active(
         self,
@@ -697,6 +733,9 @@ class VoiceNodeManager:
 
         total_items = len(records)
         stt_success_count = sum(1 for record in records if record.stt_ok)
+        blank_heard_count = sum(1 for record in records if not record.data.heard_text.strip())
+        keep_mic_open_count = sum(1 for record in records if record.data.keep_mic_open)
+        fallback_count = sum(1 for record in records if record.data.source == "fallback")
         scored_values = [
             record.stt_similarity
             for record in records
@@ -735,7 +774,9 @@ class VoiceNodeManager:
         ready_for_demo = (
             total_items >= 5
             and self._safe_ratio(stt_success_count, total_items) >= 0.8
+            and blank_heard_count == 0
             and (average_similarity is None or average_similarity >= 0.7)
+            and self._safe_ratio(fallback_count, total_items) <= 0.2
             and (not peak_values or audio_quality_ok_rate >= 0.7)
             and (
                 not playback_records
@@ -749,10 +790,13 @@ class VoiceNodeManager:
             total_items=total_items,
             stt_success_count=stt_success_count,
             stt_success_rate=self._safe_ratio(stt_success_count, total_items),
+            blank_heard_count=blank_heard_count,
             scored_count=len(scored_values),
             average_similarity=average_similarity,
             high_score_count=sum(1 for score in scored_values if score >= 0.7),
             low_score_count=sum(1 for score in scored_values if score < 0.7),
+            keep_mic_open_count=keep_mic_open_count,
+            fallback_count=fallback_count,
             playback_success_count=playback_success_count,
             playback_success_rate=self._safe_ratio(playback_success_count, len(playback_records)),
             average_uploaded_duration_ms=(
@@ -773,8 +817,11 @@ class VoiceNodeManager:
             notes=self._build_report_notes_v2(
                 total_items=total_items,
                 stt_success_count=stt_success_count,
+                blank_heard_count=blank_heard_count,
                 scored_count=len(scored_values),
                 average_similarity=average_similarity,
+                keep_mic_open_count=keep_mic_open_count,
+                fallback_count=fallback_count,
                 playback_records_count=len(playback_records),
                 playback_success_count=playback_success_count,
                 quiet_warning_count=quiet_warning_count,
@@ -856,14 +903,62 @@ class VoiceNodeManager:
             for command in queue
             if (now - command.created_at).total_seconds() <= ttl_seconds
         ]
+        expired_queue = [
+            command
+            for command in queue
+            if (now - command.created_at).total_seconds() > ttl_seconds
+        ]
         dropped_count = len(queue) - len(fresh_queue)
         if dropped_count:
+            if any(command.type == "conversation_start" for command in expired_queue):
+                self._conversation_mode_enabled[device_id] = False
+            if any(command.type == "wake_listen_start" for command in expired_queue):
+                self._wake_mode_enabled[device_id] = False
+                self._wake_conversation_active[device_id] = False
             if fresh_queue:
                 self._commands[device_id] = fresh_queue
             else:
                 self._commands.pop(device_id, None)
                 self._active_expected_text.pop(device_id, None)
         return dropped_count
+
+    def _ensure_auto_wake_unlocked(self, device_id: str) -> bool:
+        if not self._settings.voice_node_enabled or not self._settings.voice_node_auto_wake_enabled:
+            return False
+        if self._auto_wake_suspended.get(device_id, False):
+            return False
+
+        self._drop_expired_commands_unlocked(device_id)
+        if self._commands.get(device_id):
+            return False
+        if self._conversation_mode_enabled.get(device_id, False):
+            return False
+        if self._wake_conversation_active.get(device_id, False):
+            return False
+
+        if self._wake_mode_enabled.get(device_id, False):
+            refresh_seconds = max(15, self._settings.voice_node_auto_wake_refresh_seconds)
+            last_auto_wake_at = self._last_auto_wake_at.get(device_id)
+            if (
+                last_auto_wake_at is not None
+                and (datetime.now(timezone.utc) - last_auto_wake_at).total_seconds() < refresh_seconds
+            ):
+                return False
+
+        self._append_wake_start_command_unlocked(device_id)
+        return True
+
+    def _append_wake_start_command_unlocked(self, device_id: str) -> None:
+        record = VoiceNodeCommandRecord(
+            command_id=uuid4().hex,
+            device_id=device_id,
+            type="wake_listen_start",
+            created_at=datetime.now(timezone.utc),
+        )
+        self._wake_mode_enabled[device_id] = True
+        self._wake_conversation_active[device_id] = False
+        self._last_auto_wake_at[device_id] = record.created_at
+        self._commands.setdefault(device_id, []).append(record)
 
     @staticmethod
     def _to_command_data(record: VoiceNodeCommandRecord) -> VoiceNodeCommandData:
@@ -1171,8 +1266,11 @@ class VoiceNodeManager:
     def _build_report_notes_v2(
         total_items: int,
         stt_success_count: int,
+        blank_heard_count: int,
         scored_count: int,
         average_similarity: float | None,
+        keep_mic_open_count: int,
+        fallback_count: int,
         playback_records_count: int,
         playback_success_count: int,
         quiet_warning_count: int,
@@ -1186,6 +1284,12 @@ class VoiceNodeManager:
             notes.append("Run at least 5 rounds before judging demo readiness")
         if stt_success_count < total_items:
             notes.append("Some rounds did not produce speech text")
+        if blank_heard_count > 0:
+            notes.append(f"{blank_heard_count} round(s) had blank heard text")
+        if total_items >= 3 and keep_mic_open_count == 0:
+            notes.append("No recent round kept the board mic open; test continuous conversation mode")
+        if fallback_count > 0:
+            notes.append(f"{fallback_count} round(s) used fallback response")
         if scored_count == 0:
             notes.append("No scored rounds yet; choose a test sentence before recording")
         elif average_similarity is not None and average_similarity < 0.7:

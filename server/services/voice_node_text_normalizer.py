@@ -16,6 +16,7 @@ def normalize_voice_node_transcript(text: str) -> str:
     corrected = cleaned
     corrected = _normalize_common_particles(corrected)
     corrected = _normalize_place_and_traffic_words(corrected)
+    corrected = _normalize_weather_words(corrected)
     corrected = _normalize_sensor_words(corrected)
     corrected = _normalize_news_words(corrected)
     corrected = _normalize_device_words(corrected)
@@ -38,6 +39,8 @@ def _normalize_place_and_traffic_words(text: str) -> str:
         "กรุงเทพฯ": "กรุงเทพ",
         "ยาละ": "ยะลา",
         "ยะล่ะ": "ยะลา",
+        "เยลา": "ยะลา",
+        "เยล่า": "ยะลา",
         "หาดใหย่": "หาดใหญ่",
         "สนามบีน": "สนามบิน",
     }
@@ -49,6 +52,46 @@ def _normalize_place_and_traffic_words(text: str) -> str:
         corrected = corrected.replace("รดติด", "รถติด")
         corrected = corrected.replace("รตติด", "รถติด")
         corrected = corrected.replace("รถตืด", "รถติด")
+    return corrected
+
+
+def _normalize_weather_words(text: str) -> str:
+    corrected = text
+    normalized = _compact(corrected)
+    has_rain_context = any(
+        keyword in normalized
+        for keyword in (
+            "ตกไหม",
+            "ตกไม่",
+            "จะตก",
+            "ฝนตก",
+            "ฟนตก",
+            "โฟนตก",
+            "ผมจะตก",
+            "วันนี้",
+            "อากาศ",
+        )
+    )
+    if not has_rain_context:
+        return corrected
+
+    replacements = {
+        "โฟนจะตกไหม": "ฝนจะตกไหม",
+        "โฟนจะตกไม่": "ฝนจะตกไหม",
+        "ฟนจะตกไหม": "ฝนจะตกไหม",
+        "ฟนจะตกไม่": "ฝนจะตกไหม",
+        "ผมจะตกไหม": "ฝนจะตกไหม",
+        "ผมจะตกไม่": "ฝนจะตกไหม",
+        "โฟนตกไหม": "ฝนตกไหม",
+        "โฟนตกไม่": "ฝนตกไหม",
+        "ฟนตกไหม": "ฝนตกไหม",
+        "ฟนตกไม่": "ฝนตกไหม",
+        "ฝนจะตกไม่": "ฝนจะตกไหม",
+        "ฝนตกไม่": "ฝนตกไหม",
+    }
+    for wrong, right in replacements.items():
+        corrected = corrected.replace(wrong, right)
+
     return corrected
 
 
@@ -78,6 +121,11 @@ def _normalize_news_words(text: str) -> str:
     has_news_context = any(
         keyword in normalized
         for keyword in (
+            "ข่าว",
+            "ขาว",
+            "ข้าว",
+            "หาว",
+            "คาว",
             "ล่าสุด",
             "วันนี้",
             "สหรัฐ",
@@ -87,7 +135,9 @@ def _normalize_news_words(text: str) -> str:
             "ai",
             "เอไอ",
             "line",
+            "ไล",
             "ไลน์",
+            "หลาย",
         )
     )
     if not has_news_context:
@@ -111,11 +161,25 @@ def _normalize_news_words(text: str) -> str:
         "ข้าววันนี้": "ข่าววันนี้",
         "ข้าวสหรัฐ": "ข่าวสหรัฐ",
         "ข้าวอิหร่าน": "ข่าวอิหร่าน",
+        "มีขาวอะไร": "มีข่าวอะไร",
+        "มีข้าวอะไร": "มีข่าวอะไร",
+        "มีหาวอะไร": "มีข่าวอะไร",
+        "มีคาวอะไร": "มีข่าวอะไร",
+        "ส่งขาวเข้า": "ส่งข่าวเข้า",
+        "ส่งคาวเข้า": "ส่งข่าวเข้า",
+        "ส่งหาวเข้า": "ส่งข่าวเข้า",
+        "ส่งข่าวเข้าหลาย": "ส่งข่าวเข้าไลน์",
+        "ส่งขาวเข้าหลาย": "ส่งข่าวเข้าไลน์",
+        "ส่งข้าวเข้าหลาย": "ส่งข่าวเข้าไลน์",
+        "ส่งข่าวเข้าไล": "ส่งข่าวเข้าไลน์",
+        "ส่งข่าวเข้าไลน์น์": "ส่งข่าวเข้าไลน์",
     }
     for wrong, right in replacements.items():
         corrected = corrected.replace(wrong, right)
 
-    corrected = re.sub(r"^(หาว|คาว|ขาว)(?=.*(ล่าสุด|วันนี้|สหรัฐ|อิหร่าน))", "ข่าว", corrected)
+    corrected = re.sub(r"^(หาว|คาว|ขาว|ข้าว)(?=.*(ล่าสุด|วันนี้|สหรัฐ|อิหร่าน|อะไร|LINE|ไลน์|หลาย))", "ข่าว", corrected)
+    corrected = re.sub(r"(?<=ส่งข่าวเข้า)หลาย", "ไลน์", corrected)
+    corrected = re.sub(r"(?<=ส่งข่าวเข้า)ไล(?!น์)", "ไลน์", corrected)
     return corrected
 
 

@@ -20,7 +20,7 @@ menu "AI Smart Home Voice Node"
 
     config VOICE_NODE_SERVER_BASE_URL
         string "FastAPI server base URL"
-        default "http://192.168.1.50:8000"
+        default "http://192.168.16.114:8000"
         help
             Use the notebook LAN IP, not 127.0.0.1.
 

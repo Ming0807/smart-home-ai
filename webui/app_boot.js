@@ -81,6 +81,42 @@ voiceNodeRefreshButton?.addEventListener("click", (event) => {
   event.stopPropagation();
   void refreshVoiceNodePanel();
 });
+
+let voiceNodeAutoWakeAttempted = false;
+
+async function maybeStartVoiceNodeWakeOnLoad() {
+  if (voiceNodeAutoWakeAttempted) {
+    return;
+  }
+  voiceNodeAutoWakeAttempted = true;
+
+  try {
+    const nodeStatus = await fetchVoiceNodeStatus();
+    const shouldStartWake =
+      nodeStatus?.online &&
+      !nodeStatus.wake_mode_enabled &&
+      !nodeStatus.conversation_mode_enabled &&
+      !nodeStatus.pending_command_count;
+
+    if (!shouldStartWake) {
+      return;
+    }
+
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = "เปิด Wake บอร์ดให้อัตโนมัติแล้ว เรียก น้องฟ้า ได้เลย";
+    }
+    await queueVoiceNodeWakeListenStart();
+    await refreshVoiceNodePanel();
+  } catch (error) {
+    if (voiceNodeRefreshStatus) {
+      voiceNodeRefreshStatus.textContent = getReadableErrorMessage(
+        error,
+        "เปิด Wake อัตโนมัติไม่สำเร็จ กดเปิด Wake บอร์ดเองได้"
+      );
+    }
+  }
+}
+
 voiceNodeSpeakerTestButton?.addEventListener("click", async (event) => {
   event.preventDefault();
   event.stopPropagation();
@@ -442,6 +478,7 @@ refreshDashboardStatus();
 refreshDeviceRegistry(true);
 refreshVoiceDebugStatus();
 refreshVoiceNodePanel();
+window.setTimeout(() => void maybeStartVoiceNodeWakeOnLoad(), 1200);
 window.setInterval(refreshDashboardStatus, 15000);
 window.setInterval(refreshDeviceRegistry, 15000);
 window.setInterval(refreshVoiceDebugStatus, 5000);
