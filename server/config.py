@@ -79,14 +79,14 @@ class Settings(BaseModel):
     tts_output_dir: str = Field(default="static")
     voice_node_enabled: bool = Field(default=True)
     voice_node_auto_wake_enabled: bool = Field(default=True)
-    voice_node_auto_wake_refresh_seconds: int = Field(default=60)
+    voice_node_auto_wake_refresh_seconds: int = Field(default=10)
     voice_node_default_id: str = Field(default="voice-node-01")
     voice_node_wake_word: str = Field(default="สวัสดีน้องฟ้า")
     voice_node_audio_format: str = Field(default="wav")
     voice_node_reply_audio_format: str = Field(default="wav")
     voice_node_sample_rate: int = Field(default=16000)
     voice_node_reply_sample_rate: int = Field(default=24000)
-    voice_node_spoken_reply_max_chars: int = Field(default=100)
+    voice_node_spoken_reply_max_chars: int = Field(default=360)
     voice_node_wav_target_peak: float = Field(default=0.88)
     voice_node_wav_max_gain: float = Field(default=2.2)
     voice_node_record_seconds: int = Field(default=4)
@@ -265,7 +265,7 @@ def get_settings() -> Settings:
         voice_node_auto_wake_enabled=_get_bool_env("VOICE_NODE_AUTO_WAKE_ENABLED", True),
         voice_node_auto_wake_refresh_seconds=_get_int_env(
             "VOICE_NODE_AUTO_WAKE_REFRESH_SECONDS",
-            60,
+            10,
         ),
         voice_node_default_id=getenv("VOICE_NODE_DEFAULT_ID", "voice-node-01"),
         voice_node_wake_word=getenv("VOICE_NODE_WAKE_WORD", "สวัสดีน้องฟ้า"),
@@ -273,7 +273,7 @@ def get_settings() -> Settings:
         voice_node_reply_audio_format=getenv("VOICE_NODE_REPLY_AUDIO_FORMAT", "wav"),
         voice_node_sample_rate=_get_int_env("VOICE_NODE_SAMPLE_RATE", 16000),
         voice_node_reply_sample_rate=_get_int_env("VOICE_NODE_REPLY_SAMPLE_RATE", 24000),
-        voice_node_spoken_reply_max_chars=_get_int_env("VOICE_NODE_SPOKEN_REPLY_MAX_CHARS", 100),
+        voice_node_spoken_reply_max_chars=_get_int_env("VOICE_NODE_SPOKEN_REPLY_MAX_CHARS", 360),
         voice_node_wav_target_peak=_get_float_env("VOICE_NODE_WAV_TARGET_PEAK", 0.88),
         voice_node_wav_max_gain=_get_float_env("VOICE_NODE_WAV_MAX_GAIN", 2.2),
         voice_node_record_seconds=_get_int_env("VOICE_NODE_RECORD_SECONDS", 4),

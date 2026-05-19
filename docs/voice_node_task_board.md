@@ -1,5 +1,16 @@
 # Voice Node Task Board
 
+## Update 2026-05-19 - Wake listener stability after board/server restart
+
+- [x] Fixed stale server-side conversation state so auto wake can recover when the board is back in `WAKE_LISTENING`.
+- [x] Reduced auto wake refresh from 60s to 10s so a board reboot/flash gets a fresh `wake_listen_start` quickly.
+- [x] Reduced wake-listen recording windows to 3s to avoid `ESP_ERR_NO_MEM` after reply playback.
+- [x] Wake-listen mode now retries after record failure instead of turning itself off.
+- [x] Wake-listen mode skips upload/STT when local VAD detects no speech, so it loops faster and does not waste server time on silence.
+- [x] Built and flashed `voice-node-01` on COM10 after the firmware changes.
+- [x] Runtime log confirmed repeated wake listening with `skipped upload because no speech was detected`, stable heartbeat, and no `ESP_ERR_NO_MEM`.
+- [ ] Hardware test: without opening Web UI, say wake phrase, wait for cue, then ask a short command.
+
 ## Update 2026-05-19 - Voice Node IP rescue and offline diagnosis
 
 - [x] Added `check_voice_node_network.ps1` to show current notebook LAN IPs, the firmware server URL from `sdkconfig`, FastAPI reachability on that IP, and `voice-node-01` online status.
@@ -10,6 +21,15 @@
 - [x] Reconfigured firmware to `http://192.168.16.114:8000`, built successfully, and flashed `voice-node-01` on COM10.
 - [x] Confirmed `voice-node-01` is online again in `WAKE_LISTENING` at board IP `192.168.16.226`.
 - [ ] Hardware wake test: with only server/LLM running, say `สวัสดีน้องฟ้า`, wait for the cue, then continue one real command.
+
+## Update 2026-05-19 - Voice Node long reply speech pass
+
+- [x] Raised the Voice Node spoken reply limit from 100 to 360 chars by default.
+- [x] Updated local `.env` to `VOICE_NODE_SPOKEN_REPLY_MAX_CHARS=360`.
+- [x] Changed news speech generation to read complete numbered headlines that fit, instead of cutting Thai headlines mid-word.
+- [x] Added stale conversation-state reconciliation: if the server thinks board-talk is active but the board only heartbeats in `WAKE_LISTENING` without new audio for too long, the server clears the stale state and can auto-queue wake again.
+- [x] Added `idf_monitor.ps1` with UTF-8 console setup so Thai wake-word logs do not crash the ESP-IDF monitor.
+- [ ] Hardware test: ask for news from the board and confirm the speaker reads the listed items clearly, then offers item selection or LINE send.
 
 ## Update 2026-05-19 - Standalone server wake supervisor
 

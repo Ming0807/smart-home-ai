@@ -182,7 +182,8 @@ static int clamp_int(int value, int min_value, int max_value)
 esp_err_t mic_reader_record_wav(
     uint8_t **wav_data,
     size_t *wav_size,
-    const mic_record_config_t *record_config)
+    const mic_record_config_t *record_config,
+    bool *speech_detected_out)
 {
     if (wav_data == NULL || wav_size == NULL || record_config == NULL) {
         return ESP_ERR_INVALID_ARG;
@@ -302,6 +303,9 @@ esp_err_t mic_reader_record_wav(
         record_gain,
         record_config->vad_enabled,
         vad_threshold);
+    if (speech_detected_out != NULL) {
+        *speech_detected_out = speech_detected;
+    }
     return ESP_OK;
 }
 

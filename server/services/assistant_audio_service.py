@@ -407,7 +407,7 @@ class AssistantAudioService:
 
     def _build_spoken_reply(self, reply: str) -> str:
         cleaned_reply = " ".join(reply.split())
-        max_chars = max(60, self._settings.voice_node_spoken_reply_max_chars)
+        max_chars = max(160, self._settings.voice_node_spoken_reply_max_chars)
         news_reply = self._build_news_spoken_reply(cleaned_reply, max_chars)
         if news_reply is not None:
             return news_reply
@@ -427,26 +427,56 @@ class AssistantAudioService:
 
         count_match = re.search(r"มี\s*(\d+)\s*เรื่อง", reply)
         count_text = count_match.group(1) if count_match else "หลาย"
-        headline_match = re.search(r"1\.\s*(.*?)(?:\s*\|\s*2\.|$)", reply)
-        if headline_match is None:
+        headlines = self._extract_numbered_news_items(reply)
+        if not headlines:
             return None
 
-        first_headline = self._normalize_spoken_text(headline_match.group(1))
-        first_headline = re.split(r"ถ้าอยากฟังต่อ|บอกเลขข้อ|ส่งข่าวเข้า", first_headline)[0].strip()
-        first_headline = self._first_sentence_chunk(first_headline, 48)
-        spoken = (
-            f"ข่าวล่าสุดมี {count_text} เรื่อง "
-            f"ข้อ 1 {first_headline} "
-            "ถ้าอยากฟังต่อ บอกเลขข้อ หรือบอก ส่งข่าวเข้าไลน์"
-        )
+        intro = f"ข่าวล่าสุดมี {count_text} เรื่อง"
+        outro = "ถ้าอยากฟังต่อ บอกเลขข้อที่สนใจ หรือบอก ส่งข่าวเข้าไลน์"
+        spoken_items: list[str] = []
+        for index, headline in enumerate(headlines, start=1):
+            item_text = f"ข้อ {index} {headline}"
+            projected_spoken = " ".join([intro, *spoken_items, item_text, outro]).strip()
+            if spoken_items and len(projected_spoken) > max_chars:
+                break
+            if not spoken_items and len(projected_spoken) > max_chars:
+                item_text = f"ข้อ {index} {self._first_sentence_chunk(headline, 80)}"
+            spoken_items.append(item_text)
+            if index >= 5:
+                break
+
+        if not spoken_items:
+            first_headline = self._first_sentence_chunk(headlines[0], 80)
+            spoken_items = [f"ข้อ 1 {first_headline}"]
+
+        spoken = " ".join([intro, *spoken_items, outro]).strip()
         if len(spoken) <= max_chars:
             return spoken
-        compact_spoken = (
-            f"ข่าวล่าสุดมี {count_text} เรื่อง "
-            f"ข้อ 1 {self._first_sentence_chunk(first_headline, 32)} "
-            "บอกเลขข้อ หรือบอก ส่งข่าวเข้าไลน์"
-        )
-        return compact_spoken
+
+        shorter_outro = "บอกเลขข้อที่สนใจ หรือบอก ส่งข่าวเข้าไลน์"
+        while len(spoken_items) > 1:
+            spoken = " ".join([intro, *spoken_items, shorter_outro]).strip()
+            if len(spoken) <= max_chars:
+                return spoken
+            spoken_items.pop()
+
+        first_item = f"ข้อ 1 {self._first_sentence_chunk(headlines[0], 42)}"
+        return " ".join([intro, first_item, shorter_outro]).strip()
+
+    @classmethod
+    def _extract_numbered_news_items(cls, reply: str) -> list[str]:
+        body = re.split(r"ถ้าอยากฟังต่อ|บอกเลขข้อ|ส่งข่าวเข้า", reply, maxsplit=1)[0]
+        matches = list(re.finditer(r"(?:^|\s|\|)([1-5])\.\s*", body))
+        items: list[str] = []
+        for index, match in enumerate(matches):
+            start = match.end()
+            end = matches[index + 1].start() if index + 1 < len(matches) else len(body)
+            item = body[start:end].strip(" |,")
+            item = cls._normalize_spoken_text(item)
+            item = re.sub(r"\s+", " ", item).strip()
+            if item:
+                items.append(item)
+        return items
 
     @staticmethod
     def _normalize_spoken_text(text: str) -> str:
@@ -481,6 +511,9 @@ class AssistantAudioService:
             selected = text[:max_chars].strip()
         if len(selected) > max_chars:
             selected = selected[:max_chars].rstrip(" ,|-")
+            word_boundary = selected.rfind(" ")
+            if word_boundary >= max(16, int(max_chars * 0.55)):
+                selected = selected[:word_boundary].rstrip(" ,|-")
         return selected
 
     def _resolve_reply_audio_url(self, audio_url: str | None) -> str | None:

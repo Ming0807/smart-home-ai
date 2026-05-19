@@ -24,7 +24,7 @@ static const UBaseType_t VOICE_NODE_TASK_PRIORITY = 5;
 static const int64_t VOICE_NODE_COMMAND_POLL_INTERVAL_MS = 1500;
 static const int64_t VOICE_NODE_CONFIG_REFRESH_INTERVAL_MS = 10000;
 static const int64_t VOICE_NODE_CONVERSATION_COOLDOWN_MS = 800;
-static const int64_t VOICE_NODE_WAKE_IDLE_RETRY_MS = 2500;
+static const int64_t VOICE_NODE_WAKE_IDLE_RETRY_MS = 300;
 static const int VOICE_NODE_RECORD_START_SETTLE_MS = 350;
 
 static voice_node_state_t s_state = VOICE_NODE_STATE_BOOT;
@@ -157,6 +157,8 @@ static bool record_and_upload_audio(
     bool conversation_turn,
     const char *upload_source,
     bool play_record_cues,
+    int record_seconds_override,
+    bool upload_only_if_speech,
     bool *reply_audio_played)
 {
     ESP_LOGI(TAG, "%s flow started", reason);
@@ -185,8 +187,11 @@ static bool record_and_upload_audio(
     set_state(VOICE_NODE_STATE_RECORDING_COMMAND);
     uint8_t *wav_data = NULL;
     size_t wav_size = 0;
+    bool speech_detected = false;
     const mic_record_config_t record_config = {
-        .record_seconds = s_server_config.record_seconds,
+        .record_seconds = record_seconds_override > 0
+            ? record_seconds_override
+            : s_server_config.record_seconds,
         .record_gain = s_server_config.mic_record_gain,
         .vad_enabled = s_server_config.vad_enabled,
         .vad_threshold = s_server_config.vad_threshold,
@@ -196,13 +201,20 @@ static bool record_and_upload_audio(
     err = mic_reader_record_wav(
         &wav_data,
         &wav_size,
-        &record_config);
+        &record_config,
+        &speech_detected);
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "%s record failed: %s", reason, esp_err_to_name(err));
         set_state(VOICE_NODE_STATE_WAKE_LISTENING);
         return false;
     }
     ESP_LOGI(TAG, "Record done: wav_size=%u", (unsigned int)wav_size);
+    if (upload_only_if_speech && !speech_detected) {
+        ESP_LOGI(TAG, "%s skipped upload because no speech was detected", reason);
+        mic_reader_free_wav(wav_data);
+        set_state(VOICE_NODE_STATE_WAKE_LISTENING);
+        return true;
+    }
     if (play_record_cues) {
         err = speaker_player_play_record_end_cue();
         if (err != ESP_OK) {
@@ -283,6 +295,8 @@ static void poll_remote_commands(void)
             false,
             "voice_node",
             true,
+            0,
+            false,
             NULL);
         return;
     }
@@ -435,6 +449,8 @@ static void voice_node_main_loop(void)
                 true,
                 "voice_node",
                 true,
+                0,
+                false,
                 &reply_audio_played);
             if (keep_mic_open) {
                 s_next_conversation_record_ms =
@@ -459,6 +475,8 @@ static void voice_node_main_loop(void)
                 false,
                 "voice_node_wake",
                 false,
+                3,
+                true,
                 &reply_audio_played);
             if (keep_listening) {
                 const int64_t cooldown_ms = reply_audio_played
@@ -467,8 +485,9 @@ static void voice_node_main_loop(void)
                 s_next_conversation_record_ms =
                     (esp_timer_get_time() / 1000) + cooldown_ms;
             } else {
-                ESP_LOGI(TAG, "Wake listening loop stopped by assistant response");
-                s_wake_listen_mode = false;
+                ESP_LOGW(TAG, "Wake listening attempt failed, retrying instead of stopping wake mode");
+                s_next_conversation_record_ms =
+                    (esp_timer_get_time() / 1000) + VOICE_NODE_WAKE_IDLE_RETRY_MS;
             }
             last_heartbeat_ms = -VOICE_NODE_HEARTBEAT_INTERVAL_MS;
             last_command_poll_ms = -VOICE_NODE_COMMAND_POLL_INTERVAL_MS;
@@ -491,6 +510,8 @@ static void voice_node_main_loop(void)
                 false,
                 "voice_node",
                 true,
+                0,
+                false,
                 NULL);
             last_heartbeat_ms = -VOICE_NODE_HEARTBEAT_INTERVAL_MS;
             last_mic_log_ms = esp_timer_get_time() / 1000;
@@ -520,6 +541,8 @@ static void run_audio_upload_test_once(void)
         false,
         "voice_node",
         true,
+        0,
+        false,
         NULL);
 }
 

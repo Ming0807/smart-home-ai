@@ -33,7 +33,8 @@ esp_err_t mic_reader_read_level(mic_level_stats_t *stats);
 esp_err_t mic_reader_record_wav(
     uint8_t **wav_data,
     size_t *wav_size,
-    const mic_record_config_t *record_config);
+    const mic_record_config_t *record_config,
+    bool *speech_detected);
 esp_err_t mic_reader_stream_pcm_seconds(
     int stream_seconds,
     int record_gain,

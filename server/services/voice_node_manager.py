@@ -142,6 +142,7 @@ class VoiceNodeManager:
         self._active_expected_text: dict[str, str] = {}
         self._runtime_config: dict[str, VoiceNodeRuntimeConfig] = {}
         self._conversation_mode_enabled: dict[str, bool] = {}
+        self._conversation_mode_started_at: dict[str, datetime] = {}
         self._wake_mode_enabled: dict[str, bool] = {}
         self._wake_conversation_active: dict[str, bool] = {}
         self._auto_wake_suspended: dict[str, bool] = {}
@@ -161,6 +162,7 @@ class VoiceNodeManager:
                 ip_address=request.ip_address,
                 last_seen_at=now,
             )
+            self._reconcile_stale_modes_unlocked(request.device_id, request.state, now)
             self._ensure_auto_wake_unlocked(request.device_id)
         return now
 
@@ -181,6 +183,7 @@ class VoiceNodeManager:
             expected_text = self._active_expected_text.pop(resolved_device_id, None)
             if self._conversation_mode_enabled.get(resolved_device_id) and not data.keep_mic_open:
                 self._conversation_mode_enabled[resolved_device_id] = False
+                self._conversation_mode_started_at.pop(resolved_device_id, None)
                 should_auto_wake = True
         similarity = self._calculate_similarity(expected_text, data.heard_text)
         audio_metrics = self._analyze_wav_audio(uploaded_audio_bytes)
@@ -568,13 +571,16 @@ class VoiceNodeManager:
             if command_type == "conversation_start":
                 self._auto_wake_suspended[resolved_device_id] = False
                 self._conversation_mode_enabled[resolved_device_id] = True
+                self._conversation_mode_started_at[resolved_device_id] = record.created_at
                 self._wake_mode_enabled[resolved_device_id] = False
                 self._wake_conversation_active[resolved_device_id] = False
             elif command_type == "conversation_stop":
                 self._auto_wake_suspended[resolved_device_id] = True
                 self._conversation_mode_enabled[resolved_device_id] = False
+                self._conversation_mode_started_at.pop(resolved_device_id, None)
             elif command_type in {"wake_listen_start", "stream_test_start", "stream_process_start"}:
                 self._conversation_mode_enabled[resolved_device_id] = False
+                self._conversation_mode_started_at.pop(resolved_device_id, None)
                 if command_type == "wake_listen_start":
                     self._last_auto_wake_at[resolved_device_id] = record.created_at
             queue = self._commands.setdefault(resolved_device_id, [])
@@ -912,6 +918,7 @@ class VoiceNodeManager:
         if dropped_count:
             if any(command.type == "conversation_start" for command in expired_queue):
                 self._conversation_mode_enabled[device_id] = False
+                self._conversation_mode_started_at.pop(device_id, None)
             if any(command.type == "wake_listen_start" for command in expired_queue):
                 self._wake_mode_enabled[device_id] = False
                 self._wake_conversation_active[device_id] = False
@@ -921,6 +928,34 @@ class VoiceNodeManager:
                 self._commands.pop(device_id, None)
                 self._active_expected_text.pop(device_id, None)
         return dropped_count
+
+    def _reconcile_stale_modes_unlocked(
+        self,
+        device_id: str,
+        board_state: str,
+        now: datetime,
+    ) -> None:
+        if not self._conversation_mode_enabled.get(device_id, False):
+            return
+        if board_state != "WAKE_LISTENING":
+            return
+        if self._commands.get(device_id):
+            return
+
+        started_at = self._conversation_mode_started_at.get(device_id)
+        latest_audio = self._latest_audio.get(device_id)
+        reference_at = latest_audio.received_at if latest_audio is not None else started_at
+        if reference_at is None:
+            self._conversation_mode_started_at[device_id] = now
+            return
+
+        stale_after_seconds = max(25, int(self._settings.voice_node_timeout_seconds))
+        if (now - reference_at).total_seconds() < stale_after_seconds:
+            return
+
+        self._conversation_mode_enabled[device_id] = False
+        self._conversation_mode_started_at.pop(device_id, None)
+        self._wake_conversation_active[device_id] = False
 
     def _ensure_auto_wake_unlocked(self, device_id: str) -> bool:
         if not self._settings.voice_node_enabled or not self._settings.voice_node_auto_wake_enabled:
