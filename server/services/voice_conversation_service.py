@@ -12,6 +12,10 @@ from server.config import Settings, get_settings
 from server.models.chat import IntentName, ResponseSource
 from server.models.voice import MicAction, VoiceChatData
 from server.services.chat_service import ChatService, get_chat_service
+from server.services.conversation_memory import (
+    ConversationMemoryService,
+    get_conversation_memory_service,
+)
 from server.services.intent_router import IntentRouter, get_intent_router
 from server.services.llm_manager import DEFAULT_FALLBACK_REPLY, LLMManager, get_llm_manager
 from server.services.smalltalk_service import SmallTalkService, get_smalltalk_service
@@ -56,6 +60,7 @@ class VoiceConversationService:
         self,
         settings: Settings,
         chat_service: ChatService,
+        conversation_memory: ConversationMemoryService,
         intent_router: IntentRouter,
         llm_manager: LLMManager,
         smalltalk_service: SmallTalkService,
@@ -63,6 +68,7 @@ class VoiceConversationService:
     ) -> None:
         self._settings = settings
         self._chat_service = chat_service
+        self._conversation_memory = conversation_memory
         self._intent_router = intent_router
         self._llm_manager = llm_manager
         self._smalltalk_service = smalltalk_service
@@ -117,7 +123,7 @@ class VoiceConversationService:
                     pir_state=pir_state,
                     is_exit_turn=False,
                 )
-                return self._build_response(
+                response = self._build_response(
                     heard_text=cleaned_text,
                     reply=smalltalk_reply.reply,
                     intent="general_chat",
@@ -127,6 +133,8 @@ class VoiceConversationService:
                     background_tasks=background_tasks,
                     audio_mode=audio_mode,
                 )
+                self._remember_turn(cleaned_text, response)
+                return response
 
             decision = self._handle_general_chat(cleaned_text)
             keep_mic_open = self._apply_keep_mic_open_override(
@@ -134,7 +142,7 @@ class VoiceConversationService:
                 pir_state=pir_state,
                 is_exit_turn=False,
             )
-            return self._build_response(
+            response = self._build_response(
                 heard_text=cleaned_text,
                 reply=decision.reply,
                 intent="general_chat",
@@ -144,6 +152,8 @@ class VoiceConversationService:
                 background_tasks=background_tasks,
                 audio_mode=audio_mode,
             )
+            self._remember_turn(cleaned_text, response)
+            return response
 
         chat_response = self._chat_service.handle_message(
             cleaned_text,
@@ -204,8 +214,12 @@ class VoiceConversationService:
                 source=raw_response.source,
             )
 
+        contextual_message = self._conversation_memory.build_contextual_message(
+            session_id="default",
+            message=message,
+        )
         raw_response = self._llm_manager.generate_custom_reply(
-            message=self._build_general_chat_input(message),
+            message=self._build_general_chat_input(contextual_message),
             system_prompt=self._load_voice_control_prompt(),
             max_tokens=min(self._settings.llm_max_tokens, 48),
             temperature=min(self._settings.llm_temperature, 0.2),
@@ -253,6 +267,15 @@ class VoiceConversationService:
             action=action,
             keep_mic_open=keep_mic_open,
             audio_url=audio_url,
+        )
+
+    def _remember_turn(self, message: str, response: VoiceChatData) -> None:
+        self._conversation_memory.add_turn(
+            session_id="default",
+            user=message,
+            assistant=response.reply,
+            intent=response.intent,
+            source=response.source,
         )
 
     @staticmethod
@@ -344,6 +367,7 @@ class VoiceConversationService:
 _voice_conversation_service = VoiceConversationService(
     settings=get_settings(),
     chat_service=get_chat_service(),
+    conversation_memory=get_conversation_memory_service(),
     intent_router=get_intent_router(),
     llm_manager=get_llm_manager(),
     smalltalk_service=get_smalltalk_service(),

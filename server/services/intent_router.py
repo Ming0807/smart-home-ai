@@ -58,8 +58,11 @@ class IntentRouter:
     )
     _NEWS_DETAIL_PATTERNS = (
         re.compile(r"ข้อ\s*[1-9]"),
+        re.compile(r"ข้อ\s*ที่\s*[1-9]"),
+        re.compile(r"(คอ|ขอ)\s*(ที่)?\s*[1-9]"),
         re.compile(r"ข่าวข้อ\s*[1-9]"),
         re.compile(r"(เล่าข่าว|อ่านข่าว|รายละเอียดข่าว)\s*ข้อ?\s*[1-9]"),
+        re.compile(r"(เล่าข่าว|อ่านข่าว|รายละเอียดข่าว)\s*ข้อ?\s*ที่?\s*[1-9]"),
     )
     _NAVIGATION_PATTERNS = (
         re.compile(r"จาก.+ไป.+(กี่นาที|กี่กิโล|กี่กิโลเมตร|ทางไหนดี|เส้นทาง)", re.IGNORECASE),
@@ -123,7 +126,12 @@ class IntentRouter:
         original_message: str,
         normalized_message: str,
     ) -> IntentMatch | None:
-        if "ข่าว" not in normalized_message and not normalized_message.startswith("ข้อ"):
+        if (
+            "ข่าว" not in normalized_message
+            and not normalized_message.startswith("ข้อ")
+            and not normalized_message.startswith("คอ")
+            and not normalized_message.startswith("ขอ")
+        ):
             return None
 
         for pattern in self._NEWS_DETAIL_PATTERNS:

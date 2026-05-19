@@ -446,7 +446,7 @@ class NewsService:
 
     @staticmethod
     def _extract_requested_index(message: str) -> int | None:
-        match = re.search(r"ข้อ\s*([1-9])", message.casefold())
+        match = re.search(r"(?:ข้อ|คอ|ขอ)\s*(?:ที่)?\s*([1-9])", message.casefold())
         if match is None:
             return None
         try:

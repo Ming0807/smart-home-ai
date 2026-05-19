@@ -13,6 +13,10 @@ from server.services.device_control import (
     DeviceControlService,
     get_device_control_service,
 )
+from server.services.conversation_memory import (
+    ConversationMemoryService,
+    get_conversation_memory_service,
+)
 from server.services.intent_router import IntentRouter, get_intent_router
 from server.services.line_service import LineService, get_line_service
 from server.services.llm_manager import LLMManager, get_llm_manager
@@ -42,6 +46,7 @@ class ChatService:
     def __init__(
         self,
         settings: Settings,
+        conversation_memory: ConversationMemoryService,
         intent_router: IntentRouter,
         line_service: LineService,
         llm_manager: LLMManager,
@@ -56,6 +61,7 @@ class ChatService:
         weather_service: WeatherService,
     ) -> None:
         self._settings = settings
+        self._conversation_memory = conversation_memory
         self._intent_router = intent_router
         self._line_service = line_service
         self._llm_manager = llm_manager
@@ -119,7 +125,7 @@ class ChatService:
             if intent_match.intent == "news_query":
                 news_answer = self._news_service.answer_news_query(message)
                 source = news_answer.source
-                return self._build_response(
+                response = self._build_response(
                     reply=news_answer.reply,
                     intent="news_query",
                     source=news_answer.source,
@@ -127,6 +133,8 @@ class ChatService:
                     force_audio=force_audio,
                     suppress_audio=suppress_audio,
                 )
+                self._remember_turn(message, response)
+                return response
 
             if intent_match.intent == "line_send_request":
                 news_selection = self._news_service.select_recent_news_for_line(message)
@@ -182,7 +190,7 @@ class ChatService:
             if intent_match.intent == "news_detail_query":
                 news_detail_answer = self._news_service.answer_news_detail_query(message)
                 source = news_detail_answer.source
-                return self._build_response(
+                response = self._build_response(
                     reply=news_detail_answer.reply,
                     intent="news_detail_query",
                     source=news_detail_answer.source,
@@ -190,6 +198,8 @@ class ChatService:
                     force_audio=force_audio,
                     suppress_audio=suppress_audio,
                 )
+                self._remember_turn(message, response)
+                return response
 
             if intent_match.intent == "system_status":
                 system_status_answer = self._system_status_service.get_status(
@@ -250,7 +260,7 @@ class ChatService:
             )
             if smalltalk_reply is not None:
                 source = "rule_based"
-                return self._build_response(
+                response = self._build_response(
                     reply=smalltalk_reply.reply,
                     intent="general_chat",
                     source="rule_based",
@@ -258,11 +268,17 @@ class ChatService:
                     force_audio=force_audio,
                     suppress_audio=suppress_audio,
                 )
+                self._remember_turn(message, response)
+                return response
 
-            llm_response = self._llm_manager.generate_reply(message)
+            contextual_message = self._conversation_memory.build_contextual_message(
+                session_id="default",
+                message=message,
+            )
+            llm_response = self._llm_manager.generate_reply(contextual_message)
             intent = "general_chat"
             source = llm_response.source
-            return self._build_response(
+            response = self._build_response(
                 reply=llm_response.reply,
                 intent="general_chat",
                 source=llm_response.source,
@@ -270,6 +286,8 @@ class ChatService:
                 force_audio=force_audio,
                 suppress_audio=suppress_audio,
             )
+            self._remember_turn(message, response)
+            return response
         except Exception:
             status_text = "error"
             raise
@@ -416,6 +434,15 @@ class ChatService:
             ),
         )
 
+    def _remember_turn(self, message: str, response: ChatResponse) -> None:
+        self._conversation_memory.add_turn(
+            session_id="default",
+            user=message,
+            assistant=response.reply,
+            intent=response.intent,
+            source=response.source,
+        )
+
     def _schedule_audio_generation(
         self,
         background_tasks: BackgroundTasks,
@@ -441,6 +468,7 @@ class ChatService:
 
 _chat_service = ChatService(
     settings=get_settings(),
+    conversation_memory=get_conversation_memory_service(),
     intent_router=get_intent_router(),
     line_service=get_line_service(),
     llm_manager=get_llm_manager(),
