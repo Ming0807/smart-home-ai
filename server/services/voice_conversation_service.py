@@ -117,6 +117,25 @@ class VoiceConversationService:
                 if prefer_deep_thinking
                 else self._smalltalk_service.get_reply(cleaned_text)
             )
+            fast_memory_reply = (
+                None
+                if prefer_deep_thinking
+                else self._conversation_memory.get_fast_reply("default", cleaned_text)
+            )
+            if fast_memory_reply is not None:
+                response = self._build_response(
+                    heard_text=cleaned_text,
+                    reply=fast_memory_reply,
+                    intent="general_chat",
+                    source="rule_based",
+                    action="none",
+                    keep_mic_open=True,
+                    background_tasks=background_tasks,
+                    audio_mode=audio_mode,
+                )
+                self._remember_turn(cleaned_text, response)
+                return response
+
             if smalltalk_reply is not None:
                 keep_mic_open = self._apply_keep_mic_open_override(
                     ai_keep_mic_open=smalltalk_reply.keep_mic_open,

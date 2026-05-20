@@ -255,6 +255,23 @@ class ChatService:
                 self._llm_manager.is_thinking_request(message)
                 or self._llm_manager.is_real_thinking_request(message)
             )
+            fast_memory_reply = (
+                None
+                if prefer_deep_thinking
+                else self._conversation_memory.get_fast_reply("default", message)
+            )
+            if fast_memory_reply is not None:
+                response = self._build_response(
+                    reply=fast_memory_reply,
+                    intent="general_chat",
+                    source="rule_based",
+                    background_tasks=background_tasks,
+                    force_audio=force_audio,
+                    suppress_audio=suppress_audio,
+                )
+                self._remember_turn(message, response)
+                return response
+
             smalltalk_reply = (
                 None if prefer_deep_thinking else self._smalltalk_service.get_reply(message)
             )

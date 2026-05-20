@@ -234,7 +234,7 @@ static bool record_and_upload_audio(
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "%s upload failed: %s", reason, esp_err_to_name(err));
         set_state(VOICE_NODE_STATE_WAKE_LISTENING);
-        return false;
+        return conversation_turn || upload_only_if_speech;
     }
     ESP_LOGI(
         TAG,
@@ -253,6 +253,10 @@ static bool record_and_upload_audio(
     }
 
     set_state(VOICE_NODE_STATE_WAKE_LISTENING);
+    if (conversation_turn && upload_result.reply_audio_url[0] == '\0') {
+        ESP_LOGW(TAG, "Keeping conversation alive because response had no playable audio");
+        return true;
+    }
     return upload_result.keep_mic_open;
 }
 
