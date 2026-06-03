@@ -49,11 +49,10 @@ class DeviceRegistry:
             return None
 
         with self._lock:
-            for device in self._devices.values():
-                names = (device.display_name, *device.aliases)
-                if any(_normalize(name) in normalized_text for name in names):
-                    return device
-        return None
+            return _find_best_device_match(
+                devices=self._devices.values(),
+                normalized_text=normalized_text,
+            )
 
     def find_controllable_device(self, text: str) -> DeviceDefinition | None:
         normalized_text = _normalize(text)
@@ -66,11 +65,10 @@ class DeviceRegistry:
                 for device in self._devices.values()
                 if device.enabled and device.device_type == "relay"
             ]
-            for device in relay_devices:
-                names = (device.display_name, *device.aliases)
-                if any(_normalize(name) in normalized_text for name in names):
-                    return device
-        return None
+            return _find_best_device_match(
+                devices=relay_devices,
+                normalized_text=normalized_text,
+            )
 
     def update_metadata(
         self,
@@ -453,8 +451,8 @@ class DeviceRegistry:
         relay_channel: int,
         esp32_status: DeviceStatusResponse,
     ) -> None:
-        if relay_channel != 1:
-            raise DeviceRegistryError("ตอนนี้รองรับ relay channel 1 เท่านั้น")
+        if not 1 <= relay_channel <= 4:
+            raise DeviceRegistryError("ตอนนี้รองรับ relay channel 1-4 เท่านั้น")
 
         capabilities = esp32_status.capabilities
         if capabilities is None:
@@ -514,27 +512,85 @@ class DeviceRegistry:
     @staticmethod
     def _build_default_devices(settings: Settings) -> list[DeviceDefinition]:
         esp32_device_id = settings.default_esp32_device_id
-        return [
-            DeviceDefinition(
-                id="relay_1",
-                display_name="รีเลย์ช่อง 1",
-                device_type="relay",
-                room="demo",
-                esp32_device_id=esp32_device_id,
-                gpio_pin=settings.default_relay_gpio_pin,
-                pin_mode="output",
-                relay_channel=1,
-                active_high=settings.default_relay_active_high,
-                aliases=[
-                    "รีเลย์",
-                    "relay",
+        relay_definitions = (
+            (
+                "relay_1",
+                "ไฟห้องรับแขก",
+                "ห้องรับแขก",
+                settings.default_relay_gpio_pin,
+                1,
+                [
                     "ไฟ",
                     "หลอดไฟ",
-                    "พัดลม",
-                    "ปลั๊ก",
+                    "ไฟห้องรับแขก",
+                    "ไฟห้องนั่งเล่น",
+                    "ไฟรับแขก",
+                    "ห้องรับแขก",
+                    "living room light",
+                    "relay 1",
                 ],
-                actions=["on", "off"],
             ),
+            (
+                "relay_2",
+                "ไฟห้องนอน",
+                "ห้องนอน",
+                7,
+                2,
+                [
+                    "ไฟห้องนอน",
+                    "หลอดไฟห้องนอน",
+                    "ห้องนอน",
+                    "bedroom light",
+                    "relay 2",
+                ],
+            ),
+            (
+                "relay_3",
+                "ไฟห้องน้ำ",
+                "ห้องน้ำ",
+                8,
+                3,
+                [
+                    "ไฟห้องน้ำ",
+                    "หลอดไฟห้องน้ำ",
+                    "ห้องน้ำ",
+                    "bathroom light",
+                    "relay 3",
+                ],
+            ),
+            (
+                "relay_4",
+                "ไฟห้องครัว",
+                "ห้องครัว",
+                9,
+                4,
+                [
+                    "ไฟห้องครัว",
+                    "หลอดไฟห้องครัว",
+                    "ห้องครัว",
+                    "kitchen light",
+                    "relay 4",
+                ],
+            ),
+        )
+        relay_devices = [
+            DeviceDefinition(
+                id=device_id,
+                display_name=display_name,
+                device_type="relay",
+                room=room,
+                esp32_device_id=esp32_device_id,
+                gpio_pin=gpio_pin,
+                pin_mode="output",
+                relay_channel=relay_channel,
+                active_high=settings.default_relay_active_high,
+                aliases=aliases,
+                actions=["on", "off"],
+            )
+            for device_id, display_name, room, gpio_pin, relay_channel, aliases in relay_definitions
+        ]
+        return [
+            *relay_devices,
             DeviceDefinition(
                 id="dht22_1",
                 display_name="DHT22",
@@ -572,6 +628,24 @@ def _normalize(text: str) -> str:
     return "".join(text.casefold().split())
 
 
+def _find_best_device_match(
+    devices,
+    normalized_text: str,
+) -> DeviceDefinition | None:
+    best_device: DeviceDefinition | None = None
+    best_score = -1
+    for device in devices:
+        names = (device.display_name, *device.aliases)
+        for name in names:
+            normalized_name = _normalize(name)
+            if not normalized_name:
+                continue
+            if normalized_name in normalized_text and len(normalized_name) > best_score:
+                best_score = len(normalized_name)
+                best_device = device
+    return best_device
+
+
 def _coerce_str(value: object) -> str | None:
     if not isinstance(value, str):
         return None
@@ -590,7 +664,7 @@ def _coerce_gpio_pin(value: object) -> int | None:
 def _coerce_relay_channel(value: object) -> int | None:
     if not isinstance(value, int) or isinstance(value, bool):
         return None
-    if value == 1:
+    if 1 <= value <= 4:
         return value
     return None
 

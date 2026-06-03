@@ -16,6 +16,7 @@ from config import (
     MOTION_ENABLED,
     RELAY_ACTIVE_HIGH,
     RELAY_PIN,
+    RELAY_PINS,
     SENSOR_INTERVAL_SECONDS,
 )
 from motion_reader import MotionReader
@@ -24,7 +25,8 @@ from wifi_manager import ensure_wifi
 
 
 class RelayChannel:
-    def __init__(self, pin_number=RELAY_PIN, active_high=RELAY_ACTIVE_HIGH):
+    def __init__(self, pin_number, active_high=RELAY_ACTIVE_HIGH):
+        self._pin_number = pin_number
         self._pin = machine.Pin(pin_number, machine.Pin.OUT)
         self._active_high = active_high
         self.off()
@@ -35,20 +37,39 @@ class RelayChannel:
     def off(self):
         self._pin.value(0 if self._active_high else 1)
 
+
+class RelayController:
+    def __init__(self, relay_pins=None, active_high=RELAY_ACTIVE_HIGH):
+        pins = relay_pins or {1: RELAY_PIN}
+        self._channels = {}
+        for channel, pin_number in pins.items():
+            self._channels[int(channel)] = RelayChannel(
+                pin_number=int(pin_number),
+                active_high=active_high,
+            )
+
     def apply(self, command):
-        if command.get("type") != "relay" or command.get("channel") != 1:
+        if command.get("type") != "relay":
             return {
                 "status": "failed",
                 "state": None,
                 "error": "unsupported command",
             }
+        channel = int(command.get("channel") or 1)
+        relay = self._channels.get(channel)
+        if relay is None:
+            return {
+                "status": "failed",
+                "state": None,
+                "error": "unsupported relay channel",
+            }
         action = command.get("action")
         print("Relay command received:", command)
         if action == "on":
-            self.on()
+            relay.on()
             return {"status": "applied", "state": "on", "error": None}
         elif action == "off":
-            self.off()
+            relay.off()
             return {"status": "applied", "state": "off", "error": None}
         return {
             "status": "failed",
@@ -65,7 +86,7 @@ def main():
     wlan = None
     sensor = Dht22Reader()
     motion_reader = MotionReader() if MOTION_ENABLED else None
-    relay = RelayChannel()
+    relay = RelayController(RELAY_PINS)
 
     last_heartbeat = None
     last_capabilities = None

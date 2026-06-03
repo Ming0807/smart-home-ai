@@ -48,7 +48,7 @@ class RelayCommand(BaseModel):
     type: Literal["relay"] = "relay"
     command_id: str | None = None
     target_device_id: str | None = None
-    channel: int = Field(default=1, ge=1, le=1)
+    channel: int = Field(default=1, ge=1, le=4)
     gpio_pin: int | None = Field(default=None, ge=0, le=48)
     action: RelayAction
 

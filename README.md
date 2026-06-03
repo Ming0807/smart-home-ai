@@ -29,7 +29,7 @@
 
 - ESP32-S3
 - DHT22
-- 1-channel relay
+- 4-channel relay / relay 4 ตัว
 - HC-SR501 PIR motion sensor
 - INMP441 มี starter foundation เท่านั้น ยังไม่ใช่ voice input หลัก
 
@@ -498,12 +498,15 @@ GND  -> GND
 DATA -> GPIO4
 ```
 
-### Relay 1-channel
+### Relay 4-channel
 
 ```text
 VCC -> 5V
 GND -> GND
-IN  -> GPIO5
+IN1 -> GPIO5  (ไฟห้องรับแขก)
+IN2 -> GPIO7  (ไฟห้องนอน)
+IN3 -> GPIO8  (ไฟห้องน้ำ)
+IN4 -> GPIO9  (ไฟห้องครัว)
 ```
 
 ### PIR HC-SR501
@@ -567,7 +570,10 @@ data/device_registry.json
 
 ค่า default:
 
-- relay_1 ใช้ GPIO5
+- relay_1 ใช้ GPIO5 = ไฟห้องรับแขก
+- relay_2 ใช้ GPIO7 = ไฟห้องนอน
+- relay_3 ใช้ GPIO8 = ไฟห้องน้ำ
+- relay_4 ใช้ GPIO9 = ไฟห้องครัว
 - dht22_1 ใช้ GPIO4
 - pir_1 ใช้ GPIO6
 
@@ -772,4 +778,3 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\start_demo.ps1 -NoOllamaSt
 ```text
 http://127.0.0.1:8000/
 ```
-

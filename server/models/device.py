@@ -47,7 +47,7 @@ class DeviceCreateRequest(BaseModel):
     room: str | None = Field(default=None, max_length=120)
     esp32_device_id: str | None = Field(default=None, min_length=1, max_length=64)
     gpio_pin: int | None = Field(default=None, ge=0, le=48)
-    relay_channel: int | None = Field(default=None, ge=1, le=1)
+    relay_channel: int | None = Field(default=None, ge=1, le=4)
     active_high: bool | None = None
     aliases: list[str] = Field(default_factory=list, max_length=20)
     enabled: bool = True

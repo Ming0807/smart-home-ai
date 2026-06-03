@@ -39,7 +39,7 @@ class DeviceControlService:
                 source="fallback",
             )
 
-        spoken_name = self._detect_device_name(message) or target_device.display_name
+        spoken_name = target_device.display_name
         target_device = self._mark_timed_out_pending_command(target_device)
         if self._is_status_query(message):
             return DeviceControlResult(

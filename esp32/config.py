@@ -8,6 +8,12 @@ SERVER_BASE_URL = "http://192.168.60.114:8000"
 
 DHT22_PIN = 4
 RELAY_PIN = 5
+RELAY_PINS = {
+    1: 5,  # ไฟห้องรับแขก
+    2: 7,  # ไฟห้องนอน
+    3: 8,  # ไฟห้องน้ำ
+    4: 9,  # ไฟห้องครัว
+}
 RELAY_ACTIVE_HIGH = True
 PIR_PIN = 6
 MOTION_ENABLED = True

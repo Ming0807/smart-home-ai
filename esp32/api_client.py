@@ -15,6 +15,7 @@ from config import (
     MOTION_ENABLED,
     PIR_PIN,
     RELAY_PIN,
+    RELAY_PINS,
     SERVER_BASE_URL,
 )
 
@@ -80,7 +81,8 @@ def send_capabilities():
     if MIC_ENABLED:
         capabilities.append("i2s_microphone")
 
-    reserved_pins = [DHT22_PIN, RELAY_PIN]
+    relay_pins = _relay_pins()
+    reserved_pins = [DHT22_PIN, *relay_pins]
     sensor_pins = [DHT22_PIN]
     if MOTION_ENABLED:
         reserved_pins.append(PIR_PIN)
@@ -93,7 +95,7 @@ def send_capabilities():
         "board_type": BOARD_TYPE,
         "firmware_version": FIRMWARE_VERSION,
         "capabilities": capabilities,
-        "relay_pins": [RELAY_PIN],
+        "relay_pins": relay_pins,
         "sensor_pins": sensor_pins,
         "reserved_pins": _unique_ints(reserved_pins),
         "i2s_pins": [I2S_WS_PIN, I2S_SCK_PIN, I2S_SD_PIN] if MIC_ENABLED else [],
@@ -152,6 +154,14 @@ def _unique_ints(values):
         if value not in result:
             result.append(value)
     return result
+
+
+def _relay_pins():
+    try:
+        values = RELAY_PINS.values()
+    except AttributeError:
+        values = [RELAY_PIN]
+    return _unique_ints([int(value) for value in values])
 
 
 def _iso_timestamp():
