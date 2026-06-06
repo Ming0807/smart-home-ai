@@ -91,6 +91,9 @@ class VoiceNodeAudioStatusResponse(BaseModel):
     device_id: str
     has_result: bool
     received_at: datetime | None = None
+    server_received_at: datetime | None = None
+    server_processing_ms: float | None = None
+    playback_after_processing_ms: float | None = None
     seconds_since_received: int | None = None
     stt_ok: bool | None = None
     stt_error: str | None = None
@@ -154,6 +157,9 @@ class VoiceNodeStreamStatusResponse(BaseModel):
 
 class VoiceNodeAudioHistoryItem(BaseModel):
     received_at: datetime
+    server_received_at: datetime | None = None
+    server_processing_ms: float | None = None
+    playback_after_processing_ms: float | None = None
     seconds_since_received: int
     stt_ok: bool
     stt_error: str | None = None

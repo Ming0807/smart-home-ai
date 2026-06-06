@@ -56,6 +56,7 @@ class STTService:
         filename: str | None,
         content_type: str | None,
         audio_bytes: bytes,
+        retry_without_vad: bool = True,
     ) -> STTResult:
         provider = self._settings.stt_provider.strip().lower()
         temp_path: Path | None = None
@@ -81,7 +82,10 @@ class STTService:
             )
 
             if provider == "faster_whisper":
-                return self._transcribe_with_timeout(temp_path)
+                return self._transcribe_with_timeout(
+                    temp_path,
+                    retry_without_vad=retry_without_vad,
+                )
 
             return STTResult(
                 ok=False,
@@ -104,9 +108,17 @@ class STTService:
                 except OSError:
                     logger.warning("Failed to remove temporary STT file: %s", temp_path)
 
-    def _transcribe_with_timeout(self, audio_path: Path) -> STTResult:
+    def _transcribe_with_timeout(
+        self,
+        audio_path: Path,
+        retry_without_vad: bool,
+    ) -> STTResult:
         timer = start_timer()
-        future = self._executor.submit(self._run_faster_whisper, audio_path)
+        future = self._executor.submit(
+            self._run_faster_whisper,
+            audio_path,
+            retry_without_vad,
+        )
         timeout_seconds = self._settings.stt_timeout_seconds
         if not self._warmed_up:
             timeout_seconds = max(timeout_seconds, 120.0)
@@ -140,7 +152,11 @@ class STTService:
         )
         return result
 
-    def _run_faster_whisper(self, audio_path: Path) -> STTResult:
+    def _run_faster_whisper(
+        self,
+        audio_path: Path,
+        retry_without_vad: bool,
+    ) -> STTResult:
         if WhisperModel is None:
             return STTResult(
                 ok=False,
@@ -158,6 +174,7 @@ class STTService:
         if (
             not result.ok
             and self._settings.stt_vad_filter
+            and retry_without_vad
             and result.error == "no speech detected"
         ):
             logger.info("STT returned no speech with VAD; retrying once without VAD")

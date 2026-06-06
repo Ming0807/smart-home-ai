@@ -2,6 +2,7 @@ import time
 import ujson
 import urequests
 
+import config as _config
 from config import (
     BOARD_TYPE,
     DEVICE_ID,
@@ -14,10 +15,12 @@ from config import (
     MIC_ENABLED,
     MOTION_ENABLED,
     PIR_PIN,
-    RELAY_PIN,
-    RELAY_PINS,
     SERVER_BASE_URL,
 )
+
+DEFAULT_RELAY_PIN = 5
+RELAY_PIN = getattr(_config, "RELAY_PIN", DEFAULT_RELAY_PIN)
+RELAY_PINS = getattr(_config, "RELAY_PINS", None)
 
 
 def _url(path):
@@ -82,7 +85,7 @@ def send_capabilities():
         capabilities.append("i2s_microphone")
 
     relay_pins = _relay_pins()
-    reserved_pins = [DHT22_PIN, *relay_pins]
+    reserved_pins = [DHT22_PIN] + relay_pins
     sensor_pins = [DHT22_PIN]
     if MOTION_ENABLED:
         reserved_pins.append(PIR_PIN)
@@ -157,9 +160,12 @@ def _unique_ints(values):
 
 
 def _relay_pins():
-    try:
-        values = RELAY_PINS.values()
-    except AttributeError:
+    if RELAY_PINS:
+        try:
+            values = RELAY_PINS.values()
+        except AttributeError:
+            values = RELAY_PINS
+    else:
         values = [RELAY_PIN]
     return _unique_ints([int(value) for value in values])
 

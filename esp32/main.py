@@ -1,6 +1,7 @@
 import machine
 import time
 
+import config as _config
 from api_client import (
     get_next_command,
     send_capabilities,
@@ -15,13 +16,15 @@ from config import (
     HEARTBEAT_INTERVAL_SECONDS,
     MOTION_ENABLED,
     RELAY_ACTIVE_HIGH,
-    RELAY_PIN,
-    RELAY_PINS,
     SENSOR_INTERVAL_SECONDS,
 )
 from motion_reader import MotionReader
 from sensor_reader import Dht22Reader
 from wifi_manager import ensure_wifi
+
+DEFAULT_RELAY_PIN = 5
+RELAY_PIN = getattr(_config, "RELAY_PIN", DEFAULT_RELAY_PIN)
+RELAY_PINS = getattr(_config, "RELAY_PINS", None)
 
 
 class RelayChannel:
@@ -40,7 +43,7 @@ class RelayChannel:
 
 class RelayController:
     def __init__(self, relay_pins=None, active_high=RELAY_ACTIVE_HIGH):
-        pins = relay_pins or {1: RELAY_PIN}
+        pins = _normalize_relay_pins(relay_pins)
         self._channels = {}
         for channel, pin_number in pins.items():
             self._channels[int(channel)] = RelayChannel(
@@ -76,6 +79,19 @@ class RelayController:
             "state": None,
             "error": "unsupported relay action",
         }
+
+
+def _normalize_relay_pins(relay_pins):
+    if not relay_pins:
+        return {1: RELAY_PIN}
+    try:
+        relay_pins.items()
+        return relay_pins
+    except AttributeError:
+        channels = {}
+        for index, pin_number in enumerate(relay_pins):
+            channels[index + 1] = pin_number
+        return channels
 
 
 def _due(now, last_run, interval):

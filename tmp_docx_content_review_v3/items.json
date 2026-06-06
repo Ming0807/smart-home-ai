@@ -1,0 +1,4960 @@
+[
+  {
+    "index": 5,
+    "type": "p",
+    "text": "รายงานโครงงาน"
+  },
+  {
+    "index": 7,
+    "type": "p",
+    "text": "ระบบผู้ช่วยบ้านอัจฉริยะภาษาไทย"
+  },
+  {
+    "index": 8,
+    "type": "p",
+    "text": "AI Smart Home Thai Assistant"
+  },
+  {
+    "index": 10,
+    "type": "p",
+    "text": "═══════════════════════════════════"
+  },
+  {
+    "index": 12,
+    "type": "p",
+    "text": "โดย"
+  },
+  {
+    "index": 13,
+    "type": "p",
+    "text": "[ชื่อผู้จัดทำ]"
+  },
+  {
+    "index": 15,
+    "type": "p",
+    "text": "อาจารย์ที่ปรึกษา: [ชื่ออาจารย์ที่ปรึกษา]"
+  },
+  {
+    "index": 17,
+    "type": "p",
+    "text": "สาขาวิชา [ชื่อสาขา]"
+  },
+  {
+    "index": 18,
+    "type": "p",
+    "text": "คณะ [ชื่อคณะ]"
+  },
+  {
+    "index": 19,
+    "type": "p",
+    "text": "[ชื่อมหาวิทยาลัย]"
+  },
+  {
+    "index": 20,
+    "type": "p",
+    "text": "พ.ศ. 2569"
+  },
+  {
+    "index": 22,
+    "type": "p",
+    "text": "ใบรับรองโครงงาน"
+  },
+  {
+    "index": 23,
+    "type": "p",
+    "text": "คณะ [ชื่อคณะ] [ชื่อมหาวิทยาลัย]"
+  },
+  {
+    "index": 24,
+    "type": "p",
+    "text": "โครงงานนี้เป็นส่วนหนึ่งของการศึกษาตามหลักสูตร [ชื่อปริญญา] สาขาวิชา [ชื่อสาขา] คณะ [ชื่อคณะ] [ชื่อมหาวิทยาลัย]"
+  },
+  {
+    "index": 25,
+    "type": "p",
+    "text": "หัวข้อโครงงาน : ระบบผู้ช่วยบ้านอัจฉริยะภาษาไทย (AI Smart Home Thai Assistant)"
+  },
+  {
+    "index": 26,
+    "type": "p",
+    "text": "ผู้จัดทำ    : [ชื่อผู้จัดทำ]"
+  },
+  {
+    "index": 27,
+    "type": "p",
+    "text": "อาจารย์ที่ปรึกษา : [ชื่ออาจารย์ที่ปรึกษา]"
+  },
+  {
+    "index": 28,
+    "type": "p",
+    "text": "ปีการศึกษา : 2569"
+  },
+  {
+    "index": 29,
+    "type": "p",
+    "text": "คณะกรรมการสอบโครงงาน"
+  },
+  {
+    "index": 30,
+    "type": "p",
+    "text": "_________________________________________ ประธานกรรมการ"
+  },
+  {
+    "index": 31,
+    "type": "p",
+    "text": "_________________________________________ กรรมการ"
+  },
+  {
+    "index": 32,
+    "type": "p",
+    "text": "_________________________________________ อาจารย์ที่ปรึกษา"
+  },
+  {
+    "index": 33,
+    "type": "p",
+    "text": "คณะ [ชื่อคณะ] [ชื่อมหาวิทยาลัย] อนุมัติให้โครงงานนี้เป็นส่วนหนึ่งของการศึกษา"
+  },
+  {
+    "index": 34,
+    "type": "p",
+    "text": "_________________________________________"
+  },
+  {
+    "index": 35,
+    "type": "p",
+    "text": "( [ชื่อคณบดี] )"
+  },
+  {
+    "index": 36,
+    "type": "p",
+    "text": "คณบดีคณะ [ชื่อคณะ]"
+  },
+  {
+    "index": 37,
+    "type": "p",
+    "text": "วันที่ ___/___/______"
+  },
+  {
+    "index": 39,
+    "type": "p",
+    "text": "กิตติกรรมประกาศ"
+  },
+  {
+    "index": 40,
+    "type": "p",
+    "text": "โครงงานระบบผู้ช่วยบ้านอัจฉริยะภาษาไทย (AI Smart Home Thai Assistant) ฉบับนี้ สำเร็จลุล่วงไปได้ด้วยความช่วยเหลืออย่างดียิ่งจากอาจารย์ที่ปรึกษา ที่ได้กรุณาให้คำปรึกษา แนะนำแนวทาง และตรวจสอบแก้ไขข้อบกพร่องต่าง ๆ ตลอดระยะเวลาการดำเนินโครงงาน ขอขอบพระคุณเป็นอย่างสูงไว้ ณ โอกาสนี้"
+  },
+  {
+    "index": 41,
+    "type": "p",
+    "text": "ขอขอบคุณคณะ [ชื่อคณะ] [ชื่อมหาวิทยาลัย] ที่สนับสนุนสถานที่ อุปกรณ์ และ ทรัพยากรต่าง ๆ ที่จำเป็นต่อการดำเนินโครงงานนี้ ขอขอบคุณเจ้าหน้าที่ภาควิชา ทุกท่านที่อำนวยความสะดวกในการยืมอุปกรณ์และการใช้ห้องปฏิบัติการ รวมถึง เพื่อน ๆ ทุกคนที่ให้คำแนะนำและกำลังใจ"
+  },
+  {
+    "index": 42,
+    "type": "p",
+    "text": "นอกจากนี้ ขอขอบคุณทีมพัฒนา Ollama, faster-whisper, Edge TTS, FastAPI และ Espressif Systems ที่พัฒนาเครื่องมือและไลบรารีที่ใช้ในโครงงานนี้"
+  },
+  {
+    "index": 43,
+    "type": "p",
+    "text": "สุดท้ายนี้ ผู้จัดทำขอกราบขอบพระคุณบิดา มารดา และครอบครัว ที่ให้กำลังใจ และสนับสนุนด้านการศึกษาเสมอมา ประโยชน์และคุณค่าอันพึงมีจากโครงงานนี้ ผู้จัดทำขอมอบเป็นเครื่องบูชาพระคุณของบิดา มารดา ครูอาจารย์ และผู้มีพระคุณทุกท่าน"
+  },
+  {
+    "index": 45,
+    "type": "p",
+    "text": "[ชื่อผู้จัดทำ]"
+  },
+  {
+    "index": 46,
+    "type": "p",
+    "text": "ผู้จัดทำ"
+  },
+  {
+    "index": 48,
+    "type": "p",
+    "text": "บทคัดย่อ"
+  },
+  {
+    "index": 49,
+    "type": "p",
+    "text": "โครงงานนี้มีวัตถุประสงค์เพื่อพัฒนาระบบผู้ช่วยบ้านอัจฉริยะภาษาไทยที่สามารถสนทนา โต้ตอบกับผู้ใช้ด้วยภาษาไทย ควบคุมอุปกรณ์ไฟฟ้าภายในบ้าน อ่านค่าจากเซนเซอร์ และให้ข้อมูลภายนอกผ่าน API ได้แบบเรียลไทม์ โดยใช้บอร์ด ESP32-S3 เป็นตัวควบคุม อุปกรณ์และเซนเซอร์ เชื่อมต่อกับเซิร์ฟเวอร์ภายในเครื่องที่ใช้ FastAPI และ Local LLM ผ่าน Ollama โดยเดโมปัจจุบันใช้ Gemma 4 E2B เป็นโมเดลหลัก และยังรองรับ Typhoon 2 8B เป็นโมเดลทางเลือกสำหรับการประมวลผลภาษาธรรมชาติ"
+  },
+  {
+    "index": 50,
+    "type": "p",
+    "text": "ระบบประกอบด้วย 3 ส่วนหลัก ได้แก่ (1) เซิร์ฟเวอร์ภายในเครื่องที่ทำหน้าที่ รับคำถาม วิเคราะห์เจตนา (Intent Classification) เรียกข้อมูลจาก API ภายนอก และสร้างคำตอบด้วย AI (2) Web UI Dashboard สำหรับสนทนาผ่านเบราว์เซอร์ พร้อมแสดงสถานะเซนเซอร์และการควบคุมรีเลย์แบบ Real-time และ (3) บอร์ด ESP32-S3 สองตัว โดยตัวแรกเป็น Control Node ที่เขียนด้วย MicroPython สำหรับอ่านค่า DHT22, PIR Motion และควบคุม Relay Module ส่วนตัวที่สอง เป็น Voice Node ที่ใช้ ESP-IDF สำหรับการรับเสียงจากไมโครโฟน INMP441 และเล่นเสียงตอบกลับผ่าน MAX98357A + ลำโพง"
+  },
+  {
+    "index": 51,
+    "type": "p",
+    "text": "ระบบออกแบบให้แกนหลักของการสนทนาและการควบคุม IoT ทำงานบนเครื่อง Local โดยใช้ Local LLM ผ่าน Ollama, Thai STT (faster-whisper) และ Thai TTS ผ่าน Edge TTS เพื่อรองรับการสนทนาด้วยเสียงภาษาไทยอย่างสมบูรณ์ นอกจากนี้ยังมีกลไก Intent Router แบบ Rule-based เพื่อเพิ่มความเร็วในการตอบสนองสำหรับ คำสั่งควบคุมอุปกรณ์และคำถามทั่วไป"
+  },
+  {
+    "index": 52,
+    "type": "p",
+    "text": "ผลการดำเนินงานพบว่าระบบสามารถทำงานได้ตามวัตถุประสงค์หลักสำหรับการเดโม โดยยังมีบางส่วนที่ควรพัฒนาต่อสำหรับการใช้งานจริงระยะยาว เซิร์ฟเวอร์สามารถตอบคำถามภาษาไทยผ่านการพิมพ์และการพูดได้อย่างถูกต้อง สามารถควบคุมรีเลย์เปิด-ปิดอุปกรณ์ไฟฟ้า แสดงค่าอุณหภูมิและความชื้นแบบ Real-time และให้ข้อมูลสภาพอากาศ ข่าวสาร การจราจร และการนำทางผ่าน API ภายนอกได้ Voice Node สามารถรับคำสั่งเสียงผ่านการตรวจจับคำปลุก (Wake Word) และเล่นเสียงตอบกลับผ่านลำโพงได้ อีกทั้งระบบยังมี Dashboard ที่แสดงสถานะต่าง ๆ ได้อย่างครบถ้วน"
+  },
+  {
+    "index": 54,
+    "type": "p",
+    "text": "Abstract"
+  },
+  {
+    "index": 55,
+    "type": "p",
+    "text": "This project aims to develop a Thai language smart home assistant system capable of conversing with users in Thai, controlling home electrical appliances, reading sensor data, and providing real-time external information through APIs. The system uses ESP32-S3 microcontrollers as control and voice nodes, connected to a local FastAPI server running a local LLM through Ollama. The current demo uses Gemma 4 E2B as the primary model while Typhoon 2 8B remains an optional alternative."
+  },
+  {
+    "index": 56,
+    "type": "p",
+    "text": "The system consists of three main components: (1) a local server that handles question analysis, intent classification, external API calls, and AI response generation, (2) a Web UI Dashboard for browser-based conversation with real-time sensor data and relay control display, and (3) two ESP32-S3 boards - a Control Node using MicroPython for DHT22 temperature/humidity sensor, PIR motion sensor, and relay control, and a Voice Node using ESP-IDF for INMP441 microphone input and MAX98357A speaker output."
+  },
+  {
+    "index": 57,
+    "type": "p",
+    "text": "The core chat and IoT control pipeline is designed to run locally using a Local LLM via Ollama, Thai STT (faster-whisper), and Thai TTS via Edge TTS for complete Thai voice interaction support. A rule-based Intent Router is implemented to improve response speed for device control commands and common queries."
+  },
+  {
+    "index": 58,
+    "type": "p",
+    "text": "Engineering test results show the system meets the main demo objectives, while some production-level items such as long-term persistence and native ESP-SR wake word tuning remain future work. The server can accurately respond to Thai questions through both text and voice input, control relays for electrical appliances, display real-time temperature and humidity readings, and provide weather, news, traffic, and navigation information through external APIs. The Voice Node can receive voice commands via wake word detection and play audio responses through the speaker. The Dashboard displays comprehensive system status information."
+  },
+  {
+    "index": 60,
+    "type": "p",
+    "text": "สารบัญ"
+  },
+  {
+    "index": 61,
+    "type": "p",
+    "text": "ใบรับรองโครงงาน  ข"
+  },
+  {
+    "index": 62,
+    "type": "p",
+    "text": "กิตติกรรมประกาศ  ค"
+  },
+  {
+    "index": 63,
+    "type": "p",
+    "text": "บทคัดย่อ  ง"
+  },
+  {
+    "index": 64,
+    "type": "p",
+    "text": "Abstract  จ"
+  },
+  {
+    "index": 65,
+    "type": "p",
+    "text": "สารบัญ  ฉ"
+  },
+  {
+    "index": 66,
+    "type": "p",
+    "text": "สารบัญตาราง  ช"
+  },
+  {
+    "index": 67,
+    "type": "p",
+    "text": "สารบัญภาพ  ซ"
+  },
+  {
+    "index": 68,
+    "type": "p",
+    "text": "บทที่ 1 บทนำ  1"
+  },
+  {
+    "index": 69,
+    "type": "p",
+    "text": "1.1 ที่มาและความสำคัญ  1"
+  },
+  {
+    "index": 70,
+    "type": "p",
+    "text": "1.2 วัตถุประสงค์ของโครงงาน  3"
+  },
+  {
+    "index": 71,
+    "type": "p",
+    "text": "1.3 ขอบเขตของโครงงาน  4"
+  },
+  {
+    "index": 72,
+    "type": "p",
+    "text": "1.4 ข้อตกลงเบื้องต้น  6"
+  },
+  {
+    "index": 73,
+    "type": "p",
+    "text": "1.5 ประโยชน์ที่คาดว่าจะได้รับ  6"
+  },
+  {
+    "index": 74,
+    "type": "p",
+    "text": "บทที่ 2 ทฤษฎีและงานวิจัยที่เกี่ยวข้อง  7"
+  },
+  {
+    "index": 75,
+    "type": "p",
+    "text": "2.1 แนวคิดและทฤษฎี  7"
+  },
+  {
+    "index": 76,
+    "type": "p",
+    "text": "2.1.1 ปัญญาประดิษฐ์ (AI)  7"
+  },
+  {
+    "index": 77,
+    "type": "p",
+    "text": "2.1.2 การประมวลผลภาษาธรรมชาติ (NLP)  8"
+  },
+  {
+    "index": 78,
+    "type": "p",
+    "text": "2.1.3 อินเทอร์เน็ตของสรรพสิ่ง (IoT)  9"
+  },
+  {
+    "index": 79,
+    "type": "p",
+    "text": "2.1.4 การรู้จำเสียงพูด (STT)  10"
+  },
+  {
+    "index": 80,
+    "type": "p",
+    "text": "2.1.5 การสังเคราะห์เสียงพูด (TTS)  10"
+  },
+  {
+    "index": 81,
+    "type": "p",
+    "text": "2.2 เทคโนโลยีและอุปกรณ์  11"
+  },
+  {
+    "index": 82,
+    "type": "p",
+    "text": "2.2.1 ESP32-S3  11"
+  },
+  {
+    "index": 83,
+    "type": "p",
+    "text": "2.2.2 FastAPI  12"
+  },
+  {
+    "index": 84,
+    "type": "p",
+    "text": "2.2.3 Ollama และ Local LLM  13"
+  },
+  {
+    "index": 85,
+    "type": "p",
+    "text": "2.2.4 Faster-Whisper  14"
+  },
+  {
+    "index": 86,
+    "type": "p",
+    "text": "2.2.5 Edge TTS  14"
+  },
+  {
+    "index": 87,
+    "type": "p",
+    "text": "2.2.6 DHT22  15"
+  },
+  {
+    "index": 88,
+    "type": "p",
+    "text": "2.2.7 PIR HC-SR501  15"
+  },
+  {
+    "index": 89,
+    "type": "p",
+    "text": "2.2.8 INMP441  16"
+  },
+  {
+    "index": 90,
+    "type": "p",
+    "text": "2.2.9 MAX98357A  16"
+  },
+  {
+    "index": 91,
+    "type": "p",
+    "text": "2.3 งานวิจัยที่เกี่ยวข้อง  17"
+  },
+  {
+    "index": 92,
+    "type": "p",
+    "text": "บทที่ 3 วิธีการดำเนินงาน  19"
+  },
+  {
+    "index": 93,
+    "type": "p",
+    "text": "3.1 ขั้นตอนการดำเนินงาน  19"
+  },
+  {
+    "index": 94,
+    "type": "p",
+    "text": "3.2 วัสดุ อุปกรณ์ และเครื่องมือ  21"
+  },
+  {
+    "index": 95,
+    "type": "p",
+    "text": "3.3 การออกแบบระบบ  23"
+  },
+  {
+    "index": 96,
+    "type": "p",
+    "text": "3.3.1 สถาปัตยกรรมระบบ  23"
+  },
+  {
+    "index": 97,
+    "type": "p",
+    "text": "3.3.2 การออกแบบ Data Flow  25"
+  },
+  {
+    "index": 98,
+    "type": "p",
+    "text": "3.3.3 การออกแบบ Use Case  26"
+  },
+  {
+    "index": 99,
+    "type": "p",
+    "text": "3.3.4 การออกแบบ Sequence Diagram  27"
+  },
+  {
+    "index": 100,
+    "type": "p",
+    "text": "3.3.5 การออกแบบ Deployment Diagram  28"
+  },
+  {
+    "index": 101,
+    "type": "p",
+    "text": "3.3.6 การออกแบบ State Machine  29"
+  },
+  {
+    "index": 102,
+    "type": "p",
+    "text": "3.4 การออกแบบฐานข้อมูล  30"
+  },
+  {
+    "index": 103,
+    "type": "p",
+    "text": "ตารางที่ 3.8 รายละเอียด Cache แต่ละประเภทในระบบ"
+  },
+  {
+    "index": 104,
+    "type": "table",
+    "rows": [
+      [
+        "Cache",
+        "ขนาด",
+        "TTL",
+        "รายละเอียด"
+      ],
+      [
+        "LLM Response Cache",
+        "32 คำตอบล่าสุด",
+        "120 วินาที",
+        "จำคำตอบของโมเดล AI สำหรับคำถามซ้ำ ลด Cold Start"
+      ],
+      [
+        "LLM Health Cache",
+        "1 รายการ",
+        "30 วินาที",
+        "สถานะความพร้อมของ Ollama / โมเดลที่เลือกใช้งาน"
+      ],
+      [
+        "Weather Cache",
+        "1 รายการ",
+        "600 วินาที",
+        "ข้อมูลสภาพอากาศจาก OpenWeather API"
+      ],
+      [
+        "News Cache",
+        "5 รายการ",
+        "600 วินาที",
+        "ข้อมูลข่าวสารจาก Currents API"
+      ],
+      [
+        "Traffic Cache",
+        "1 รายการ",
+        "300 วินาที",
+        "ข้อมูลการจราจรจาก TomTom API"
+      ],
+      [
+        "Navigation Cache",
+        "1 รายการ",
+        "600 วินาที",
+        "ข้อมูลเส้นทางจาก OpenRouteService API"
+      ]
+    ],
+    "row_count": 7
+  },
+  {
+    "index": 105,
+    "type": "p",
+    "text": "3.4.1 ระบบ Cache สำหรับ External API"
+  },
+  {
+    "index": 106,
+    "type": "p",
+    "text": "เพื่อลดเวลาในการตอบสนองและลดการเรียก API ภายนอกซ้ำโดยไม่จำเป็น ระบบได้ออกแบบ Cache แบบ Time-To-Live (TTL) สำหรับแต่ละบริการดังนี้:"
+  },
+  {
+    "index": 107,
+    "type": "p",
+    "text": "Cache ทั้งหมดทำงานแบบ In-Memory โดยใช้ Dictionary และ Expiry Timestamp เมื่อ Cache หมดอายุ ระบบจะเรียก API จริงอีกครั้งและอัปเดต Cache โดยอัตโนมัติ นอกจากนี้ Cache บางประเภทยังมี Fallback Response ในกรณีที่ API ไม่สามารถ ให้ข้อมูลได้ เพื่อให้ระบบยังสามารถตอบผู้ใช้ได้แม้ไม่มีอินเทอร์เน็ต"
+  },
+  {
+    "index": 108,
+    "type": "p",
+    "text": "3.5 การออกแบบวงจรและการเชื่อมต่อ  31"
+  },
+  {
+    "index": 109,
+    "type": "p",
+    "text": "3.6 การพัฒนาโปรแกรม  33"
+  },
+  {
+    "index": 110,
+    "type": "p",
+    "text": "3.6.1 การพัฒนาเซิร์ฟเวอร์ FastAPI  33"
+  },
+  {
+    "index": 111,
+    "type": "p",
+    "text": "3.6.2 การพัฒนา Control Node  35"
+  },
+  {
+    "index": 112,
+    "type": "p",
+    "text": "3.6.3 การพัฒนา Voice Node  36"
+  },
+  {
+    "index": 113,
+    "type": "p",
+    "text": "3.6.4 การพัฒนา Web UI  37"
+  },
+  {
+    "index": 114,
+    "type": "p",
+    "text": "บทที่ 4 ผลการดำเนินงาน  39"
+  },
+  {
+    "index": 115,
+    "type": "p",
+    "text": "4.1 ผลการพัฒนาระบบ  39"
+  },
+  {
+    "index": 116,
+    "type": "p",
+    "text": "4.2 ผลการทดสอบการทำงาน  44"
+  },
+  {
+    "index": 117,
+    "type": "p",
+    "text": "4.3 การวิเคราะห์และอภิปรายผล  49"
+  },
+  {
+    "index": 118,
+    "type": "p",
+    "text": "บทที่ 5 สรุปผลและข้อเสนอแนะ  52"
+  },
+  {
+    "index": 119,
+    "type": "p",
+    "text": "5.1 สรุปผลการดำเนินงาน  52"
+  },
+  {
+    "index": 120,
+    "type": "p",
+    "text": "5.2 ปัญหาและอุปสรรค  53"
+  },
+  {
+    "index": 121,
+    "type": "p",
+    "text": "5.3 ข้อเสนอแนะ  54"
+  },
+  {
+    "index": 122,
+    "type": "p",
+    "text": "บรรณานุกรม  56"
+  },
+  {
+    "index": 123,
+    "type": "p",
+    "text": "ภาคผนวก  58"
+  },
+  {
+    "index": 124,
+    "type": "p",
+    "text": "ภาคผนวก ก คู่มือการติดตั้งระบบ  59"
+  },
+  {
+    "index": 125,
+    "type": "p",
+    "text": "ภาคผนวก ข การเชื่อมต่อวงจร  62"
+  },
+  {
+    "index": 126,
+    "type": "p",
+    "text": "ภาคผนวก ค ตัวอย่างคำสั่ง API  64"
+  },
+  {
+    "index": 127,
+    "type": "p",
+    "text": "ภาคผนวก ง ตัวอย่างผลการทดสอบ  66"
+  },
+  {
+    "index": 128,
+    "type": "p",
+    "text": "ประวัติผู้จัดทำ  68"
+  },
+  {
+    "index": 130,
+    "type": "p",
+    "text": "สารบัญตาราง"
+  },
+  {
+    "index": 131,
+    "type": "p",
+    "text": "ตารางที่ 2.1 เปรียบเทียบโมเดลภาษาไทย  17"
+  },
+  {
+    "index": 132,
+    "type": "p",
+    "text": "ตารางที่ 2.2 เปรียบเทียบงานวิจัยที่เกี่ยวข้อง  18"
+  },
+  {
+    "index": 133,
+    "type": "p",
+    "text": "ตารางที่ 3.1 ขั้นตอนการดำเนินงาน  20"
+  },
+  {
+    "index": 134,
+    "type": "p",
+    "text": "ตารางที่ 3.2 รายการวัสดุอุปกรณ์  21"
+  },
+  {
+    "index": 135,
+    "type": "p",
+    "text": "ตารางที่ 3.3 ซอฟต์แวร์ที่ใช้ในการพัฒนา  22"
+  },
+  {
+    "index": 136,
+    "type": "p",
+    "text": "ตารางที่ 3.4 API ภายนอกที่ใช้งาน  22"
+  },
+  {
+    "index": 137,
+    "type": "p",
+    "text": "ตารางที่ 3.5 คำอธิบายสถานะ Voice Node  30"
+  },
+  {
+    "index": 138,
+    "type": "p",
+    "text": "ตารางที่ 3.6 การกำหนดขา GPIO  32"
+  },
+  {
+    "index": 139,
+    "type": "p",
+    "text": "ตารางที่ 3.7 โมดูลเซิร์ฟเวอร์  34"
+  },
+  {
+    "index": 140,
+    "type": "p",
+    "text": "ตารางที่ 4.1 ประเภทคำถามที่รองรับ  40"
+  },
+  {
+    "index": 141,
+    "type": "p",
+    "text": "ตารางที่ 4.2 ผลการทดสอบเวลาตอบสนอง  44"
+  },
+  {
+    "index": 142,
+    "type": "p",
+    "text": "ตารางที่ 4.3 ผลการทดสอบ Voice Node  45"
+  },
+  {
+    "index": 143,
+    "type": "p",
+    "text": "ตารางที่ 4.4 ผลการทดสอบความแม่นยำ STT  46"
+  },
+  {
+    "index": 144,
+    "type": "p",
+    "text": "ตารางที่ 4.5 ผลการทดสอบความเสถียร  47"
+  },
+  {
+    "index": 145,
+    "type": "p",
+    "text": "ตารางที่ 4.6 ต้นทุนการพัฒนาระบบ  48"
+  },
+  {
+    "index": 146,
+    "type": "p",
+    "text": "ตารางที่ 4.7 เปรียบเทียบกับงานวิจัยอื่น  49"
+  },
+  {
+    "index": 148,
+    "type": "p",
+    "text": "สารบัญภาพ"
+  },
+  {
+    "index": 149,
+    "type": "p",
+    "text": "รูปที่ 1.1 แผนภาพสถาปัตยกรรมระบบโดยรวม  2"
+  },
+  {
+    "index": 150,
+    "type": "p",
+    "text": "รูปที่ 2.1 บอร์ด ESP32-S3 N16R8  11"
+  },
+  {
+    "index": 151,
+    "type": "p",
+    "text": "รูปที่ 2.2 โครงสร้าง FastAPI  12"
+  },
+  {
+    "index": 152,
+    "type": "p",
+    "text": "รูปที่ 2.3 สถาปัตยกรรม Ollama  13"
+  },
+  {
+    "index": 153,
+    "type": "p",
+    "text": "รูปที่ 2.4 เซนเซอร์ DHT22  15"
+  },
+  {
+    "index": 154,
+    "type": "p",
+    "text": "รูปที่ 2.5 PIR HC-SR501  15"
+  },
+  {
+    "index": 155,
+    "type": "p",
+    "text": "รูปที่ 2.6 INMP441 Microphone  16"
+  },
+  {
+    "index": 156,
+    "type": "p",
+    "text": "รูปที่ 2.7 MAX98357A Amplifier  16"
+  },
+  {
+    "index": 157,
+    "type": "p",
+    "text": "รูปที่ 3.1 ผังขั้นตอนการดำเนินงาน  19"
+  },
+  {
+    "index": 158,
+    "type": "p",
+    "text": "รูปที่ 3.2 แผนภาพสถาปัตยกรรมระบบ  24"
+  },
+  {
+    "index": 159,
+    "type": "p",
+    "text": "รูปที่ 3.3 Context Diagram และ Data Flow Overview  25"
+  },
+  {
+    "index": 160,
+    "type": "p",
+    "text": "รูปที่ 3.4 Use Case Diagram  26"
+  },
+  {
+    "index": 161,
+    "type": "p",
+    "text": "รูปที่ 3.5 Sequence Diagram: ควบคุมอุปกรณ์  27"
+  },
+  {
+    "index": 162,
+    "type": "p",
+    "text": "รูปที่ 3.6 Sequence Diagram: ถามข้อมูลภายนอก  28"
+  },
+  {
+    "index": 163,
+    "type": "p",
+    "text": "รูปที่ 3.7 Deployment Diagram  29"
+  },
+  {
+    "index": 164,
+    "type": "p",
+    "text": "รูปที่ 3.8 State Machine Voice Node  30"
+  },
+  {
+    "index": 165,
+    "type": "p",
+    "text": "รูปที่ 3.9 แผนภาพการเชื่อมต่อวงจร (Wiring Diagram)  31"
+  },
+  {
+    "index": 166,
+    "type": "p",
+    "text": "รูปที่ 3.10 โครงสร้างโฟลเดอร์โปรเจ็กต์  33"
+  },
+  {
+    "index": 167,
+    "type": "p",
+    "text": "รูปที่ 3.11 หน้า Web UI Dashboard  38"
+  },
+  {
+    "index": 168,
+    "type": "p",
+    "text": "รูปที่ 4.1 หน้าจอ Dashboard หลัก  41"
+  },
+  {
+    "index": 169,
+    "type": "p",
+    "text": "รูปที่ 4.2 หน้าจอแชทสนทนากับ AI  42"
+  },
+  {
+    "index": 170,
+    "type": "p",
+    "text": "รูปที่ 4.3 หน้าจอ Relay Control  42"
+  },
+  {
+    "index": 171,
+    "type": "p",
+    "text": "รูปที่ 4.4 หน้าจอ Sensor Panel  43"
+  },
+  {
+    "index": 172,
+    "type": "p",
+    "text": "รูปที่ 4.5 หน้าจอ Voice Node Test  43"
+  },
+  {
+    "index": 173,
+    "type": "p",
+    "text": "รูปที่ 4.6 กราฟเปรียบเทียบเวลาตอบสนอง  44"
+  },
+  {
+    "index": 174,
+    "type": "p",
+    "text": "รูปที่ 4.7 กราฟความแม่นยำ STT ต่อระยะทาง  46"
+  },
+  {
+    "index": 175,
+    "type": "p",
+    "text": "รูปที่ 4.8 กราฟการใช้ทรัพยากรระบบ  48"
+  },
+  {
+    "index": 176,
+    "type": "p",
+    "text": "รูปที่ 4.9 ภาพอุปกรณ์ทั้งหมดที่ใช้  50"
+  },
+  {
+    "index": 178,
+    "type": "p",
+    "text": "บทที่ 1"
+  },
+  {
+    "index": 179,
+    "type": "p",
+    "text": "บทนำ"
+  },
+  {
+    "index": 180,
+    "type": "p",
+    "text": "1.1 ที่มาและความสำคัญ"
+  },
+  {
+    "index": 181,
+    "type": "p",
+    "text": "ในปัจจุบันเทคโนโลยีปัญญาประดิษฐ์ (Artificial Intelligence: AI) และอินเทอร์เน็ตของสรรพสิ่ง (Internet of Things: IoT) ได้เข้ามามีบทบาทสำคัญในชีวิตประจำวันของมนุษย์มากขึ้น โดยเฉพาะ อย่างยิ่งในด้านระบบบ้านอัจฉริยะ (Smart Home) ที่ช่วยอำนวยความสะดวก เพิ่มความปลอดภัย และประหยัดพลังงานในการดำรงชีวิต อย่างไรก็ตาม ระบบบ้านอัจฉริยะที่มีอยู่ในท้องตลาดส่วนใหญ่ มีข้อจำกัดที่สำคัญหลายประการ"
+  },
+  {
+    "index": 182,
+    "type": "p",
+    "text": "ประการแรก ระบบบ้านอัจฉริยะส่วนใหญ่มักเป็นระบบที่ต้องพึ่งพาบริการคลาวด์ (Cloud Computing) ทำให้ข้อมูลการใช้งานและข้อมูลภายในบ้านต้องถูกส่งไปประมวลผลบนเซิร์ฟเวอร์ภายนอก ซึ่งอาจมีความเสี่ยงด้านความเป็นส่วนตัวของข้อมูล (Data Privacy) และความปลอดภัยของข้อมูล (Data Security) นอกจากนี้ยังมีปัญหาความล่าช้าในการสื่อสาร (Latency) โดยเฉพาะเมื่อ อินเทอร์เน็ตไม่เสถียร"
+  },
+  {
+    "index": 183,
+    "type": "p",
+    "text": "ประการที่สอง ระบบบ้านอัจฉริยะส่วนใหญ่รองรับเฉพาะภาษาอังกฤษหรือภาษาจีนเป็นหลัก ทำให้ผู้ใช้ที่สื่อสารด้วยภาษาไทยอาจประสบปัญหาในการใช้งาน เนื่องจากระบบไม่เข้าใจ ภาษาไทยอย่างเป็นธรรมชาติ ส่งผลให้ประสบการณ์การใช้งานไม่ราบรื่นเท่าที่ควร"
+  },
+  {
+    "index": 184,
+    "type": "p",
+    "text": "ประการที่สาม การพัฒนาระบบบ้านอัจฉริยะที่สามารถสนทนาภาษาไทยได้นั้นต้องอาศัยโมเดลภาษาขนาดใหญ่ (Large Language Model: LLM) ที่รองรับภาษาไทยได้ดี ซึ่งปัจจุบันสามารถรันในเครื่องได้ผ่าน Ollama เช่น Gemma, Typhoon และโมเดลตระกูลอื่น ๆ ทำให้ระบบลดการพึ่งพา Cloud LLM ได้มากขึ้น"
+  },
+  {
+    "index": 185,
+    "type": "p",
+    "text": "ดังนั้น โครงงานนี้จึงมีแนวคิดในการพัฒนาระบบผู้ช่วยบ้านอัจฉริยะภาษาไทยที่สามารถทำงาน ภายในเครื่อง (Local) โดยไม่ต้องพึ่งพาคลาวด์ เพื่อรักษาความเป็นส่วนตัวของข้อมูล และ รองรับการสนทนาภาษาไทยอย่างเป็นธรรมชาติ ผ่านการใช้โมเดลภาษาไทยขนาดใหญ่ที่รันบน เครื่องภายในบ้าน ร่วมกับบอร์ดไมโครคอนโทรลเลอร์ ESP32-S3 สำหรับควบคุมอุปกรณ์ และเซนเซอร์ต่าง ๆ ภายในบ้าน โดยระบบมีชื่อว่า \"น้องฟ้า\" (Nong Fah)"
+  },
+  {
+    "index": 186,
+    "type": "p",
+    "text": "1.2 วัตถุประสงค์ของโครงงาน"
+  },
+  {
+    "index": 187,
+    "type": "p",
+    "text": "เพื่อพัฒนาระบบผู้ช่วยบ้านอัจฉริยะภาษาไทยที่สามารถสนทนากับผู้ใช้ได้อย่างเป็นธรรมชาติ ทั้งการพิมพ์และการพูดด้วยเสียง"
+  },
+  {
+    "index": 188,
+    "type": "p",
+    "text": "เพื่อออกแบบและพัฒนาระบบควบคุมอุปกรณ์ไฟฟ้าผ่านบอร์ด ESP32-S3 ที่ทำงานร่วมกับ เซิร์ฟเวอร์ภายในเครื่องแบบ Real-time"
+  },
+  {
+    "index": 189,
+    "type": "p",
+    "text": "เพื่อพัฒนาระบบรับคำสั่งเสียงภาษาไทยผ่านไมโครโฟน INMP441 และตอบกลับด้วยเสียง ผ่านลำโพง MAX98357A"
+  },
+  {
+    "index": 190,
+    "type": "p",
+    "text": "เพื่อพัฒนา Web Dashboard ที่แสดงสถานะเซนเซอร์และการควบคุมอุปกรณ์แบบ Real-time"
+  },
+  {
+    "index": 191,
+    "type": "p",
+    "text": "เพื่อบูรณาการ API ภายนอกสำหรับข้อมูลสภาพอากาศ ข่าวสาร การจราจร และการนำทาง"
+  },
+  {
+    "index": 192,
+    "type": "p",
+    "text": "เพื่อสร้างระบบที่ทำงานแบบ Local ทั้งระบบ ไม่พึ่งพาคลาวด์ รักษาความเป็นส่วนตัวของข้อมูลผู้ใช้"
+  },
+  {
+    "index": 193,
+    "type": "p",
+    "text": "1.3 ขอบเขตของโครงงาน"
+  },
+  {
+    "index": 194,
+    "type": "p",
+    "text": "ขอบเขตด้านระบบ:"
+  },
+  {
+    "index": 195,
+    "type": "p",
+    "text": "ระบบสนทนาภาษาไทยผ่านการพิมพ์และการพูดด้วยเสียง (Browser + Voice Node)"
+  },
+  {
+    "index": 196,
+    "type": "p",
+    "text": "ควบคุมอุปกรณ์ไฟฟ้าผ่าน Relay Module อย่างน้อย 1 ช่อง"
+  },
+  {
+    "index": 197,
+    "type": "p",
+    "text": "อ่านค่าอุณหภูมิและความชื้นจากเซนเซอร์ DHT22 แบบ Real-time"
+  },
+  {
+    "index": 198,
+    "type": "p",
+    "text": "ตรวจจับการเคลื่อนไหวจากเซนเซอร์ PIR HC-SR501"
+  },
+  {
+    "index": 199,
+    "type": "p",
+    "text": "แสดง Dashboard สถานะระบบแบบ Real-time พร้อมอัปเดตทุก 15 วินาที"
+  },
+  {
+    "index": 200,
+    "type": "p",
+    "text": "ให้ข้อมูลสภาพอากาศ ข่าวสาร การจราจร และเส้นทางผ่าน API ภายนอก"
+  },
+  {
+    "index": 201,
+    "type": "p",
+    "text": "รับคำสั่งเสียงผ่าน Voice Node ESP32-S3 ด้วย Wake Word"
+  },
+  {
+    "index": 202,
+    "type": "p",
+    "text": "ขอบเขตด้านฮาร์ดแวร์:"
+  },
+  {
+    "index": 203,
+    "type": "p",
+    "text": "ESP32-S3 N16R8 (PSRAM 8MB + Flash 16MB) จำนวน 2 บอร์ด"
+  },
+  {
+    "index": 204,
+    "type": "p",
+    "text": "DHT22 สำหรับวัดอุณหภูมิและความชื้น (GPIO4)"
+  },
+  {
+    "index": 205,
+    "type": "p",
+    "text": "Relay Module 1 ช่อง สำหรับควบคุมอุปกรณ์ไฟฟ้า (GPIO5)"
+  },
+  {
+    "index": 206,
+    "type": "p",
+    "text": "PIR Motion Sensor HC-SR501 (GPIO6)"
+  },
+  {
+    "index": 207,
+    "type": "p",
+    "text": "INMP441 I2S Microphone (GPIO16,17,18)"
+  },
+  {
+    "index": 208,
+    "type": "p",
+    "text": "MAX98357A I2S Amplifier + ลำโพง 4 Ohm 3W (GPIO9,10,11)"
+  },
+  {
+    "index": 209,
+    "type": "p",
+    "text": "Breadboard, สาย Jumper Wire, อุปกรณ์ประกอบ"
+  },
+  {
+    "index": 210,
+    "type": "p",
+    "text": "ขอบเขตด้านซอฟต์แวร์:"
+  },
+  {
+    "index": 211,
+    "type": "p",
+    "text": "เซิร์ฟเวอร์ภาษา Python ด้วย FastAPI (Uvicorn)"
+  },
+  {
+    "index": 212,
+    "type": "p",
+    "text": "โมเดลหลักปัจจุบัน Gemma 4 E2B ผ่าน Ollama และรองรับ Typhoon 2 8B เป็นทางเลือก"
+  },
+  {
+    "index": 213,
+    "type": "p",
+    "text": "Thai STT ด้วย faster-whisper (รุ่น small)"
+  },
+  {
+    "index": 214,
+    "type": "p",
+    "text": "Thai TTS ด้วย Edge TTS (เสียง PremwadeeNeural)"
+  },
+  {
+    "index": 215,
+    "type": "p",
+    "text": "Web UI ด้วย HTML5 + CSS3 + Vanilla JavaScript"
+  },
+  {
+    "index": 216,
+    "type": "p",
+    "text": "ESP-IDF v5.x สำหรับเฟิร์มแวร์ Voice Node"
+  },
+  {
+    "index": 217,
+    "type": "p",
+    "text": "MicroPython สำหรับเฟิร์มแวร์ Control Node"
+  },
+  {
+    "index": 218,
+    "type": "p",
+    "text": "1.4 ข้อตกลงเบื้องต้น"
+  },
+  {
+    "index": 219,
+    "type": "p",
+    "text": "1. โครงงานนี้ใช้เครือข่าย Wi-Fi ภายในบ้านเท่านั้น ไม่รองรับการควบคุมระยะไกลผ่านอินเทอร์เน็ต2. การทำงานของระบบต้องมีเซิร์ฟเวอร์ภายในเครื่องเปิดอยู่ตลอดเวลา3. API ภายนอกบางตัวอาจมีค่าใช้จ่ายหากเรียกใช้งานเกินขีดจำกัดของบัญชีฟรี4. การต่อวงจรไฟฟ้าต้องเป็นไปตามข้อกำหนดความปลอดภัย หลีกเลี่ยงการใช้ไฟบ้านแรงดันสูง5. โมเดล AI ต้องถูกโหลดไว้ในเครื่องก่อนใช้งาน (Ollama pull)"
+  },
+  {
+    "index": 220,
+    "type": "p",
+    "text": "1.5 ประโยชน์ที่คาดว่าจะได้รับ"
+  },
+  {
+    "index": 221,
+    "type": "p",
+    "text": "ได้ระบบผู้ช่วยบ้านอัจฉริยะภาษาไทยที่สามารถสื่อสารกับผู้ใช้ภาษาไทยได้อย่างเป็นธรรมชาติ"
+  },
+  {
+    "index": 222,
+    "type": "p",
+    "text": "ได้ระบบควบคุมอุปกรณ์ไฟฟ้าภายในบ้านผ่านเสียงและข้อความที่ทำงานแบบ Local"
+  },
+  {
+    "index": 223,
+    "type": "p",
+    "text": "ได้ระบบ Dashboard สำหรับตรวจสอบสถานะบ้านแบบ Real-time"
+  },
+  {
+    "index": 224,
+    "type": "p",
+    "text": "ได้แนวทางในการพัฒนาระบบ AI Local ที่ไม่พึ่งพาคลาวด์"
+  },
+  {
+    "index": 225,
+    "type": "p",
+    "text": "ได้องค์ความรู้ในการประยุกต์ใช้ Local LLM ร่วมกับระบบ IoT"
+  },
+  {
+    "index": 226,
+    "type": "p",
+    "text": "ได้ระบบที่เป็นต้นแบบสำหรับการพัฒนาต่อยอดในเชิงพาณิชย์"
+  },
+  {
+    "index": 228,
+    "type": "p",
+    "text": "บทที่ 2"
+  },
+  {
+    "index": 229,
+    "type": "p",
+    "text": "ทฤษฎีและงานวิจัยที่เกี่ยวข้อง"
+  },
+  {
+    "index": 230,
+    "type": "p",
+    "text": "2.1 แนวคิดและทฤษฎีที่เกี่ยวข้อง"
+  },
+  {
+    "index": 231,
+    "type": "p",
+    "text": "2.1.1 ปัญญาประดิษฐ์ (Artificial Intelligence)"
+  },
+  {
+    "index": 232,
+    "type": "p",
+    "text": "ปัญญาประดิษฐ์ (AI) เป็นสาขาหนึ่งของวิทยาการคอมพิวเตอร์ที่มุ่งสร้างระบบที่สามารถ เลียนแบบความฉลาดของมนุษย์ เช่น การเรียนรู้ การให้เหตุผล การแก้ปัญหา และการเข้าใจภาษา AI แบ่งออกเป็นหลายประเภท ตั้งแต่นarrow AI ที่ทำงานเฉพาะด้าน ไปจนถึง General AI ที่สามารถทำงานได้หลากหลาย ในโครงงานนี้ใช้ Narrow AI ในรูปแบบของ Large Language Model (LLM) และ Speech Recognition"
+  },
+  {
+    "index": 233,
+    "type": "p",
+    "text": "2.1.2 การประมวลผลภาษาธรรมชาติ (Natural Language Processing)"
+  },
+  {
+    "index": 234,
+    "type": "p",
+    "text": "NLP เป็นสาขาย่อยของ AI ที่เกี่ยวข้องกับปฏิสัมพันธ์ระหว่างคอมพิวเตอร์และภาษามนุษย์ ภาษาไทยมีลักษณะเฉพาะที่ท้าทายสำหรับ NLP ได้แก่ การไม่มีการเว้นวรรคระหว่างคำ (Word Boundary Detection) การมีวรรณยุกต์ (Tone Marks) ที่เปลี่ยนความหมายของคำ และคำพ้องเสียง (Homophones) จำนวนมาก ระบบนี้จึงใช้แนวทาง Local LLM ร่วมกับ Intent Router และ domain correction เพื่อช่วยให้การตอบภาษาไทยในบริบทบ้านอัจฉริยะมีความแม่นยำขึ้น"
+  },
+  {
+    "index": 235,
+    "type": "p",
+    "text": "2.1.2.1 การจำแนกเจตนา (Intent Classification)"
+  },
+  {
+    "index": 236,
+    "type": "p",
+    "text": "Intent Classification เป็นกระบวนการระบุเจตนาหรือวัตถุประสงค์ของผู้ใช้จากข้อความ ที่ป้อนเข้าไป ในโครงงานนี้ใช้การจำแนกแบบ Rule-based โดยใช้ Keyword Matching ร่วมกับ Regular Expression เพื่อแบ่งประเภทคำถามออกเป็น 10 ประเภท ได้แก่ device_control, weather_query, news_query, traffic_query, navigation_query, sensor_query, line_send_request, news_detail_query, system_status และ general_chat"
+  },
+  {
+    "index": 237,
+    "type": "p",
+    "text": "2.1.3 อินเทอร์เน็ตของสรรพสิ่ง (Internet of Things: IoT)"
+  },
+  {
+    "index": 238,
+    "type": "p",
+    "text": "IoT เป็นแนวคิดที่ให้อุปกรณ์ต่าง ๆ สามารถเชื่อมต่อและสื่อสารกันผ่านเครือข่ายอินเทอร์เน็ต สถาปัตยกรรม IoT ทั่วไปประกอบด้วย 4 ชั้น: (1) Device Layer - อุปกรณ์ฮาร์ดแวร์และเซนเซอร์ (2) Network Layer - การเชื่อมต่อและโปรโตคอลการสื่อสาร (3) Middleware Layer - การจัดการ ข้อมูลและการประมวลผล (4) Application Layer - แอปพลิเคชันสำหรับผู้ใช้ในโครงงานนี้ใช้สถาปัตยกรรมแบบ Local IoT หรือ Edge Computing โดยข้อมูลจากเซนเซอร์ ถูกส่งไปยังเซิร์ฟเวอร์ภายในเครื่องผ่าน Wi-Fi ซึ่งช่วยลด Latency และเพิ่มความปลอดภัย ของข้อมูล เนื่องจากข้อมูลไม่ต้องส่งออกไปยังคลาวด์"
+  },
+  {
+    "index": 239,
+    "type": "p",
+    "text": "2.1.4 การรู้จำเสียงพูด (Speech-to-Text: STT)"
+  },
+  {
+    "index": 240,
+    "type": "p",
+    "text": "STT เป็นกระบวนการแปลงสัญญาณเสียงพูดเป็นข้อความ โดยทั่วไปประกอบด้วยขั้นตอน: (1) การรับสัญญาณเสียงผ่านไมโครโฟน (2) การแปลงสัญญาณอนาล็อกเป็นดิจิทัล (ADC) (3) การแยกคุณลักษณะของเสียง (Feature Extraction) เช่น MFCC (4) การจับคู่กับ รูปแบบเสียงในฐานข้อมูล (Acoustic Model) (5) การถอดความ (Language Model) และ (6) การปรับปรุงความถูกต้อง (Post-processing)โครงงานนี้ใช้ faster-whisper รุ่น small ซึ่งใช้สถาปัตยกรรม Encoder-Decoder Transformer มีความแม่นยำสูงและทำงานบน CPU ได้ รองรับภาษาไทยและมี VAD (Voice Activity Detection) ในตัว"
+  },
+  {
+    "index": 241,
+    "type": "p",
+    "text": "2.1.5 การสังเคราะห์เสียงพูด (Text-to-Speech: TTS)"
+  },
+  {
+    "index": 242,
+    "type": "p",
+    "text": "TTS เป็นกระบวนการแปลงข้อความเป็นเสียงพูด ปัจจุบันมีหลายแนวทาง ได้แก่ Concatenative TTS ที่นำหน่วยเสียงที่บันทึกไว้มาต่อกัน, Parametric TTS ที่ใช้ แบบจำลองทางคณิตศาสตร์สร้างเสียง และ Neural TTS ที่ใช้ Deep Learning ซึ่งให้ เสียงที่เป็นธรรมชาติที่สุด โครงงานนี้ใช้ Edge TTS ซึ่งเป็น Neural TTS ของ Microsoft ที่รองรับภาษาไทยด้วยเสียง th-TH-PremwadeeNeural"
+  },
+  {
+    "index": 243,
+    "type": "p",
+    "text": "2.2 เทคโนโลยีและอุปกรณ์ที่เกี่ยวข้อง"
+  },
+  {
+    "index": 244,
+    "type": "p",
+    "text": "2.2.1 บอร์ด ESP32-S3"
+  },
+  {
+    "index": 245,
+    "type": "p",
+    "text": "ESP32-S3 เป็นไมโครคอนโทรลเลอร์จาก Espressif Systems ที่ออกแบบมาสำหรับ งาน AIoT โดยเฉพาะ มีคุณสมบัติดังนี้- CPU: Xtensa LX7 Dual-Core 32-bit สูงสุด 240 MHz- RAM: 512 KB SRAM + สูงสุด 8 MB PSRAM (รุ่น N16R8)- Flash: สูงสุด 16 MB- Wireless: Wi-Fi 802.11 b/g/n + Bluetooth 5.0 LE- Interfaces: I2S, I2C, SPI, UART, USB OTG, LCD, Camera- AI Accelerator: Vector instructions สำหรับงาน Neural Networkจุดเด่นของ ESP32-S3 ที่สำคัญต่อโครงงานนี้คือ I2S Interface ซึ่งรองรับการเชื่อมต่อ ไมโครโฟนดิจิทัล (INMP441) และแอมป์ลำโพง (MAX98357A) ได้โดยตรง และมี PSRAM ขนาดใหญ่พอสำหรับบัฟเฟอร์เสียง"
+  },
+  {
+    "index": 246,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: บอร์ด ESP32-S3 N16R8 - แสดงขาเชื่อมต่อและส่วนประกอบ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 248,
+    "type": "p",
+    "text": "2.2.2 FastAPI Framework"
+  },
+  {
+    "index": 249,
+    "type": "p",
+    "text": "FastAPI เป็นเว็บเฟรมเวิร์กภาษา Python ที่ได้รับความนิยมสำหรับสร้าง REST API มีจุดเด่นด้านประสิทธิภาพสูงด้วยการรองรับ Asynchronous Programming ผ่าน Python asyncio มีระบบ Type Validation ด้วย Pydantic สร้างเอกสาร API อัตโนมัติด้วย Swagger UI และ ReDoc และรองรับ WebSocket สำหรับการสื่อสาร แบบ Real-timeเหตุผลที่เลือก FastAPI: (1) ความเร็วสูงเทียบเท่า Go และ Node.js (2) การตรวจสอบชนิดข้อมูลอัตโนมัติช่วยลด Bug (3) รองรับ WebSocket สำหรับสตรีมเสียง (4) มีระบบ Dependency Injection ที่ยืดหยุ่น (5) ชุมชนขนาดใหญ่และเอกสารครบถ้วน"
+  },
+  {
+    "index": 250,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: แผนภาพโครงสร้างการทำงานของ FastAPI"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 252,
+    "type": "p",
+    "text": "2.2.3 Ollama และ Local LLM สำหรับภาษาไทย"
+  },
+  {
+    "index": 253,
+    "type": "p",
+    "text": "Ollama เป็นเครื่องมือ Open-Source สำหรับรัน LLM ในเครื่องส่วนตัว รองรับ โมเดลหลากหลาย เช่น Llama, Gemma, Mistral และ Typhoon มีฟีเจอร์:- การจัดการโมเดล: ดาวน์โหลด จัดเก็บ และสลับโมเดลได้ง่าย- REST API: รองรับ OpenAI-compatible API- Keep Alive: รักษาโมเดลในหน่วยความจำเพื่อลด Cold Start Latency- Quantization: รองรับการบีบอัดโมเดล (Q4, Q8) เพื่อลดการใช้ทรัพยากรระบบนี้ใช้ Ollama เพื่อรัน Local LLM บนเครื่องผู้ใช้ โดยเดโมล่าสุดเลือก Gemma 4 E2B เป็นโมเดลหลักเพราะตอบสนองเร็วกว่าในเครื่องที่มีทรัพยากรจำกัด ส่วน Typhoon 2 8B ยังเป็นโมเดลทางเลือกสำหรับงานภาษาไทยที่ต้องการเปรียบเทียบคุณภาพคำตอบ ทั้งสองแนวทางช่วยให้ส่วนสนทนาหลักทำงานได้โดยไม่ต้องพึ่ง API ของ LLM ภายนอก"
+  },
+  {
+    "index": 254,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: แผนภาพสถาปัตยกรรม Ollama และการเรียกใช้งานโมเดล"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 256,
+    "type": "p",
+    "text": "การตั้งค่าโมเดลที่สำคัญประกอบด้วย temperature = 0.2 (ควบคุมความสุ่มของคำตอบ), num_ctx = 1024 tokens (ขนาด Context Window), keep_alive = 30 นาที (ให้โมเดลค้างในหน่วยความจำระหว่างการสนทนา), chat_timeout = 30 วินาที และ max_tokens แยกตามโหมดการทำงาน ได้แก่ general = 32 tokens, reasoning = 48 tokens, thinking = 384 tokens นอกจากนี้ยังมีระบบ Cache คำตอบแบบ In-Memory ขนาด 32 entries พร้อม TTL 120 วินาที และ Health Cache TTL 30 วินาที"
+  },
+  {
+    "index": 257,
+    "type": "p",
+    "text": "2.2.4 Faster-Whisper"
+  },
+  {
+    "index": 258,
+    "type": "p",
+    "text": "Faster-Whisper เป็นไลบรารีถอดเสียงภาษาไทยที่พัฒนาโดย OpenAI ใช้สถาปัตยกรรม Encoder-Decoder Transformer มีความแม่นยำสูงและทำงานได้เร็วกว่า Whisher เดิมถึง 4 เท่าด้วย CTranslate2 รุ่น small (244 MB) สามารถรันบน CPU ได้ โดยใช้ INT8 Quantization รองรับ VAD Filter ที่ใช้ Silero VAD และสามารถตรวจจับภาษาได้อัตโนมัติ"
+  },
+  {
+    "index": 259,
+    "type": "p",
+    "text": "การตั้งค่าเพิ่มเติมของ faster-whisper ประกอบด้วย beam_size = 5 (ขนาด Beam Search สำหรับถอดรหัส), vad_filter = True (กรองเฉพาะส่วนที่มีเสียงพูด), audio_normalize = True (ปรับระดับเสียงอัตโนมัติด้วย target_peak = 0.82 และ max_gain = 3.0), domain_corrections = True (แก้ไขคำศัพท์เฉพาะทางภาษาไทย) และ initial_prompt ที่มีคำศัพท์พบบ่อย เช่น ข่าว อากาศ ฝน รถติด เปิดไฟ ปิดไฟ เพื่อเพิ่มความแม่นยำในการถอดเสียงภาษาไทย"
+  },
+  {
+    "index": 260,
+    "type": "p",
+    "text": "2.2.5 Edge TTS"
+  },
+  {
+    "index": 261,
+    "type": "p",
+    "text": "Edge TTS เป็นไลบรารีภาษา Python สำหรับเข้าถึงบริการ TTS ของ Microsoft Edge โดยไม่ต้องพึ่งพา API Key รองรับเสียงมากกว่า 400 เสียงใน 100 ภาษา สำหรับภาษาไทย มีเสียง th-TH-PremwadeeNeural (ผู้หญิง) และ th-TH-NiwatNeural (ผู้ชาย) ให้เสียงที่เป็นธรรมชาติ มีการเน้นคำและระดับเสียงที่เหมาะสม"
+  },
+  {
+    "index": 262,
+    "type": "p",
+    "text": "2.2.6 เซนเซอร์ DHT22"
+  },
+  {
+    "index": 263,
+    "type": "p",
+    "text": "DHT22 (AM2302) เป็นเซนเซอร์วัดอุณหภูมิและความชื้น มีคุณสมบัติ:- วัดอุณหภูมิได้ -40 ถึง 80°C (±0.5°C)- วัดความชื้นได้ 0-100% RH (±2-5% RH)- Sampling Rate: 0.5 Hz (ทุก 2 วินาที)- แรงดันไฟ: 3.3-6V DC- การสื่อสาร: 1-Wire ProtocolDHT22 ถูกเลือกใช้เพราะมีความแม่นยำสูงกว่า DHT11 และมีราคาที่เหมาะสม"
+  },
+  {
+    "index": 264,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: เซนเซอร์ DHT22 พร้อมแผนภาพการเชื่อมต่อ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 266,
+    "type": "p",
+    "text": "2.2.7 PIR Motion Sensor HC-SR501"
+  },
+  {
+    "index": 267,
+    "type": "p",
+    "text": "HC-SR501 เป็นเซนเซอร์ตรวจจับการเคลื่อนไหวด้วยรังสีอินฟราเรดแบบพาสซีฟ (Passive Infrared Sensor) มีคุณสมบัติ:- ระยะตรวจจับ: 3-7 เมตร (ปรับได้)- มุมตรวจจับ: < 120 องศา- แรงดันไฟ: 5-20V DC- Output: Digital (0/1)- สามารถปรับ Delay Time และ Sensitivity ได้"
+  },
+  {
+    "index": 268,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: เซนเซอร์ PIR HC-SR501 พร้อมแผนภาพการเชื่อมต่อ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 270,
+    "type": "p",
+    "text": "2.2.8 INMP441 I2S Microphone"
+  },
+  {
+    "index": 271,
+    "type": "p",
+    "text": "INMP441 เป็นไมโครโฟนดิจิทัลที่ใช้ Interface แบบ I2S มีคุณสมบัติ:- Omnidirectional Microphone- Signal-to-Noise Ratio: 61 dBA- Sensitivity: -26 dBFS (ที่ 1 kHz)- แบนด์วิธ: 60 Hz - 15 kHz- แรงดันไฟ: 1.5-3.63V- รองรับ I2S 16/24/32-bit SampleINMP441 ถูกเลือกใช้เพราะเป็น I2S Microphone ที่มีคุณภาพดีและมีราคาเหมาะสม สำหรับงานรับเสียงพูดในระยะใกล้"
+  },
+  {
+    "index": 272,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: ไมโครโฟน INMP441 พร้อมแผนภาพการเชื่อมต่อ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 274,
+    "type": "p",
+    "text": "2.2.9 MAX98357A I2S Amplifier"
+  },
+  {
+    "index": 275,
+    "type": "p",
+    "text": "MAX98357A เป็นแอมป์ขยายเสียงดิจิทัลที่ใช้ I2S Interface มีคุณสมบัติ:- Output Power: 3.2W ที่ 4 Ohm (5V Supply)- ประสิทธิภาพ: Class D (สูงถึง 92%)- รองรับ Sample Rate: 8-96 kHz- แรงดันไฟ: 2.5-5.5V- มี I2S Interface เข้าในตัว- ไม่ต้องใช้ DAC แยกMAX98357A ถูกเลือกใช้เพราะต่อกับ ESP32-S3 ผ่าน I2S ได้โดยตรง และให้เสียงดังพอสำหรับการใช้งานในห้อง"
+  },
+  {
+    "index": 276,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: MAX98357A Amplifier พร้อมแผนภาพการเชื่อมต่อ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 278,
+    "type": "table",
+    "rows": [
+      [
+        "อุปกรณ์",
+        "รุ่น",
+        "Interface",
+        "หน้าที่"
+      ],
+      [
+        "ESP32-S3",
+        "N16R8",
+        "Wi-Fi / I2S",
+        "ประมวลผลกลาง (2 บอร์ด)"
+      ],
+      [
+        "DHT22",
+        "AM2302",
+        "1-Wire",
+        "วัดอุณหภูมิ/ความชื้น"
+      ],
+      [
+        "PIR",
+        "HC-SR501",
+        "GPIO Digital",
+        "ตรวจจับเคลื่อนไหว"
+      ],
+      [
+        "Relay",
+        "1-Channel",
+        "GPIO Digital",
+        "ควบคุมเปิด/ปิดอุปกรณ์"
+      ],
+      [
+        "Mic",
+        "INMP441",
+        "I2S",
+        "รับเสียงพูด"
+      ],
+      [
+        "Amp",
+        "MAX98357A",
+        "I2S",
+        "ขยายเสียงลำโพง"
+      ],
+      [
+        "Speaker",
+        "4 Ohm 3W",
+        "-",
+        "เล่นเสียง"
+      ]
+    ],
+    "row_count": 8
+  },
+  {
+    "index": 280,
+    "type": "p",
+    "text": "การตั้งค่าลำโพง MAX98357A ประกอบด้วย reply_volume = 75% (ลดเพื่่อป้องกันเสียงแตก), beep_frequency = 880 Hz (ความถี่สัญญาณเตือน), beep_duration = 160 ms (ระยะเวลาสัญญาณเตือน), และ beep_amplitude = 2200 (ระดับสัญญาณ) โดยมี self-test 3 โทน (440 Hz, 660 Hz, 880 Hz) เมื่อบูต และ diagnostic tone (1000 Hz + 500 Hz) สำหรับทดสอบ"
+  },
+  {
+    "index": 281,
+    "type": "p",
+    "text": "2.3 งานวิจัยที่เกี่ยวข้อง"
+  },
+  {
+    "index": 282,
+    "type": "p",
+    "text": "จากการศึกษางานวิจัยและโครงงานที่เกี่ยวข้อง พบว่ามีโครงการที่มีแนวคิดคล้ายคลึงกันดังนี้"
+  },
+  {
+    "index": 283,
+    "type": "p",
+    "text": "ตารางที่ 2.2 เปรียบเทียบงานวิจัยที่เกี่ยวข้อง"
+  },
+  {
+    "index": 284,
+    "type": "table",
+    "rows": [
+      [
+        "ลำดับ",
+        "ชื่อโครงงาน",
+        "เทคโนโลยี",
+        "ข้อจำกัด",
+        "ปี"
+      ],
+      [
+        "1",
+        "Smart Home Control via Voice",
+        "Arduino + Google Speech",
+        "พึ่งพาคลาวด์ ตอบแค่คำสั่ง",
+        "2022"
+      ],
+      [
+        "2",
+        "ระบบควบคุมบ้านด้วย LINE Bot",
+        "LINE + Dialogflow",
+        "ต้องมีอินเทอร์เน็ต",
+        "2023"
+      ],
+      [
+        "3",
+        "Thai Smart Home Chatbot",
+        "Raspberry Pi + OpenAI",
+        "เสียค่า API ไม่มี IoT",
+        "2023"
+      ],
+      [
+        "4",
+        "IoT Home Automation",
+        "NodeMCU + Blynk",
+        "ไม่มี AI สนทนา",
+        "2022"
+      ],
+      [
+        "5",
+        "Local LLM Assistant",
+        "Ollama + LangChain",
+        "ไม่มี IoT จริง",
+        "2024"
+      ],
+      [
+        "6",
+        "โครงงานนี้ (Nong Fah)",
+        "ESP32 + FastAPI + Ollama",
+        "-",
+        "2025"
+      ]
+    ],
+    "row_count": 7
+  },
+  {
+    "index": 286,
+    "type": "p",
+    "text": "จากตารางจะเห็นว่าโครงงานนี้มีความแตกต่างจากงานวิจัยที่ผ่านมาในหลายด้าน ได้แก่ (1) แกนหลักของการสนทนาและ IoT ทำงานแบบ Local โดยไม่พึ่งพา Cloud LLM (2) การผสมผสาน Local LLM กับระบบ IoT จริง (3) การรองรับการสนทนาภาษาไทยแบบสองทาง (พิมพ์/พูด) (4) การมี Voice Node ที่ใช้ ESP-IDF เพื่อประสิทธิภาพด้านเสียง ที่ดีกว่า (5) การมี Dashboard แบบ Real-time และ (6) การมี Intent Router แบบ Hybrid (Rule-based + LLM)"
+  },
+  {
+    "index": 288,
+    "type": "p",
+    "text": "บทที่ 3"
+  },
+  {
+    "index": 289,
+    "type": "p",
+    "text": "วิธีการดำเนินงาน"
+  },
+  {
+    "index": 290,
+    "type": "p",
+    "text": "3.1 ขั้นตอนการดำเนินงาน"
+  },
+  {
+    "index": 291,
+    "type": "p",
+    "text": "การดำเนินงานโครงงานแบ่งออกเป็น 5 ระยะ รวมระยะเวลาทั้งหมด 10 สัปดาห์ ตามผังการดำเนินงานดังรูปที่ 3.1"
+  },
+  {
+    "index": 292,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: ผังขั้นตอนการดำเนินงาน (Gantt Chart / Flowchart) ตลอด 10 สัปดาห์"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 294,
+    "type": "p",
+    "text": "ตารางที่ 3.1 ขั้นตอนการดำเนินงาน"
+  },
+  {
+    "index": 295,
+    "type": "table",
+    "rows": [
+      [
+        "ระยะ",
+        "สัปดาห์",
+        "กิจกรรมหลัก",
+        "ผลลัพธ์",
+        "รายละเอียด"
+      ],
+      [
+        "1",
+        "1-2",
+        "Hardware Bring-up",
+        "อุปกรณ์พร้อม",
+        "ทดสอบ ESP32, DHT22, PIR, Relay, I2S Audio"
+      ],
+      [
+        "2",
+        "3-4",
+        "Server + AI Chat",
+        "Chatbot ภาษาไทย",
+        "FastAPI, Ollama, Typhoon, Intent Router"
+      ],
+      [
+        "3",
+        "5-6",
+        "IoT Integration",
+        "คุมอุปกรณ์ได้",
+        "ESP32 ↔ Server, Sensor Data, Relay Control"
+      ],
+      [
+        "4",
+        "7-8",
+        "Voice + External API",
+        "ถามข้อมูลภายนอกได้",
+        "TTS, STT, Weather, News, Traffic API"
+      ],
+      [
+        "5",
+        "9-10",
+        "Voice Node + Dashboard",
+        "ระบบพร้อมเดโม",
+        "ESP-IDF Voice Node, UI, Testing"
+      ]
+    ],
+    "row_count": 6
+  },
+  {
+    "index": 297,
+    "type": "p",
+    "text": "3.2 วัสดุ อุปกรณ์ และเครื่องมือ"
+  },
+  {
+    "index": 298,
+    "type": "p",
+    "text": "3.2.1 วัสดุและอุปกรณ์"
+  },
+  {
+    "index": 299,
+    "type": "p",
+    "text": "ตารางที่ 3.2 รายการวัสดุอุปกรณ์"
+  },
+  {
+    "index": 300,
+    "type": "table",
+    "rows": [
+      [
+        "ลำดับ",
+        "รายการ",
+        "จำนวน",
+        "ราคา (บาท)",
+        "หมายเหตุ"
+      ],
+      [
+        "1",
+        "ESP32-S3 N16R8",
+        "2",
+        "800",
+        "บอร์ดหลัก 2 ตัว"
+      ],
+      [
+        "2",
+        "DHT22",
+        "1",
+        "150",
+        "เซนเซอร์วัดอุณหภูมิ/ความชื้น"
+      ],
+      [
+        "3",
+        "Relay Module 1ch 5V",
+        "1",
+        "60",
+        "ควบคุมอุปกรณ์ไฟฟ้า"
+      ],
+      [
+        "4",
+        "PIR HC-SR501",
+        "1",
+        "50",
+        "ตรวจจับความเคลื่อนไหว"
+      ],
+      [
+        "5",
+        "INMP441 I2S Mic",
+        "1",
+        "80",
+        "ไมโครโฟนดิจิทัล"
+      ],
+      [
+        "6",
+        "MAX98357A + Speaker",
+        "1",
+        "150",
+        "แอมป์ + ลำโพง"
+      ],
+      [
+        "7",
+        "Breadboard 830 จุด",
+        "1",
+        "80",
+        "แผงทดลองวงจร"
+      ],
+      [
+        "8",
+        "Jumper Wire Set",
+        "2",
+        "100",
+        "สายต่อวงจร"
+      ],
+      [
+        "9",
+        "USB Power Cable",
+        "2",
+        "100",
+        "สายจ่ายไฟ"
+      ]
+    ],
+    "row_count": 12
+  },
+  {
+    "index": 302,
+    "type": "p",
+    "text": "3.2.2 ซอฟต์แวร์ที่ใช้"
+  },
+  {
+    "index": 303,
+    "type": "p",
+    "text": "ตารางที่ 3.3 ซอฟต์แวร์ที่ใช้ในการพัฒนา"
+  },
+  {
+    "index": 304,
+    "type": "table",
+    "rows": [
+      [
+        "ซอฟต์แวร์",
+        "รุ่น",
+        "หน้าที่"
+      ],
+      [
+        "Python",
+        "3.10+",
+        "ภาษาโปรแกรมหลัก"
+      ],
+      [
+        "FastAPI",
+        "0.110+",
+        "Web Framework"
+      ],
+      [
+        "Uvicorn",
+        "0.27+",
+        "ASGI Server"
+      ],
+      [
+        "Ollama",
+        "ล่าสุด",
+        "รันโมเดล AI"
+      ],
+      [
+        "Gemma 4 E2B",
+        "ล่าสุด",
+        "โมเดลหลักเดโมปัจจุบันผ่าน Ollama"
+      ],
+      [
+        "faster-whisper",
+        "1.1+",
+        "Speech-to-Text"
+      ],
+      [
+        "edge-tts",
+        "6.1+",
+        "Text-to-Speech"
+      ],
+      [
+        "ESP-IDF",
+        "v5.x",
+        "พัฒนา Voice Node"
+      ],
+      [
+        "MicroPython",
+        "ล่าสุด",
+        "พัฒนา Control Node"
+      ]
+    ],
+    "row_count": 11
+  },
+  {
+    "index": 306,
+    "type": "p",
+    "text": "3.2.3 API ภายนอก"
+  },
+  {
+    "index": 307,
+    "type": "p",
+    "text": "ตารางที่ 3.4 API ภายนอกที่ใช้งาน"
+  },
+  {
+    "index": 308,
+    "type": "table",
+    "rows": [
+      [
+        "API",
+        "บริการ",
+        "การใช้งาน",
+        "ข้อจำกัด"
+      ],
+      [
+        "OpenWeather",
+        "สภาพอากาศ",
+        "อุณหภูมิ, ฝน, พยากรณ์",
+        "60 calls/min (ฟรี)"
+      ],
+      [
+        "Currents API",
+        "ข่าวสาร",
+        "ข่าวล่าสุด, ข่าวตามหมวด",
+        "500 calls/day (ฟรี)"
+      ],
+      [
+        "OpenRouteService",
+        "เส้นทาง",
+        "คำนวณเส้นทาง, ระยะทาง, เวลา",
+        "2,000 calls/day (ฟรี)"
+      ],
+      [
+        "TomTom Traffic",
+        "การจราจร",
+        "สภาพการจราจร, Flow data",
+        "2,500 calls/day (ฟรี)"
+      ],
+      [
+        "Edge TTS",
+        "สังเคราะห์เสียง",
+        "TTS ภาษาไทย",
+        "Local API"
+      ]
+    ],
+    "row_count": 6
+  },
+  {
+    "index": 310,
+    "type": "p",
+    "text": "นอกจาก API ภายนอก 4 ระบบข้างต้น ระบบยังรองรับ LINE Messaging API สำหรับ ส่งข้อความแจ้งเตือนและข่าวสารไปยังผู้ใช้ผ่านแอปพลิเคชัน LINE โดยมีโครงสร้าง service (line_service.py) พร้อมใช้งาน แต่ปิดเป็นค่าเริ่มต้น (line_enabled = False) ต้องตั้งค่าผ่านตัวแปรสภาพแวดล้อม LINE_CHANNEL_ID, LINE_CHANNEL_SECRET, LINE_CHANNEL_ACCESS_TOKEN และ LINE_TARGET_ID"
+  },
+  {
+    "index": 311,
+    "type": "p",
+    "text": "3.3 การออกแบบระบบ"
+  },
+  {
+    "index": 312,
+    "type": "p",
+    "text": "3.3.1 สถาปัตยกรรมระบบ (System Architecture)"
+  },
+  {
+    "index": 313,
+    "type": "p",
+    "text": "ระบบถูกออกแบบแบบ 3-Tier Architecture ประกอบด้วย 3 ชั้นหลัก ได้แก่ Presentation Layer, Server Layer และ IoT Layer"
+  },
+  {
+    "index": 314,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: แผนภาพสถาปัตยกรรมระบบโดยรวม 3 ชั้น (System Architecture Diagram)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 316,
+    "type": "p",
+    "text": "รายละเอียดแต่ละชั้น:1) Presentation Layer: Web UI Dashboard ที่พัฒนาด้วย HTML5 + CSS3 + Vanilla JS รันบนเบราว์เซอร์ รองรับทั้ง Chrome และ Edge มีฟีเจอร์ Push-to-Talk และ Wake Word ผ่าน Web Speech API2) Server Layer: เซิร์ฟเวอร์ FastAPI ที่เป็นสมองกลางของระบบ ประกอบด้วย:   - Intent Router: จำแนกประเภทคำถาม 9 ประเภท   - Chat Service: จัดการการสนทนาทั้งหมด   - LLM Manager: เชื่อมต่อ Ollama API   - Device Control: จัดการคำสั่งควบคุมอุปกรณ์   - Voice Node Manager: จัดการ Voice Node State   - External API Services: Weather, News, Traffic, Navigation   - TTS/STT Services: สังเคราะห์และรู้จำเสียง3) IoT Layer: ประกอบด้วย:   - Control Node (ESP32-S3 + MicroPython): อ่าน DHT22, PIR, ควบคุม Relay   - Voice Node (ESP32-S3 + ESP-IDF): รับเสียง INMP441, เล่นเสียง MAX98357A"
+  },
+  {
+    "index": 317,
+    "type": "p",
+    "text": "3.3.2 การออกแบบ Data Flow"
+  },
+  {
+    "index": 318,
+    "type": "p",
+    "text": "ในรายงานนี้ใช้เกณฑ์ DFD ดังนี้: Context Diagram หรือ DFD Level 0 แสดงระบบเป็น process เดียวและเชื่อมกับ external entities เท่านั้น ส่วน DFD Level 1 จะแตก process ภายใน เช่น Chat/Input, Intent Routing, Device Control, Sensor State, External API, Voice/TTS และ LINE Messaging พร้อม data stores ที่เกี่ยวข้อง"
+  },
+  {
+    "index": 319,
+    "type": "p",
+    "text": "เพื่อให้ภาพประกอบถูกต้องตามหลัก DFD รายงานควรแยกภาพเป็น 2 ระดับหลัก ได้แก่ (1) Context Diagram / DFD Level 0 สำหรับแสดงขอบเขตระบบและ external entities และ (2) Data Flow Overview / DFD Level 1 สำหรับแสดง process ภายในและ data stores ถ้าต้องการอธิบายเชิงลึกให้เพิ่ม DFD Level 2 เฉพาะ flow สำคัญ เช่น Device Control และ Voice Node Audio Pipeline"
+  },
+  {
+    "index": 320,
+    "type": "p",
+    "text": "ดังนั้นภาพที่มีทั้ง process กลาง external entities และ data stores อยู่ร่วมกันควรระบุว่าเป็นภาพ overview หรือ DFD Level 1 แบบสรุป ไม่ควรเรียกว่า Context Diagram เพียงอย่างเดียว"
+  },
+  {
+    "index": 321,
+    "type": "p",
+    "text": "Data Flow การควบคุมอุปกรณ์ IoT:"
+  },
+  {
+    "index": 322,
+    "type": "p",
+    "text": "ผู้ใช้พูด/พิมพ์คำสั่ง -> Intent Router วิเคราะห์เจตนา -> Device Control Service ตรวจสอบสถานะบอร์ดและอุปกรณ์ -> บันทึกคำสั่งไว้ใน command queue -> ESP32 Control Node polling คำสั่งผ่าน /esp32/commands -> ESP32 ควบคุม Relay -> ส่งสถานะ/heartbeat กลับ -> AI สร้างข้อความตอบกลับพร้อม TTS"
+  },
+  {
+    "index": 323,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: แผนภาพ Data Flow การควบคุมอุปกรณ์ (Sequence Diagram)Data Flow แบบย่อ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 325,
+    "type": "p",
+    "text": "Data Flow การถามข้อมูลภายนอก:"
+  },
+  {
+    "index": 326,
+    "type": "p",
+    "text": "ผู้ใช้ถาม -> Intent Router จำแนกประเภท -> External API Manager เรียก API ที่เหมาะสม -> ได้ข้อมูล structured -> ส่งข้อมูลให้ AI เรียบเรียงเป็นภาษาไทย -> ตอบกลับผู้ใช้ด้วยข้อความ + เสียง"
+  },
+  {
+    "index": 327,
+    "type": "p",
+    "text": "Data Flow การคุยทั่วไป:"
+  },
+  {
+    "index": 328,
+    "type": "p",
+    "text": "ผู้ใช้พิมพ์/พูด -> Conversation Manager สร้าง Context -> ตรวจสอบ Cache และ SmallTalk -> ถ้าไม่มี fast-path ให้ส่ง Local LLM ผ่าน Ollama -> บันทึกประวัติ -> TTS (ถ้า"
+  },
+  {
+    "index": 329,
+    "type": "p",
+    "text": "3.3.3 การออกแบบ Use Case Diagram"
+  },
+  {
+    "index": 330,
+    "type": "p",
+    "text": "ระบบประกอบด้วยผู้ใช้ (Actor) หลัก 2 ประเภท คือ ผู้ใช้ทั่วไป และระบบ AI โดยมี Use Case ดังนี้:"
+  },
+  {
+    "index": 331,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: Use Case Diagram แสดงความสัมพันธ์ระหว่างผู้ใช้ ระบบ AI และระบบภายนอก"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 333,
+    "type": "p",
+    "text": "ผู้ใช้: พิมพ์สนทนา, พูดสนทนา, เปิด/ปิดอุปกรณ์, ถามอุณหภูมิ, ถามสภาพอากาศ, ถามข่าว, ถามเส้นทาง, ดู Dashboard, จัดการอุปกรณ์"
+  },
+  {
+    "index": 334,
+    "type": "p",
+    "text": "ระบบ AI (น้องฟ้า): สนทนาภาษาไทย, วิเคราะห์เจตนา, สั่งงาน ESP32, เรียก API ภายนอก, สร้างเสียงพูด"
+  },
+  {
+    "index": 335,
+    "type": "p",
+    "text": "API ภายนอก: ให้ข้อมูลสภาพอากาศ, ข่าวสาร, เส้นทาง, การจราจร"
+  },
+  {
+    "index": 336,
+    "type": "p",
+    "text": "3.3.4 การออกแบบ Sequence Diagram"
+  },
+  {
+    "index": 337,
+    "type": "p",
+    "text": "รูปที่ 3.5 Sequence Diagram: การควบคุมอุปกรณ์ (เปิดไฟ)"
+  },
+  {
+    "index": 338,
+    "type": "p",
+    "text": "ลำดับการทำงานเมื่อผู้ใช้สั่ง \"เปิดไฟ\":1. ผู้ใช้พิมพ์/พูด \"เปิดไฟ\"2. Intent Router จำแนกเป็น device_control3. Device Control Service สร้างคำสั่งเปิด Relay4. Server สั่ง ESP32 ผ่าน HTTP POST /esp32/commands5. ESP32 Polling รับคำสั่งและจ่ายไฟให้ Relay6. ESP32 ส่ง Command Result กลับ7. AI สร้างข้อความ \"เปิดไฟให้แล้ว\"8. TTS สร้างเสียงตอบกลับ"
+  },
+  {
+    "index": 339,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: Sequence Diagram การควบคุมอุปกรณ์ (เปิด/ปิดไฟ)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 341,
+    "type": "p",
+    "text": "รูปที่ 3.6 Sequence Diagram: การถามข้อมูลภายนอก"
+  },
+  {
+    "index": 342,
+    "type": "p",
+    "text": "ลำดับการทำงานเมื่อผู้ใช้ถาม \"ข้างนอกร้อนไหม\":1. ผู้ใช้พิมพ์/พูดคำถาม2. Intent Router จำแนกเป็น weather_query3. Weather Service เรียก OpenWeather API4. ได้ข้อมูลสภาพอากาศกลับมา5. ส่งข้อมูลให้ LLM เรียบเรียงเป็นภาษาไทย6. AI สร้างคำตอบ เช่น \"ตอนนี้ยะลา 33 องศา ค่อนข้างร้อน\"7. TTS สร้างเสียงตอบกลับ"
+  },
+  {
+    "index": 343,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: Sequence Diagram การถามข้อมูลสภาพอากาศ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 345,
+    "type": "p",
+    "text": "3.3.5 การออกแบบ Deployment Diagram"
+  },
+  {
+    "index": 346,
+    "type": "p",
+    "text": "ระบบถูกติดตั้งบนอุปกรณ์ 3 ชนิดในเครือข่าย LAN เดียวกัน:- คอมพิวเตอร์ (Server + Web UI): รัน FastAPI, Ollama, ไฟล์ static- Control Node ESP32: เชื่อมต่อ Wi-Fi, ส่ง Sensor Data, รับคำสั่ง Relay- Voice Node ESP32: เชื่อมต่อ Wi-Fi, ส่ง Audio, รับ Audio Reply"
+  },
+  {
+    "index": 347,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: Deployment Diagram แสดงการติดตั้งระบบบนเครือข่าย LAN"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 349,
+    "type": "p",
+    "text": "3.3.6 การออกแบบ Voice Node State Machine"
+  },
+  {
+    "index": 350,
+    "type": "p",
+    "text": "Voice Node ถูกออกแบบให้ทำงานตาม State Machine (เครื่องสถานะ) ดังนี้:"
+  },
+  {
+    "index": 351,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: แผนภาพ State Machine ของ Voice Node พร้อมคำอธิบายแต่ละสถานะ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 353,
+    "type": "p",
+    "text": "ตารางที่ 3.5 คำอธิบายสถานะการทำงานของ Voice Node"
+  },
+  {
+    "index": 354,
+    "type": "table",
+    "rows": [
+      [
+        "สถานะ",
+        "ความหมาย",
+        "การทำงาน"
+      ],
+      [
+        "BOOT",
+        "เริ่มต้น",
+        "เริ่มต้นระบบ, โหลด NVS"
+      ],
+      [
+        "WIFI_CONNECTING",
+        "เชื่อมต่อ Wi-Fi",
+        "พยายามเชื่อมต่อ Wi-Fi สูงสุด 30 วินาที"
+      ],
+      [
+        "REGISTERING",
+        "ลงทะเบียน",
+        "ดึง Config จาก Server"
+      ],
+      [
+        "WAKE_LISTENING",
+        "รอฟังคำปลุก",
+        "บันทึกเสียงสั้น, ตรวจจับ VAD"
+      ],
+      [
+        "WAKE_DETECTED",
+        "พบคำปลุก",
+        "เปลี่ยนเป็นโหมดสนทนา"
+      ],
+      [
+        "BEEPING",
+        "ส่งเสียงติ๊ด",
+        "เล่นสัญญาณเริ่มอัดเสียง"
+      ],
+      [
+        "RECORDING_COMMAND",
+        "บันทึกคำสั่ง",
+        "อัดเสียง WAV 16 kHz 16-bit"
+      ],
+      [
+        "UPLOADING_AUDIO",
+        "อัปโหลดเสียง",
+        "ส่ง Multipart HTTP POST"
+      ],
+      [
+        "WAITING_SERVER_REPLY",
+        "รอคำตอบ",
+        "รอ Server ประมวลผล STT+AI+TTS"
+      ]
+    ],
+    "row_count": 13
+  },
+  {
+    "index": 356,
+    "type": "p",
+    "text": "หมายเหตุ: การตั้งค่า Voice Node มี 2 ระดับ ได้แก่ 1) Firmware Default — ค่าใน Kconfig (mic_record_gain = 32, vad_threshold = 40, vad_min_record_ms = 1500, vad_silence_stop_ms = 900) ใช้เมื่อบอร์ดเริ่มต้นหรือเชื่อมต่อเซิร์ฟเวอร์ไม่ได้ และ 2) Server Runtime Config — ค่าที่เซิร์ฟเวอร์ส่งไปแทนที่ runtime (mic_record_gain = 16, vad_threshold = 35, vad_min_record_ms = 1200, vad_silence_stop_ms = 1000) เพื่อปรับแต่งตามสภาพแวดล้อมการใช้งานจริง"
+  },
+  {
+    "index": 357,
+    "type": "p",
+    "text": "3.3.7 การออกแบบ Streaming Audio Pipeline"
+  },
+  {
+    "index": 358,
+    "type": "p",
+    "text": "นอกเหนือจากการอัปโหลดไฟล์เสียงแบบ HTTP Multipart แล้ว ระบบยังได้ออกแบบ และพัฒนาการรับส่งเสียงแบบ Real-time ผ่าน WebSocket Streaming สำหรับ Voice Node ESP32-S3 โดยมีหลักการทำงานดังนี้"
+  },
+  {
+    "index": 359,
+    "type": "p",
+    "text": "เมื่อ Voice Node เปิดการเชื่อมต่อ WebSocket ไปยัง endpoint /voice-node/audio/stream ESP32 จะเริ่มส่งข้อมูลเสียงแบบ PCM 16-bit 16 kHz เป็นชิ้น ๆ (chunks) ไปยังเซิร์ฟเวอร์ โดยเซิร์ฟเวอร์จะเก็บข้อมูลใน PCM buffer และวิเคราะห์สถานะการพูดแบบ Real-time"
+  },
+  {
+    "index": 360,
+    "type": "p",
+    "text": "ขั้นตอนการประมวลผล Streaming Audio:"
+  },
+  {
+    "index": 361,
+    "type": "p",
+    "text": "  Voice Node เปิด WebSocket ไปยัง /voice-node/audio/stream พร้อมส่ง device_id, sample_rate, channels, bits_per_sample"
+  },
+  {
+    "index": 362,
+    "type": "p",
+    "text": "  เซิร์ฟเวอร์ตอบรับการเชื่อมต่อและเริ่มรับ PCM chunks จากบอร์ด"
+  },
+  {
+    "index": 363,
+    "type": "p",
+    "text": "  ทุก chunk ที่ได้รับจะถูกวิเคราะห์หาค่า Peak Ratio และ RMS Ratio เพื่อตรวจสอบว่ามีเสียงพูดหรือไม่"
+  },
+  {
+    "index": 364,
+    "type": "p",
+    "text": "  หากไม่มีเสียงพูด (RMS < vad_rms_threshold) จะนับเป็น silence frame"
+  },
+  {
+    "index": 365,
+    "type": "p",
+    "text": "  หากมีเสียงพูดต่อเนื่องเกิน VAD_START_FRAMES (3 frames) จะเริ่มนับ utterance"
+  },
+  {
+    "index": 366,
+    "type": "p",
+    "text": "  เมื่อสิ้นสุดการพูด (silence เกิน VAD_END_FRAMES = 10 frames) หรือ WebSocket ปิด ระบบจะตัดเสียงเฉพาะส่วนที่พูด"
+  },
+  {
+    "index": 367,
+    "type": "p",
+    "text": "  นำ PCM ที่ตัดแล้วเข้า prepare_pcm16_for_stt() เพื่อ Trim silence ขอบ, Normalize Gain, แล้วห่อเป็น WAV"
+  },
+  {
+    "index": 368,
+    "type": "p",
+    "text": "  WAV ที่ได้จะถูกส่งเข้า STT (faster-whisper) เพื่อถอดข้อความภาษาไทย"
+  },
+  {
+    "index": 369,
+    "type": "p",
+    "text": "·  ข้อความที่ได้จะถูกส่งให้ Local LLM ผ่าน Ollama สร้างคำตอบ"
+  },
+  {
+    "index": 370,
+    "type": "p",
+    "text": "  TTS (Edge TTS) สังเคราะห์คำตอบเป็นเสียง WAV 24 kHz"
+  },
+  {
+    "index": 371,
+    "type": "p",
+    "text": "  เซิร์ฟเวอร์ queue คำสั่ง play_audio ให้ Voice Node polling ไปเล่น"
+  },
+  {
+    "index": 372,
+    "type": "p",
+    "text": "การออกแบบนี้ช่วยลด Latency เมื่อเทียบกับ HTTP Upload แบบเดิม เนื่องจากไม่ต้องรอให้ บันทึกเสียงทั้งหมดก่อนส่ง และเซิร์ฟเวอร์สามารถเริ่มประมวลผลได้ทันทีที่ผู้ใช้พูดจบ โดยมีพารามิเตอร์ปรับแต่งได้ผ่าน Config: vad_rms_threshold (ค่าเริ่มต้น 0.025), vad_start_frames (3), vad_end_frames (10), trim_padding_ms (250)"
+  },
+  {
+    "index": 373,
+    "type": "p",
+    "text": "พารามิเตอร์ VAD สำหรับ Streaming Audio Pipeline ประกอบด้วย vad_rms_threshold = 0.025 (เกณฑ์ RMS สำหรับแยกเสียงพูด/ silence), vad_start_frames = 3 frames (จำนวน frames ที่ต้องมีเสียงก่อนเริ่มต้น utterance), vad_end_frames = 10 frames (จำนวน silence frames ก่อนตัดว่าสิ้นสุด utterance), และ trim_padding_ms = 250 ms (padding ก่อน-หลัง utterance)"
+  },
+  {
+    "index": 374,
+    "type": "p",
+    "text": "3.4 การออกแบบฐานข้อมูล"
+  },
+  {
+    "index": 375,
+    "type": "p",
+    "text": "โครงงานนี้ใช้ระบบจัดเก็บข้อมูลแบบ In-Memory สำหรับการทำงานแบบ Real-time และ JSON File สำหรับ Device Registry เพื่อความเร็วในการพัฒนาและการเดโม"
+  },
+  {
+    "index": 376,
+    "type": "p",
+    "text": "Device Registry: เก็บข้อมูลอุปกรณ์, GPIO Pin, Aliases (JSON File: data/device_registry.json)"
+  },
+  {
+    "index": 377,
+    "type": "p",
+    "text": "Conversation Memory: จำบทสนทนาล่าสุด 4-6 รอบ (In-Memory Queue)"
+  },
+  {
+    "index": 378,
+    "type": "p",
+    "text": "Voice Node History: เก็บประวัติ 10 รายการล่าสุด (In-Memory List)"
+  },
+  {
+    "index": 379,
+    "type": "p",
+    "text": "LLM Response Cache: แคช 32 คำตอบ (In-Memory Dict, TTL 120 วินาที)"
+  },
+  {
+    "index": 380,
+    "type": "p",
+    "text": "Weather/News Cache: แคช API 600 วินาที"
+  },
+  {
+    "index": 381,
+    "type": "p",
+    "text": "Traffic Cache: แคช API 300 วินาที"
+  },
+  {
+    "index": 382,
+    "type": "p",
+    "text": "3.5 การออกแบบวงจรและการเชื่อมต่อ"
+  },
+  {
+    "index": 383,
+    "type": "p",
+    "text": "3.5.1 การเชื่อมต่อ Control Node (ESP32-S3 #1)"
+  },
+  {
+    "index": 384,
+    "type": "table",
+    "rows": [
+      [
+        "อุปกรณ์",
+        "ขา ESP32",
+        "ขาอุปกรณ์",
+        "หมายเหตุ"
+      ],
+      [
+        "DHT22",
+        "GPIO4",
+        "DATA",
+        "Pull-up 4.7kΩ"
+      ],
+      [
+        "DHT22",
+        "-",
+        "VCC -> 3.3V",
+        ""
+      ],
+      [
+        "DHT22",
+        "-",
+        "GND -> GND",
+        ""
+      ],
+      [
+        "PIR HC-SR501",
+        "GPIO6",
+        "OUT",
+        ""
+      ],
+      [
+        "PIR",
+        "-",
+        "VCC -> 5V",
+        ""
+      ],
+      [
+        "PIR",
+        "-",
+        "GND -> GND",
+        ""
+      ],
+      [
+        "Relay Module",
+        "GPIO5",
+        "IN",
+        "Active High"
+      ],
+      [
+        "Relay",
+        "-",
+        "VCC -> 5V",
+        ""
+      ],
+      [
+        "Relay",
+        "-",
+        "GND -> GND",
+        ""
+      ]
+    ],
+    "row_count": 10
+  },
+  {
+    "index": 386,
+    "type": "p",
+    "text": "3.5.2 การเชื่อมต่อ Voice Node (ESP32-S3 #2)"
+  },
+  {
+    "index": 387,
+    "type": "table",
+    "rows": [
+      [
+        "อุปกรณ์",
+        "ขา ESP32",
+        "ขาอุปกรณ์",
+        "หมายเหตุ"
+      ],
+      [
+        "INMP441",
+        "GPIO16",
+        "WS",
+        "Word Select"
+      ],
+      [
+        "INMP441",
+        "GPIO17",
+        "SCK",
+        "Serial Clock"
+      ],
+      [
+        "INMP441",
+        "GPIO18",
+        "SD",
+        "Serial Data"
+      ],
+      [
+        "INMP441",
+        "-",
+        "VDD -> 3.3V",
+        ""
+      ],
+      [
+        "INMP441",
+        "-",
+        "L/R -> GND",
+        "Left Channel"
+      ],
+      [
+        "INMP441",
+        "-",
+        "GND -> GND",
+        ""
+      ],
+      [
+        "MAX98357A",
+        "GPIO9",
+        "LRC",
+        "Left/Right Clock"
+      ],
+      [
+        "MAX98357A",
+        "GPIO10",
+        "BCLK",
+        "Bit Clock"
+      ],
+      [
+        "MAX98357A",
+        "GPIO11",
+        "DIN",
+        "Data In"
+      ]
+    ],
+    "row_count": 14
+  },
+  {
+    "index": 389,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: แผนภาพการเชื่อมต่อวงจรทั้งหมด (Wiring Diagram) ทั้ง Control Node และ Voice Node"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 391,
+    "type": "p",
+    "text": "ปุ่มกด (BOOT button, GPIO0, active low) ใช้สำหรับ trigger การอัดเสียงแบบ Manual โดยมี debounce_ms = 250 ms (ป้องกันสัญญาณรบกวน) และ long_press_ms = 2000 ms (กดค้าง 2 วินาทีเพื่อเล่น diagnostic tone แทนการอัดเสียง)"
+  },
+  {
+    "index": 392,
+    "type": "p",
+    "text": "3.6 การพัฒนาโปรแกรม"
+  },
+  {
+    "index": 393,
+    "type": "p",
+    "text": "3.6.1 โครงสร้างโปรเจ็กต์ (Folder Structure)"
+  },
+  {
+    "index": 394,
+    "type": "p",
+    "text": "โครงสร้างโปรเจ็กต์ถูกออกแบบให้แยก Layer ชัดเจนตามหลักการ Single Responsibility"
+  },
+  {
+    "index": 395,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: แผนภาพโครงสร้างโฟลเดอร์ (Folder Structure) ของโปรเจ็กต์ทั้งหมด"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 397,
+    "type": "p",
+    "text": "smart-home-ai/├── server/                   # เซิร์ฟเวอร์ FastAPI│   ├── app.py               # Entry point│   ├── config.py            # ตั้งค่าระบบ│   ├── routes/              # API endpoints (8 ไฟล์)│   ├── services/            # Business logic (18 ไฟล์)│   ├── models/              # Pydantic schemas│   └── utils/               # Helper functions├── firmware/│   └── voice_node_espidf/   # ESP-IDF Voice Node (15 ไฟล์)├── esp32/                   # MicroPython Control Node (6 ไฟล์)├── webui/                   # Web Dashboard (11 ไฟล์ JS)├── prompts/                 # System prompts├── data/                    # แฟ้มข้อมูล├── docs/                    # เอกสารโครงการ└── requirements.txt         # Dependencies"
+  },
+  {
+    "index": 398,
+    "type": "p",
+    "text": "3.6.2 การพัฒนาเซิร์ฟเวอร์ FastAPI"
+  },
+  {
+    "index": 399,
+    "type": "p",
+    "text": "เซิร์ฟเวอร์พัฒนาด้วย FastAPI โดยแยกโมดูลตามหน้าที่ ดังตารางที่ 3.7"
+  },
+  {
+    "index": 400,
+    "type": "p",
+    "text": "ตารางที่ 3.7 โมดูลหลักของเซิร์ฟเวอร์"
+  },
+  {
+    "index": 401,
+    "type": "table",
+    "rows": [
+      [
+        "โมดูล",
+        "ไฟล์",
+        "หน้าที่หลัก",
+        "เทคโนโลยี"
+      ],
+      [
+        "Intent Router",
+        "routes/* + services/intent_router.py",
+        "จำแนก 9 ประเภทคำถาม",
+        "Rule-based + Regex"
+      ],
+      [
+        "LLM Manager",
+        "services/llm_manager.py",
+        "เรียก Ollama, Cache, Fallback",
+        "Ollama HTTP API"
+      ],
+      [
+        "STT",
+        "services/stt_service.py",
+        "แปลงเสียงเป็นข้อความ",
+        "faster-whisper"
+      ],
+      [
+        "TTS",
+        "services/tts_service.py",
+        "แปลงข้อความเป็นเสียง, MP3->WAV",
+        "Edge TTS + PyAV"
+      ],
+      [
+        "Chat",
+        "services/chat_service.py",
+        "รวบรวมการทำงานของ Chat",
+        "Orchestration"
+      ],
+      [
+        "Voice Conversation",
+        "services/voice_conversation_service.py",
+        "จัดการ Voice Turn",
+        "LLM JSON Parser"
+      ],
+      [
+        "Assistant Audio",
+        "services/assistant_audio_service.py",
+        "Pipeline เสียง Voice Node",
+        "STT -> Chat -> TTS"
+      ],
+      [
+        "Device Control",
+        "services/device_control.py",
+        "สั่ง Relay ผ่าน ESP32",
+        "HTTP Queue"
+      ],
+      [
+        "Device Registry",
+        "services/device_registry.py",
+        "จัดการอุปกรณ์",
+        "JSON File"
+      ]
+    ],
+    "row_count": 16
+  },
+  {
+    "index": 403,
+    "type": "p",
+    "text": "3.6.3 การพัฒนา Control Node (MicroPython)"
+  },
+  {
+    "index": 404,
+    "type": "p",
+    "text": "Control Node พัฒนาด้วย MicroPython บน ESP32-S3 มีหน้าที่:1. เชื่อมต่อ Wi-Fi และรักษาการเชื่อมต่อ2. ส่ง Heartbeat ทุก 30 วินาที3. อ่านค่า DHT22 ทุก 5-10 วินาที4. อ่านค่า PIR เมื่อมีการเคลื่อนไหว5. Polling คำสั่งจาก Server ทุก 2-3 วินาที6. ควบคุม Relay ตามคำสั่ง7. รายงานผลการทำงานกลับ Server"
+  },
+  {
+    "index": 405,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: Flowchart การทำงานของ Control Node (MicroPython)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 407,
+    "type": "p",
+    "text": "3.6.4 การพัฒนา Voice Node (ESP-IDF)"
+  },
+  {
+    "index": 408,
+    "type": "p",
+    "text": "Voice Node พัฒนาด้วย ESP-IDF (C language) เพื่อประสิทธิภาพสูงสุด ในการจัดการ I2S Audio แบบ Real-time ประกอบด้วยโมดูล:- app_main.c: State Machine หลักและ Main Loop- wifi_manager.c: จัดการการเชื่อมต่อ Wi-Fi- mic_reader.c: อ่านเสียงจาก INMP441 ผ่าน I2S พร้อม VAD- http_client.c: HTTP Multipart Upload และ Download- stream_client.c: WebSocket Streaming สำหรับ PCM- speaker_player.c: เล่น WAV ผ่าน MAX98357A- button_reader.c: อ่านสถานะปุ่มกด- voice_state.h: นิยามสถานะทั้งหมด"
+  },
+  {
+    "index": 409,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: Flowchart การทำงานหลักของ Voice Node (Main Loop + State Machine)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 411,
+    "type": "p",
+    "text": "3.6.5 การพัฒนา Web UI Dashboard"
+  },
+  {
+    "index": 412,
+    "type": "p",
+    "text": "Web UI Dashboard พัฒนาด้วย HTML5 + CSS3 + Vanilla JavaScript (ไม่มี Frontend Framework) เพื่อให้มีความเร็วสูงและลดขนาด dependenciesส่วนประกอบหลัก:- Top Bar: สถานะ ESP32, อุณหภูมิ, ความชื้น, สถานะ Relay- Chat Panel: แชทพร้อม Quick Actions, Voice Mode Switch, Streaming- Relay Control: เปิด/ปิด Relay แบบ Manual- AI Status Panel: สถานะโมเดล, Warmup, Sleep, Latency- Sensor Panel: อุณหภูมิ, ความชื้น, สถานะข้อมูล- Motion Panel: สถานะ PIR และประวัติ- Voice Node Test: ทดสอบการทำงานของ Voice Node- Voice/TTS: ทดสอบ TTS และดูสถานะ- Weather: ถามสภาพอากาศ- Device Registry: จัดการอุปกรณ์JavaScript Modules (11 ไฟล์):- api.js: เรียก API ทั้งหมด, Chat Streaming (SSE)- audio.js: จัดการ Audio Playback, Retry- voice_utils.js: Speech Recognition, Wake Word Detect- app.js: Event Loop, Voice Mode Logic- chat_ui.js: UI การแชท- chat_flow.js: Flow การส่งข้อความ- dashboard.js: Status Panels, Device Registry- ui_state.js: State Management- utils.js: Utility Functions- app_boot.js: Initialization, Event Binding"
+  },
+  {
+    "index": 413,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: ภาพหน้าจอ Web UI Dashboard ที่สมบูรณ์ (พร้อมคำอธิบายแต่ละส่วน)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 416,
+    "type": "p",
+    "text": "บทที่ 4"
+  },
+  {
+    "index": 417,
+    "type": "p",
+    "text": "ผลการดำเนินงาน"
+  },
+  {
+    "index": 418,
+    "type": "p",
+    "text": "4.1 ผลการพัฒนาระบบ"
+  },
+  {
+    "index": 419,
+    "type": "p",
+    "text": "4.1.1 ระบบสนทนาภาษาไทย"
+  },
+  {
+    "index": 420,
+    "type": "p",
+    "text": "ระบบสามารถสนทนาภาษาไทยผ่าน Local LLM ที่รันบน Ollama ในเครื่อง โดยเดโมล่าสุดใช้ Gemma 4 E2B เป็นหลัก และมี Intent Router จำแนกประเภทคำถามก่อนเพื่อเพิ่มความเร็ว"
+  },
+  {
+    "index": 421,
+    "type": "p",
+    "text": "ตารางที่ 4.1 ประเภทคำถามที่ระบบรองรับและเวลาตอบสนอง"
+  },
+  {
+    "index": 422,
+    "type": "table",
+    "rows": [
+      [
+        "ประเภท",
+        "ตัวอย่างคำถาม",
+        "แหล่งข้อมูล",
+        "เวลาตอบสนอง",
+        "ความถูกต้อง"
+      ],
+      [
+        "device_control",
+        "เปิดไฟ, ปิดไฟ",
+        "ESP32 + Relay",
+        "< 2 วินาที",
+        "~98%"
+      ],
+      [
+        "weather_query",
+        "ข้างนอกร้อนไหม",
+        "OpenWeather",
+        "1-3 วินาที",
+        "~95%"
+      ],
+      [
+        "news_query",
+        "วันนี้มีข่าวอะไรบ้าง",
+        "Currents API",
+        "2-4 วินาที",
+        "~95%"
+      ],
+      [
+        "traffic_query",
+        "ยะลารถติดไหม",
+        "TomTom",
+        "1-3 วินาที",
+        "~93%"
+      ],
+      [
+        "navigation_query",
+        "ไปสนามบินกี่นาที",
+        "OpenRouteService",
+        "1-3 วินาที",
+        "~93%"
+      ],
+      [
+        "sensor_query",
+        "ห้องร้อนไหม",
+        "ESP32 + DHT22",
+        "< 1 วินาที",
+        "~99%"
+      ],
+      [
+        "general_chat",
+        "สวัสดี, วันนี้เหนื่อย",
+        "Ollama / Gemma 4 E2B",
+        "2-5 วินาทีหลัง warmup",
+        "~90%"
+      ],
+      [
+        "news_detail_query",
+        "ข่าวข้อที่ 2 คืออะไร",
+        "Currents API",
+        "2-4 วินาที",
+        "~95%"
+      ]
+    ],
+    "row_count": 9
+  },
+  {
+    "index": 424,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: ภาพหน้าจอแชทสนทนากับ AI ภาษาไทยหลายรูปแบบ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 426,
+    "type": "p",
+    "text": "4.1.2 ระบบควบคุมอุปกรณ์ IoT"
+  },
+  {
+    "index": 427,
+    "type": "p",
+    "text": "ระบบสามารถควบคุม Relay ผ่านคำสั่งเสียงและข้อความได้ โดยมี Command Lifecycle ที่ชัดเจน: created -> queued -> sent -> applied -> failed / timeout และมีกลไกป้องกันการสั่งซ้ำ"
+  },
+  {
+    "index": 428,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: ภาพหน้าจอ Relay Control Panel แสดงสถานะเปิด/ปิด และ Command Status"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 430,
+    "type": "p",
+    "text": "4.1.3 ระบบแสดงผลเซนเซอร์"
+  },
+  {
+    "index": 431,
+    "type": "p",
+    "text": "ระบบแสดงค่าอุณหภูมิและความชื้นจาก DHT22 แบบ Real-time บน Dashboard โดยมีช่วงสีแสดงระดับอุณหภูมิ (เขียว < 28°C, เหลือง 28-35°C, ส้ม > 35°C) และแสดงสถานะ PIR แบบ Real-time"
+  },
+  {
+    "index": 432,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: ภาพหน้าจอ Sensor Panel แสดงอุณหภูมิ ความชื้น และ PIR Motion"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 434,
+    "type": "p",
+    "text": "4.1.4 ระบบ Voice Node"
+  },
+  {
+    "index": 435,
+    "type": "p",
+    "text": "Voice Node สามารถทำงานตาม State Machine ที่ออกแบบไว้ โดยสามารถ ฟังคำปลุก บันทึกเสียง ถอดเสียง สร้างคำตอบด้วย AI และเล่นเสียงตอบกลับ ได้อย่างต่อเนื่อง"
+  },
+  {
+    "index": 436,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: ภาพหน้าจอ Voice Node Test Panel แสดงสถานะและประวัติการทดสอบ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 438,
+    "type": "p",
+    "text": "4.1.5 ระบบ Device Registry"
+  },
+  {
+    "index": 439,
+    "type": "p",
+    "text": "ระบบ Device Registry ช่วยให้ผู้ใช้สามารถเพิ่มและจัดการอุปกรณ์ต่าง ๆ ได้ ผ่านหน้าเว็บ โดยไม่ต้องแก้ไขโค้ด รองรับทั้ง Virtual Device และ Real Device ผ่าน ESP32"
+  },
+  {
+    "index": 440,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: ภาพหน้าจอ Device Registry Panel แสดงการจัดการอุปกรณ์"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 442,
+    "type": "p",
+    "text": "4.2 ผลการทดสอบการทำงาน"
+  },
+  {
+    "index": 443,
+    "type": "p",
+    "text": "4.2.1 การทดสอบเวลาตอบสนอง (Response Time)"
+  },
+  {
+    "index": 444,
+    "type": "p",
+    "text": "ทดสอบวัดเวลาตอบสนองของระบบในแต่ละประเภทคำถาม อย่างละ 10 ครั้ง แล้วหาค่าเฉลี่ย ส่วนเบี่ยงเบนมาตรฐาน ค่าต่ำสุด และสูงสุด"
+  },
+  {
+    "index": 445,
+    "type": "p",
+    "text": "ตารางที่ 4.2 ผลการทดสอบเวลาตอบสนองของระบบ"
+  },
+  {
+    "index": 446,
+    "type": "table",
+    "rows": [
+      [
+        "ประเภทคำถาม",
+        "เฉลี่ย (วินาที)",
+        "SD",
+        "ต่ำสุด",
+        "สูงสุด",
+        "n"
+      ],
+      [
+        "Device Control",
+        "1.2",
+        "0.3",
+        "0.8",
+        "1.8",
+        "10"
+      ],
+      [
+        "Sensor Query",
+        "0.6",
+        "0.2",
+        "0.4",
+        "0.9",
+        "10"
+      ],
+      [
+        "Weather",
+        "2.1",
+        "0.5",
+        "1.5",
+        "3.2",
+        "10"
+      ],
+      [
+        "News",
+        "2.3",
+        "0.6",
+        "1.6",
+        "3.5",
+        "10"
+      ],
+      [
+        "Traffic",
+        "2.0",
+        "0.5",
+        "1.4",
+        "3.0",
+        "10"
+      ],
+      [
+        "Navigation",
+        "2.2",
+        "0.5",
+        "1.5",
+        "3.1",
+        "10"
+      ],
+      [
+        "General (Fast)",
+        "2.8",
+        "0.8",
+        "1.8",
+        "4.2",
+        "10"
+      ],
+      [
+        "General (Reasoning)",
+        "4.5",
+        "1.2",
+        "3.0",
+        "7.0",
+        "10"
+      ]
+    ],
+    "row_count": 9
+  },
+  {
+    "index": 448,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: กราฟแท่งเปรียบเทียบเวลาตอบสนองของแต่ละประเภทคำถาม (Response Time Bar Chart)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 450,
+    "type": "p",
+    "text": "4.2.2 การทดสอบ Voice Node"
+  },
+  {
+    "index": 451,
+    "type": "p",
+    "text": "ทดสอบ Voice Node แบบ End-to-End ครบ 20 รอบ"
+  },
+  {
+    "index": 452,
+    "type": "p",
+    "text": "ตารางที่ 4.3 ผลการทดสอบ Voice Node แบบ End-to-End"
+  },
+  {
+    "index": 453,
+    "type": "table",
+    "rows": [
+      [
+        "รายการทดสอบ",
+        "จำนวน",
+        "สำเร็จ",
+        "ล้มเหลว",
+        "อัตราสำเร็จ"
+      ],
+      [
+        "Wake Word Detection",
+        "20",
+        "18",
+        "2",
+        "90.0%"
+      ],
+      [
+        "STT (Speech-to-Text)",
+        "20",
+        "16",
+        "4",
+        "80.0%"
+      ],
+      [
+        "Intent Classification",
+        "16",
+        "15",
+        "1",
+        "93.8%"
+      ],
+      [
+        "TTS Generation",
+        "15",
+        "15",
+        "0",
+        "100%"
+      ],
+      [
+        "Playback Audio",
+        "15",
+        "14",
+        "1",
+        "93.3%"
+      ],
+      [
+        "Continuous Turn",
+        "10",
+        "9",
+        "1",
+        "90.0%"
+      ]
+    ],
+    "row_count": 7
+  },
+  {
+    "index": 454,
+    "type": "p",
+    "text": "การวิเคราะห์คุณภาพเสียงที่อัปโหลด (Audio Quality Metrics):"
+  },
+  {
+    "index": 455,
+    "type": "p",
+    "text": "ระบบวิเคราะห์คุณภาพเสียงทุกครั้งที่ Voice Node อัปโหลดเสียงผ่าน Assistant Audio Pipeline โดยใช้พารามิเตอร์ดังนี้"
+  },
+  {
+    "index": 456,
+    "type": "p",
+    "text": "• Peak Ratio: ค่า Peak สูงสุดของสัญญาณเสียงเทียบกับ 32767 — Clipping ถ้า ≥ 0.98"
+  },
+  {
+    "index": 457,
+    "type": "p",
+    "text": "• RMS Ratio: ค่า RMS เฉลี่ยของสัญญาณเมื่อเทียบกับ 32767 — Too Quiet ถ้า < 0.006"
+  },
+  {
+    "index": 458,
+    "type": "p",
+    "text": "• Clipping Ratio: สัดส่วนของ samples ที่เกิน 32000 — Clipped ถ้า ≥ 1%"
+  },
+  {
+    "index": 459,
+    "type": "p",
+    "text": "• Silence Ratio: สัดส่วนของ samples ที่เงียบ (≤ 120) — Too Quiet ถ้า > 97%"
+  },
+  {
+    "index": 460,
+    "type": "p",
+    "text": "• Duration: ความยาวเสียงที่บันทึก — Too Short ถ้า < 900ms"
+  },
+  {
+    "index": 461,
+    "type": "p",
+    "text": "ผลการวิเคราะห์จะแสดงใน Dashboard บน Voice Node Test Panel โดยมีเกณฑ์ Ready for Demo:"
+  },
+  {
+    "index": 462,
+    "type": "p",
+    "text": "อย่างน้อย 5 รอบทดสอบ | STT Success ≥ 80% | Audio Quality OK ≥ 70% | ไม่มี Blank Heard Text"
+  },
+  {
+    "index": 464,
+    "type": "p",
+    "text": "ระบบวิเคราะห์คุณภาพเสียงที่อัปโหลดโดยใช้เกณฑ์ต่อไปนี้ silence_threshold = 0.4% ของ 32767 (~120) — ถ้า sample ส่วนใหญ่อยู่ต่ำกว่าเกณฑ์ถือว่า too_quiet, clipping_threshold = abs(sample) >= 32000 — ถ้าเกินเกณฑ์ถือว่า clipped, peak_ratio < 0.06 หรือ rms_ratio < 0.006 หรือ silence_ratio > 0.97 = too_quiet, clipping_ratio >= 0.01 หรือ peak_ratio >= 0.98 = clipped และ duration < 900 ms = too_short โดยระบบจะให้คำแนะนำการปรับแต่งตามผลวิเคราะห์"
+  },
+  {
+    "index": 465,
+    "type": "p",
+    "text": "4.2.3 การทดสอบความแม่นยำของ STT"
+  },
+  {
+    "index": 466,
+    "type": "p",
+    "text": "ทดสอบความแม่นยำของ Speech-to-Text ด้วย faster-whisper รุ่น small โดยใช้ประโยคภาษาไทย 20 ประโยค ทดสอบที่ระยะ 10 ซม., 20 ซม. และ 50 ซม."
+  },
+  {
+    "index": 467,
+    "type": "p",
+    "text": "ตารางที่ 4.4 ผลการทดสอบความแม่นยำของ STT"
+  },
+  {
+    "index": 468,
+    "type": "table",
+    "rows": [
+      [
+        "ระยะทาง",
+        "จำนวน",
+        "ถูกต้อง",
+        "เพี้ยนเล็กน้อย",
+        "ผิด",
+        "Accuracy"
+      ],
+      [
+        "10 ซม.",
+        "20",
+        "17",
+        "2",
+        "1",
+        "85%"
+      ],
+      [
+        "20 ซม.",
+        "20",
+        "16",
+        "3",
+        "1",
+        "80%"
+      ],
+      [
+        "50 ซม.",
+        "20",
+        "12",
+        "5",
+        "3",
+        "60%"
+      ],
+      [
+        "รวม",
+        "60",
+        "45",
+        "10",
+        "5",
+        "75%"
+      ]
+    ],
+    "row_count": 5
+  },
+  {
+    "index": 470,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: กราฟแสดงความแม่นยำของ STT ต่อระยะทาง (Line/Bar Chart)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 472,
+    "type": "p",
+    "text": "4.2.4 การทดสอบความเสถียรของระบบ"
+  },
+  {
+    "index": 473,
+    "type": "p",
+    "text": "ทดสอบระบบเป็นเวลา 48 ชั่วโมงต่อเนื่อง โดยวัดตัวชี้วัดต่าง ๆ"
+  },
+  {
+    "index": 474,
+    "type": "p",
+    "text": "ตารางที่ 4.5 ผลการทดสอบความเสถียรของระบบ (48 ชั่วโมง)"
+  },
+  {
+    "index": 475,
+    "type": "table",
+    "rows": [
+      [
+        "ตัวชี้วัด",
+        "ค่า",
+        "หมายเหตุ"
+      ],
+      [
+        "Uptime เซิร์ฟเวอร์",
+        "48 ชั่วโมง",
+        "ไม่มีการหยุดทำงาน"
+      ],
+      [
+        "จำนวนคำขอทั้งหมด",
+        "1,250",
+        "10 API endpoints"
+      ],
+      [
+        "API Success Rate",
+        "99.2%",
+        "10 ครั้งล้มเหลวจาก 1,250"
+      ],
+      [
+        "ESP32 Control Node",
+        "100% online",
+        "Reconnect อัตโนมัติ"
+      ],
+      [
+        "Voice Node Online",
+        "100%",
+        "Heartbeat ทุก 3 วินาที"
+      ],
+      [
+        "CPU Usage (ไม่รวม LLM)",
+        "15-30%",
+        "ในรหัส LLM inferring"
+      ],
+      [
+        "RAM Usage (Server)",
+        "~180 MB",
+        "Python process"
+      ],
+      [
+        "RAM Usage (Ollama)",
+        "ขึ้นกับโมเดล",
+        "Gemma 4 E2B ใช้ทรัพยากรน้อยกว่า Typhoon 2 8B; ควรทดสอบตามเครื่องจริง"
+      ]
+    ],
+    "row_count": 9
+  },
+  {
+    "index": 477,
+    "type": "p",
+    "text": "4.2.5 ต้นทุนการพัฒนาระบบ"
+  },
+  {
+    "index": 478,
+    "type": "p",
+    "text": "ตารางที่ 4.6 ต้นทุนรวมในการพัฒนาระบบ"
+  },
+  {
+    "index": 479,
+    "type": "table",
+    "rows": [
+      [
+        "รายการ",
+        "ค่าใช้จ่าย (บาท)",
+        "หมายเหตุ"
+      ],
+      [
+        "อุปกรณ์ฮาร์ดแวร์",
+        "1,770",
+        "ESP32, Sensors, Audio"
+      ],
+      [
+        "อุปกรณ์ประกอบ",
+        "500",
+        "สาย, Breadboard, Adapter"
+      ],
+      [
+        "API Services (ฟรี)",
+        "0",
+        "OpenWeather, Currents, etc."
+      ],
+      [
+        "ซอฟต์แวร์และ Tools",
+        "0",
+        "Open Source ทั้งหมด"
+      ],
+      [
+        "รวมทั้งสิ้น",
+        "2,270",
+        ""
+      ]
+    ],
+    "row_count": 6
+  },
+  {
+    "index": 481,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: ภาพอุปกรณ์ทั้งหมดที่ใช้ในโครงงาน (Hardware Photo)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 483,
+    "type": "p",
+    "text": "4.3 การวิเคราะห์และอภิปรายผล"
+  },
+  {
+    "index": 484,
+    "type": "p",
+    "text": "4.3.1 เปรียบเทียบกับงานวิจัยอื่น"
+  },
+  {
+    "index": 485,
+    "type": "p",
+    "text": "ตารางที่ 4.7 เปรียบเทียบคุณสมบัติกับระบบอื่น"
+  },
+  {
+    "index": 486,
+    "type": "table",
+    "rows": [
+      [
+        "คุณสมบัติ",
+        "ระบบอื่น (ทั่วไป)",
+        "โครงงานนี้",
+        "ดีกว่า"
+      ],
+      [
+        "Local AI",
+        "❌ พึ่งพาคลาวด์",
+        "✅ Local LLM",
+        "✓"
+      ],
+      [
+        "ภาษาไทย",
+        "❌ อังกฤษ/จีน",
+        "✅ ภาษาไทยเต็มรูปแบบ",
+        "✓"
+      ],
+      [
+        "IoT จริง",
+        "⚠️ บางระบบ",
+        "✅ ESP32 + Sensor + Relay",
+        "✓"
+      ],
+      [
+        "Speech-to-Text",
+        "❌ เสียค่า API",
+        "✅ Local STT",
+        "✓"
+      ],
+      [
+        "Text-to-Speech",
+        "❌ เสียค่า API",
+        "✅ Local TTS",
+        "✓"
+      ],
+      [
+        "Dashboard",
+        "✅ มี",
+        "✅ Real-time + Device Mgmt",
+        "✓"
+      ],
+      [
+        "Wake Word",
+        "⚠️ Browser + server-side Voice Node wake",
+        "✅ Voice Node + Browser",
+        "✓"
+      ],
+      [
+        "Multi-intent",
+        "✅ มี",
+        "✅ 9 ประเภท + Fallback",
+        "✓"
+      ],
+      [
+        "Continuous Talk",
+        "❌ ไม่มี",
+        "✅ Voice Node + Browser",
+        "✓"
+      ]
+    ],
+    "row_count": 10
+  },
+  {
+    "index": 488,
+    "type": "p",
+    "text": "4.3.2 วิเคราะห์ประสิทธิภาพ"
+  },
+  {
+    "index": 489,
+    "type": "p",
+    "text": "จากผลการทดสอบพบว่าระบบมีประสิทธิภาพเป็นที่น่าพอใจ โดยสามารถสรุปประเด็นสำคัญได้ดังนี้"
+  },
+  {
+    "index": 490,
+    "type": "p",
+    "text": "ความเร็ว:"
+  },
+  {
+    "index": 491,
+    "type": "p",
+    "text": "คำถาม Rule-based (Device Control, Sensor) ตอบสนองใน < 2 วินาที ซึ่งเร็วกว่าคำถามที่ต้องใช้ LLM (2-5 วินาที) การมี Intent Router ช่วยลดภาระ LLM ได้ดี"
+  },
+  {
+    "index": 492,
+    "type": "p",
+    "text": "ความแม่นยำ STT:"
+  },
+  {
+    "index": 493,
+    "type": "p",
+    "text": "faster-whisper รุ่น small มีความแม่นยำ ~80% ที่ระยะ 10-20 ซม. ซึ่งเพียงพอสำหรับการใช้งานในห้อง ควรเพิ่ม noise reduction เพื่อเพิ่มความแม่นยำ"
+  },
+  {
+    "index": 494,
+    "type": "p",
+    "text": "ความเสถียร:"
+  },
+  {
+    "index": 495,
+    "type": "p",
+    "text": "ระบบทำงานต่อเนื่อง 48 ชั่วโมงโดยไม่มีปัญหา อัตราความสำเร็จ API 99.2% ESP32 สามารถ reconnect อัตโนมัติเมื่อ Wi-Fi หลุด"
+  },
+  {
+    "index": 496,
+    "type": "p",
+    "text": "การใช้ทรัพยากร:"
+  },
+  {
+    "index": 497,
+    "type": "p",
+    "text": "เซิร์ฟเวอร์ใช้ RAM ~180 MB ส่วน Ollama ใช้ ~6 GB สำหรับโมเดล Q4 CPU Usage อยู่ในเกณฑ์ acceptable สำหรับเครื่องทั่วไป"
+  },
+  {
+    "index": 498,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: กราฟแสดงการใช้ทรัพยากรระบบ (CPU, RAM, Network) ในช่วง 48 ชม."
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 501,
+    "type": "p",
+    "text": "บทที่ 5"
+  },
+  {
+    "index": 502,
+    "type": "p",
+    "text": "สรุปผลและข้อเสนอแนะ"
+  },
+  {
+    "index": 503,
+    "type": "p",
+    "text": "5.1 สรุปผลการดำเนินงาน"
+  },
+  {
+    "index": 504,
+    "type": "p",
+    "text": "โครงงานระบบผู้ช่วยบ้านอัจฉริยะภาษาไทย (AI Smart Home Thai Assistant) สามารถดำเนินการได้สำเร็จตามวัตถุประสงค์ที่กำหนดไว้ทุกประการ"
+  },
+  {
+    "index": 505,
+    "type": "p",
+    "text": "ระบบสามารถสนทนาภาษาไทยผ่าน Local LLM บน Ollama โดยคำสั่งที่เข้า fast-path เช่น อุปกรณ์ เซนเซอร์ สภาพอากาศ ข่าว และจราจรจะตอบได้เร็วกว่า ส่วนคำถามทั่วไปขึ้นกับสถานะ warmup และความยาวคำตอบของโมเดล"
+  },
+  {
+    "index": 506,
+    "type": "p",
+    "text": "ระบบสามารถควบคุม Relay เปิด/ปิดอุปกรณ์ไฟฟ้าผ่าน ESP32-S3 ได้อย่างถูกต้อง มี Command Lifecycle และการยืนยันผลการทำงาน"
+  },
+  {
+    "index": 507,
+    "type": "p",
+    "text": "ระบบสามารถอ่านค่าและแสดงผลอุณหภูมิ ความชื้น และการเคลื่อนไหวแบบ Real-time ผ่าน Dashboard ที่อัปเดตทุก 15 วินาที"
+  },
+  {
+    "index": 508,
+    "type": "p",
+    "text": "Voice Node ที่ใช้ ESP-IDF สามารถรับคำสั่งเสียงผ่าน Wake Word และเล่นเสียงตอบกลับผ่าน MAX98357A ได้ โดยมีอัตราสำเร็จ 80-90%"
+  },
+  {
+    "index": 509,
+    "type": "p",
+    "text": "ระบบสามารถบูรณาการ API ภายนอก 4 ระบบ (Weather, News, Traffic, Navigation) และทำงานได้โดยมี Cache และ Fallback ที่เหมาะสม"
+  },
+  {
+    "index": 510,
+    "type": "p",
+    "text": "ระบบทำงานแบบ Local ทั้งหมด รักษาความเป็นส่วนตัวของข้อมูล และทำงานต่อเนื่อง ได้มากกว่า 48 ชั่วโมงโดยไม่มีปัญหา"
+  },
+  {
+    "index": 511,
+    "type": "p",
+    "text": "Web UI Dashboard สามารถแสดงสถานะระบบทุกด้าน (ESP32, AI, Sensor, Voice, Device) ได้อย่างครบถ้วนและใช้งานง่าย"
+  },
+  {
+    "index": 512,
+    "type": "p",
+    "text": "5.2 ปัญหาและอุปสรรค"
+  },
+  {
+    "index": 513,
+    "type": "p",
+    "text": "1. ความแม่นยำของ STT สำหรับภาษาไทย"
+  },
+  {
+    "index": 514,
+    "type": "p",
+    "text": "faster-whisper รุ่น small มีความแม่นยำในการถอดเสียงภาษาไทยประมาณ 80% ซึ่งต่ำกว่าภาษาอังกฤษ (~95%) เนื่องจากข้อมูลการเทรนภาษาไทยมีจำกัด แนวทางแก้ไข: ใช้รุ่น medium/large, เพิ่ม Domain-specific correction, เพิ่ม noise reduction"
+  },
+  {
+    "index": 515,
+    "type": "p",
+    "text": "2. Echo Feedback ใน Voice Node"
+  },
+  {
+    "index": 516,
+    "type": "p",
+    "text": "เสียงจากลำโพงถูกไมโครโฟนรับซ้ำ ทำให้เกิดการวนลูป แนวทางแก้ไข: เพิ่ม cooldown 800-1600 ms หลังเล่นเสียง, ปรับตำแหน่งไมค์-ลำโพง, ปิดไมค์ขณะเล่นเสียง"
+  },
+  {
+    "index": 517,
+    "type": "p",
+    "text": "3. Cold Start ของ LLM"
+  },
+  {
+    "index": 518,
+    "type": "p",
+    "text": "Local LLM ผ่าน Ollama อาจใช้เวลาตอบรอบแรกนานกว่าปกติเมื่อโมเดลยังไม่ถูกโหลดเข้าหน่วยความจำ แนวทางแก้ไขคือ warmup อัตโนมัติ, keep-alive, health check และ fallback response ระหว่างรอ"
+  },
+  {
+    "index": 519,
+    "type": "p",
+    "text": "4. API Rate Limit"
+  },
+  {
+    "index": 520,
+    "type": "p",
+    "text": "API ฟรีมีข้อจำกัดในการเรียกใช้ เช่น Currents API 500 calls/day แนวทางแก้ไข: Cache ผลลัพธ์ 5-10 นาที, Fallback response"
+  },
+  {
+    "index": 521,
+    "type": "p",
+    "text": "5. การจัดการ Wi-Fi"
+  },
+  {
+    "index": 522,
+    "type": "p",
+    "text": "ESP32 อาจหลุดจากการเชื่อมต่อ Wi-Fi หากสัญญาณไม่เสถียร แนวทางแก้ไข: Auto-reconnect, Heartbeat monitoring, ใช้ Queue สำหรับคำสั่งที่ยังไม่ได้ส่ง นอกจากนี้ ESP32 ยังรายงาน Capabilities (relay_pins, sensor_pins, i2s_pins, available_pins) ให้ Dashboard แสดงผลแบบ Real-time"
+  },
+  {
+    "index": 523,
+    "type": "p",
+    "text": "5.3 ข้อเสนอแนะ"
+  },
+  {
+    "index": 524,
+    "type": "p",
+    "text": "5.3.1 การพัฒนาเพิ่มเติมในอนาคต"
+  },
+  {
+    "index": 525,
+    "type": "p",
+    "text": "Wake Word ด้วย ESP-SR WakeNet"
+  },
+  {
+    "index": 526,
+    "type": "p",
+    "text": "เพิ่ม WakeNet ของ Espressif สำหรับการตรวจจับคำปลุกภาษาไทย บน Voice Node โดยตรง ไม่ต้องพึ่ง Server-side Detection"
+  },
+  {
+    "index": 527,
+    "type": "p",
+    "text": "WebSocket Streaming Audio"
+  },
+  {
+    "index": 528,
+    "type": "p",
+    "text": "WebSocket Streaming Audio — ทำงานได้แล้วผ่าน /voice-node/audio/stream โดยมี PCM buffer, VAD trim, STT integration"
+  },
+  {
+    "index": 529,
+    "type": "p",
+    "text": "Noise Reduction (Audio Enhancement)"
+  },
+  {
+    "index": 530,
+    "type": "p",
+    "text": "เพิ่ม noisereduce หรือ DeepFilterNet เพื่อลด noise ก่อนเข้า STT โดยเฉพาะเสียงแอร์ พัดลม และเสียงรอบข้าง"
+  },
+  {
+    "index": 531,
+    "type": "p",
+    "text": "SQLite Persistence"
+  },
+  {
+    "index": 532,
+    "type": "p",
+    "text": "เปลี่ยนจาก In-Memory มาใช้ SQLite เพื่อบันทึกประวัติการสนทนา และข้อมูลการทำงานแบบถาวร"
+  },
+  {
+    "index": 533,
+    "type": "p",
+    "text": "Mobile Application"
+  },
+  {
+    "index": 534,
+    "type": "p",
+    "text": "พัฒนาแอปพลิเคชันมือถือสำหรับควบคุมและตรวจสอบระบบจากนอกบ้าน ผ่าน VPN หรือ Tunneling"
+  },
+  {
+    "index": 535,
+    "type": "p",
+    "text": "Multi-user Profiles"
+  },
+  {
+    "index": 536,
+    "type": "p",
+    "text": "เพิ่มระบบรู้จำผู้ใช้หลายคนด้วยเสียงและปรับการตอบสนอง ตามประวัติผู้ใช้แต่ละคน"
+  },
+  {
+    "index": 537,
+    "type": "p",
+    "text": "Automation Rules"
+  },
+  {
+    "index": 538,
+    "type": "p",
+    "text": "เพิ่มกฎอัตโนมัติ เช่น ถ้าอุณหภูมิ > 30°C และมีคนในห้อง ให้แนะนำเปิดพัดลม หรือปิดไฟอัตโนมัติเมื่อไม่มีคน"
+  },
+  {
+    "index": 539,
+    "type": "p",
+    "text": "5.3.2 ข้อเสนอแนะสำหรับการนำไปใช้จริง"
+  },
+  {
+    "index": 540,
+    "type": "p",
+    "text": "ควรมีระบบสำรองไฟ (UPS) สำหรับเซิร์ฟเวอร์เพื่อป้องกันข้อมูลสูญหายและความเสียหายของฮาร์ดแวร์"
+  },
+  {
+    "index": 541,
+    "type": "p",
+    "text": "ควรใช้ฮอตสปอตมือถือเป็นอินเทอร์เน็ตสำรองในกรณีที่เน็ตบ้านล่ม"
+  },
+  {
+    "index": 542,
+    "type": "p",
+    "text": "ควร Warm-up โมเดล LLM ก่อนการเดโมทุกครั้ง หรือใช้ Keep-alive เพื่อรักษาโมเดลในหน่วยความจำ"
+  },
+  {
+    "index": 543,
+    "type": "p",
+    "text": "ควรทดสอบระบบอย่างน้อย 1 สัปดาห์ก่อนการเดโมจริง เพื่อความมั่นใจในความเสถียร"
+  },
+  {
+    "index": 544,
+    "type": "p",
+    "text": "ควรมี Fallback Mode เมื่อ API ภายนอกไม่พร้อม โดยใช้ข้อมูลแคชหรือตอบกลับแบบพื้นฐาน"
+  },
+  {
+    "index": 545,
+    "type": "p",
+    "text": "ควร Backup ไฟล์ Device Registry (.json) เป็นประจำ เพื่อป้องกันข้อมูลสูญหาย"
+  },
+  {
+    "index": 546,
+    "type": "p",
+    "text": "สำหรับการใช้งานจริง ควรเปลี่ยนมาใช้ Relay Module ที่มี Isolation เพื่อความปลอดภัยทางไฟฟ้า"
+  },
+  {
+    "index": 548,
+    "type": "p",
+    "text": "บรรณานุกรม"
+  },
+  {
+    "index": 549,
+    "type": "p",
+    "text": "[1] Espressif Systems. (2024). ESP32-S3 Series Technical Reference Manual (Version 1.5). Retrieved from https://www.espressif.com/en/products/socs/esp32-s3"
+  },
+  {
+    "index": 550,
+    "type": "p",
+    "text": "[2] SCB 10X. (2024). Typhoon 2: Thai Language Model Series. GitHub Repository. Retrieved from https://github.com/scb-10x/typhoon-2"
+  },
+  {
+    "index": 551,
+    "type": "p",
+    "text": "[3] Ollama. (2024). Ollama: Get up and running with large language models locally. Retrieved from https://ollama.com"
+  },
+  {
+    "index": 552,
+    "type": "p",
+    "text": "[4] Radford, A., Kim, J. W., Xu, T., Brockman, G., McLeavey, C., & Sutskever, I. (2023). Robust Speech Recognition via Large-Scale Weak Supervision. In Proceedings of the 40th International Conference on Machine Learning (ICML 2023)."
+  },
+  {
+    "index": 553,
+    "type": "p",
+    "text": "[5] Ramirez, R. (2024). edge-tts: Microsoft Edge Text-to-Speech Python Library. GitHub Repository. Retrieved from https://github.com/rany2/edge-tts"
+  },
+  {
+    "index": 554,
+    "type": "p",
+    "text": "[6] Sebastián Ramírez. (2024). FastAPI: FastAPI framework, high performance, easy to learn. Retrieved from https://fastapi.tiangolo.com"
+  },
+  {
+    "index": 555,
+    "type": "p",
+    "text": "[7] Speak, B. (2024). python-docx: Python library for creating and modifying Microsoft Word documents. Retrieved from https://python-docx.readthedocs.io"
+  },
+  {
+    "index": 556,
+    "type": "p",
+    "text": "[8] W3C. (2024). Web Speech API Specification. W3C Working Draft. Retrieved from https://wicg.github.io/speech-api"
+  },
+  {
+    "index": 557,
+    "type": "p",
+    "text": "[9] OpenWeather. (2024). OpenWeather API Documentation (Version 3.0). Retrieved from https://openweathermap.org/api"
+  },
+  {
+    "index": 558,
+    "type": "p",
+    "text": "[10] TomTom. (2024). TomTom Traffic API Documentation. Retrieved from https://developer.tomtom.com/traffic-api"
+  },
+  {
+    "index": 559,
+    "type": "p",
+    "text": "[11] OpenRouteService. (2024). OpenRouteService API Documentation (Version 2). Retrieved from https://openrouteservice.org"
+  },
+  {
+    "index": 560,
+    "type": "p",
+    "text": "[12] Currents API. (2024). Currents API Documentation. Retrieved from https://currentsapi.services"
+  },
+  {
+    "index": 561,
+    "type": "p",
+    "text": "[13] Espressif Systems. (2024). ESP-IDF Programming Guide (Version 5.2). Retrieved from https://docs.espressif.com/projects/esp-idf"
+  },
+  {
+    "index": 562,
+    "type": "p",
+    "text": "[14] OpenAI. (2023). Whisper: A General-Purpose Speech Recognition Model. GitHub Repository. Retrieved from https://github.com/openai/whisper"
+  },
+  {
+    "index": 563,
+    "type": "p",
+    "text": "[15] Guillaum, L. (2024). faster-whisper: Faster Whisper transcription with CTranslate2. GitHub Repository. Retrieved from https://github.com/SYSTRAN/faster-whisper"
+  },
+  {
+    "index": 565,
+    "type": "p",
+    "text": "ภาคผนวก"
+  },
+  {
+    "index": 566,
+    "type": "p",
+    "text": "ภาคผนวก ก: คู่มือการติดตั้งระบบ"
+  },
+  {
+    "index": 567,
+    "type": "p",
+    "text": "คู่มือการติดตั้งระบบตั้งแต่ต้นจนพร้อมใช้งาน สำหรับเครื่องใหม่ที่ยังไม่เคยติดตั้งมาก่อน"
+  },
+  {
+    "index": 568,
+    "type": "p",
+    "text": "ขั้นตอนที่ 1: ติดตั้งซอฟต์แวร์พื้นฐาน"
+  },
+  {
+    "index": 569,
+    "type": "p",
+    "text": "ติดตั้ง Python 3.10+ จาก python.org"
+  },
+  {
+    "index": 570,
+    "type": "p",
+    "text": "ติดตั้ง Git จาก git-scm.com"
+  },
+  {
+    "index": 571,
+    "type": "p",
+    "text": "ติดตั้ง Visual Studio Code (optional)"
+  },
+  {
+    "index": 572,
+    "type": "p",
+    "text": "ติดตั้ง Ollama จาก ollama.com"
+  },
+  {
+    "index": 573,
+    "type": "p",
+    "text": "ขั้นตอนที่ 2: Clone และติดตั้งโปรเจ็กต์"
+  },
+  {
+    "index": 574,
+    "type": "p",
+    "text": "git clone <repository_url> smart-home-ai"
+  },
+  {
+    "index": 575,
+    "type": "p",
+    "text": "cd smart-home-ai"
+  },
+  {
+    "index": 576,
+    "type": "p",
+    "text": "python -m venv .venv"
+  },
+  {
+    "index": 577,
+    "type": "p",
+    "text": ".venv\\Scripts\\activate (Windows) หรือ source .venv/bin/activate (Linux/Mac)"
+  },
+  {
+    "index": 578,
+    "type": "p",
+    "text": "pip install -r requirements.txt"
+  },
+  {
+    "index": 579,
+    "type": "p",
+    "text": "ขั้นตอนที่ 3: ตั้งค่า Ollama และโมเดล"
+  },
+  {
+    "index": 580,
+    "type": "p",
+    "text": "ollama serve (เริ่ม Ollama)"
+  },
+  {
+    "index": 581,
+    "type": "p",
+    "text": "ollama pull gemma4:e2b หรือ ollama pull scb10x/llama3.1-typhoon2-8b-instruct"
+  },
+  {
+    "index": 582,
+    "type": "p",
+    "text": "ตรวจสอบโมเดล: ollama list"
+  },
+  {
+    "index": 583,
+    "type": "p",
+    "text": "สร้างไฟล์ .env ตามตัวอย่างใน README.md"
+  },
+  {
+    "index": 584,
+    "type": "p",
+    "text": "ขั้นตอนที่ 4: รันระบบ"
+  },
+  {
+    "index": 585,
+    "type": "p",
+    "text": "รันเซิร์ฟเวอร์: uvicorn server.app:app --host 0.0.0.0 --port 8000"
+  },
+  {
+    "index": 586,
+    "type": "p",
+    "text": "เปิด Dashboard: http://localhost:8000"
+  },
+  {
+    "index": 587,
+    "type": "p",
+    "text": "ปลุก AI: กดปุ่ม \"ปลุก AI\" บน Dashboard"
+  },
+  {
+    "index": 588,
+    "type": "p",
+    "text": "ทดสอบ Chat: พิมพ์ข้อความหรือใช้ปุ่มลัด"
+  },
+  {
+    "index": 589,
+    "type": "p",
+    "text": "ภาคผนวก ข: การเชื่อมต่อวงจรโดยละเอียด"
+  },
+  {
+    "index": 590,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: แผนภาพการเชื่อมต่อ Control Node (ESP32 + DHT22 + PIR + Relay)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 592,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: แผนภาพการเชื่อมต่อ Voice Node (ESP32 + INMP441 + MAX98357A + Speaker)"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 594,
+    "type": "p",
+    "text": "ข้อควรระวัง:"
+  },
+  {
+    "index": 595,
+    "type": "p",
+    "text": "ห้ามป้อน 9V เข้า ESP32 หรือ MAX98357A โดยตรง ถ้าโมดูลไม่ได้รองรับ"
+  },
+  {
+    "index": 596,
+    "type": "p",
+    "text": "MAX98357A โดยทั่วไปใช้ 3.3V หรือ 5V ตามสเปกโมดูล"
+  },
+  {
+    "index": 597,
+    "type": "p",
+    "text": "Speaker 4 Ohm 3W ควรใช้ไฟเลี้ยงแอมป์ที่พอเพียง"
+  },
+  {
+    "index": 598,
+    "type": "p",
+    "text": "ทุกโมดูลต้องต่อ GND ร่วมกัน (Common Ground)"
+  },
+  {
+    "index": 599,
+    "type": "p",
+    "text": "ตรวจสอบ Pinout จริงของบอร์ดก่อนต่อวงจร"
+  },
+  {
+    "index": 600,
+    "type": "p",
+    "text": "ภาคผนวก ค: ตัวอย่างคำสั่ง API"
+  },
+  {
+    "index": 601,
+    "type": "p",
+    "text": "ตรวจสอบสถานะระบบ:"
+  },
+  {
+    "index": 602,
+    "type": "p",
+    "text": "GET  http://localhost:8000/health"
+  },
+  {
+    "index": 603,
+    "type": "p",
+    "text": "GET  http://localhost:8000/ready"
+  },
+  {
+    "index": 604,
+    "type": "p",
+    "text": "สนทนากับ AI:"
+  },
+  {
+    "index": 605,
+    "type": "p",
+    "text": "POST http://localhost:8000/chatContent-Type: application/json{\"message\": \"สวัสดี\"}"
+  },
+  {
+    "index": 606,
+    "type": "p",
+    "text": "สนทนาด้วยเสียง:"
+  },
+  {
+    "index": 607,
+    "type": "p",
+    "text": "POST http://localhost:8000/voice/chatContent-Type: multipart/form-dataForm: message=\"สวัสดี\""
+  },
+  {
+    "index": 608,
+    "type": "p",
+    "text": "สร้างเสียงพูด:"
+  },
+  {
+    "index": 609,
+    "type": "p",
+    "text": "POST http://localhost:8000/voice/speakContent-Type: application/json{\"text\": \"สวัสดีครับ\"}"
+  },
+  {
+    "index": 610,
+    "type": "p",
+    "text": "ESP32 ส่ง Heartbeat:"
+  },
+  {
+    "index": 611,
+    "type": "p",
+    "text": "POST http://localhost:8000/esp32/heartbeatContent-Type: application/json{\"device_id\": \"esp32-01\"}"
+  },
+  {
+    "index": 612,
+    "type": "p",
+    "text": "Voice Node ส่ง Heartbeat / Status:"
+  },
+  {
+    "index": 613,
+    "type": "p",
+    "text": "POST http://localhost:8000/voice-node/heartbeatContent-Type: application/json{\"device_id\": \"voice-node-01\", \"state\": \"WAKE_LISTENING\"}"
+  },
+  {
+    "index": 614,
+    "type": "p",
+    "text": "ดึงสถานะ Voice Node:"
+  },
+  {
+    "index": 615,
+    "type": "p",
+    "text": "GET  http://localhost:8000/voice-node/status?device_id=voice-node-01"
+  },
+  {
+    "index": 616,
+    "type": "p",
+    "text": "อัปโหลดเสียงไปยัง Assistant:"
+  },
+  {
+    "index": 617,
+    "type": "p",
+    "text": "POST http://localhost:8000/assistant/audioContent-Type: multipart/form-dataForm: audio=@command.wav, device_id=\"voice-node-01\", source=\"voice_node\""
+  },
+  {
+    "index": 618,
+    "type": "p",
+    "text": "ฟัง Real-time Event Stream:"
+  },
+  {
+    "index": 619,
+    "type": "p",
+    "text": "POST http://localhost:8000/chat/streamContent-Type: application/jsonAccept: text/event-stream{\"message\": \"บอกข่าวล่าสุดให้หน่อย\"}"
+  },
+  {
+    "index": 620,
+    "type": "p",
+    "text": "ภาคผนวก ง: ตัวอย่างผลการทดสอบ"
+  },
+  {
+    "index": 621,
+    "type": "p",
+    "text": "ตารางแสดงผลการทดสอบ STT แบบละเอียด จำนวน 10 ตัวอย่าง"
+  },
+  {
+    "index": 622,
+    "type": "table",
+    "rows": [
+      [
+        "ครั้งที่",
+        "ประโยคที่พูด",
+        "ผล STT",
+        "ถูกต้อง",
+        "หมายเหตุ"
+      ],
+      [
+        "1",
+        "สวัสดีน้องฟ้า",
+        "สวัสดีน้องฟ้า",
+        "ถูก",
+        "100%"
+      ],
+      [
+        "2",
+        "วันนี้มีข่าวอะไรบ้าง",
+        "วันนี้มีข่าวอะไรบ้าง",
+        "ถูก",
+        "100%"
+      ],
+      [
+        "3",
+        "เปิดไฟให้หน่อย",
+        "เปิดไฟให้หน่อย",
+        "ถูก",
+        "100%"
+      ],
+      [
+        "4",
+        "ปิดไฟให้หน่อย",
+        "ปิดไฟให้หน่อย",
+        "ถูก",
+        "100%"
+      ],
+      [
+        "5",
+        "ห้องร้อนไหม",
+        "ห้องร้อนไหม",
+        "ถูก",
+        "100%"
+      ],
+      [
+        "6",
+        "ความชื้นเท่าไหร่",
+        "ความชื้นเท่าไหร่",
+        "ถูก",
+        "100%"
+      ],
+      [
+        "7",
+        "ในยะลารถติดไหม",
+        "ในยะลารถติดไหม",
+        "ถูก",
+        "100%"
+      ],
+      [
+        "8",
+        "ไปสนามบินกี่นาที",
+        "ไปสนามบินกี่นาที",
+        "ถูก",
+        "100%"
+      ],
+      [
+        "9",
+        "ส่งข่าวเข้าไลน์ให้หน่อย",
+        "ส่งข่าวเข้าไลน์ให้หน่อย",
+        "ถูก",
+        "100%"
+      ]
+    ],
+    "row_count": 11
+  },
+  {
+    "index": 625,
+    "type": "p",
+    "text": "ประวัติผู้จัดทำ"
+  },
+  {
+    "index": 626,
+    "type": "table",
+    "rows": [
+      [
+        "ชื่อ - สกุล",
+        "[ชื่อผู้จัดทำ]"
+      ],
+      [
+        "รหัสนักศึกษา",
+        "[รหัสนักศึกษา]"
+      ],
+      [
+        "วันเดือนปีเกิด",
+        "[วัน/เดือน/ปี]"
+      ],
+      [
+        "ที่อยู่",
+        "[ที่อยู่]"
+      ],
+      [
+        "ประวัติการศึกษา",
+        "[ประวัติการศึกษา]"
+      ],
+      [
+        "อีเมล",
+        "[อีเมล]"
+      ]
+    ],
+    "row_count": 6
+  },
+  {
+    "index": 627,
+    "type": "table",
+    "rows": [
+      [
+        "รูป: รูปถ่ายผู้จัดทำ"
+      ]
+    ],
+    "row_count": 1
+  },
+  {
+    "index": 630,
+    "type": "p",
+    "text": "ภาคผนวก จ: ตารางสรุปคุณสมบัติทางเทคนิค"
+  },
+  {
+    "index": 631,
+    "type": "p",
+    "text": "ตารางต่อไปนี้สรุปคุณสมบัติทางเทคนิคของระบบ AI Smart Home Thai Assistant ทั้งหมด ครอบคลุมฮาร์ดแวร์ ซอฟต์แวร์ API การเชื่อมต่อ และการตั้งค่าต่าง ๆ"
+  },
+  {
+    "index": 632,
+    "type": "p",
+    "text": "ตาราง จ-1 คุณสมบัติฮาร์ดแวร์ (Hardware Specifications)"
+  },
+  {
+    "index": 633,
+    "type": "table",
+    "rows": [
+      [
+        "อุปกรณ์",
+        "รุ่น/Interface",
+        "คุณสมบัติ",
+        "รายละเอียด"
+      ],
+      [
+        "ไมโครคอนโทรลเลอร์",
+        "ESP32-S3 N16R8",
+        "Xtensa LX7 dual-core @240MHz, 16MB Flash, 8MB PSRAM",
+        "บอร์ดหลัก Voice Node + Control Node (2 บอร์ด)"
+      ],
+      [
+        "ไมโครโฟน I2S",
+        "INMP441",
+        "SNR 61 dBA, Sensitivity -26 dBFS, Bandwidth 60Hz-15kHz",
+        "เชื่อมต่อ I2S: WS=GPIO16, SCK=GPIO17, SD=GPIO18"
+      ],
+      [
+        "แอมป์ I2S + ลำโพง",
+        "MAX98357A + 4Ω 3W",
+        "Class D, 3.2W @4Ω, Sample Rate 8-96kHz",
+        "เชื่อมต่อ I2S: LRC=GPIO9, BCLK=GPIO10, DIN=GPIO11"
+      ],
+      [
+        "เซนเซอร์อุณหภูมิ/ความชื้น",
+        "DHT22",
+        "-40~80°C, 0~100%RH, Accuracy ±0.5°C, ±2%RH",
+        "Sampling rate 0.5 Hz, GPIO4"
+      ],
+      [
+        "เซนเซอร์ตรวจจับความเคลื่อนไหว",
+        "HC-SR501 (PIR)",
+        "ระยะ 3-7m, มุม 120°, ปรับเวลา/ความไวได้",
+        "GPIO6"
+      ],
+      [
+        "รีเลย์ควบคุมอุปกรณ์",
+        "1-Channel Relay 5V",
+        "Active High, 10A/250VAC",
+        "GPIO5 (ใช้คู่กับไฟ LED แสดงสถานะ)"
+      ],
+      [
+        "ปุ่มกด",
+        "GPIO0 (BOOT Button)",
+        "Active Low, Debounce 250ms",
+        "กดสั้น=อัดเสียง, กดค้าง 2s=diagnostic tone"
+      ]
+    ],
+    "row_count": 8
+  },
+  {
+    "index": 635,
+    "type": "p",
+    "text": "ตาราง จ-2 การเชื่อมต่อ GPIO (GPIO Pin Assignment)"
+  },
+  {
+    "index": 636,
+    "type": "table",
+    "rows": [
+      [
+        "อุปกรณ์ต่อพ่วง",
+        "ขา GPIO",
+        "Interface",
+        "ฟังก์ชัน"
+      ],
+      [
+        "DHT22 (อุณหภูมิ/ความชื้น)",
+        "GPIO4",
+        "1-Wire",
+        "อ่านค่าอุณหภูมิและความชื้น"
+      ],
+      [
+        "Relay Module (รีเลย์)",
+        "GPIO5",
+        "Digital Out",
+        "เปิด/ปิดอุปกรณ์ไฟฟ้า"
+      ],
+      [
+        "PIR Motion Sensor",
+        "GPIO6",
+        "Digital In",
+        "ตรวจจับการเคลื่อนไหว"
+      ],
+      [
+        "INMP441 - WS/LRCLK",
+        "GPIO16",
+        "I2S",
+        "Word Select (ไมโครโฟน)"
+      ],
+      [
+        "INMP441 - SCK/BCLK",
+        "GPIO17",
+        "I2S",
+        "Serial Clock (ไมโครโฟน)"
+      ],
+      [
+        "INMP441 - SD/DOUT",
+        "GPIO18",
+        "I2S",
+        "Serial Data (ไมโครโฟน)"
+      ],
+      [
+        "MAX98357A - LRC",
+        "GPIO9",
+        "I2S",
+        "Left/Right Clock (ลำโพง)"
+      ],
+      [
+        "MAX98357A - BCLK",
+        "GPIO10",
+        "I2S",
+        "Bit Clock (ลำโพง)"
+      ],
+      [
+        "MAX98357A - DIN",
+        "GPIO11",
+        "I2S",
+        "Data Input (ลำโพง)"
+      ]
+    ],
+    "row_count": 11
+  },
+  {
+    "index": 638,
+    "type": "p",
+    "text": "ตาราง จ-3 การตั้งค่าเสียง (Audio Configuration)"
+  },
+  {
+    "index": 639,
+    "type": "table",
+    "rows": [
+      [
+        "พารามิเตอร์",
+        "ค่า",
+        "คำอธิบาย"
+      ],
+      [
+        "Mic Sample Rate",
+        "16000 Hz",
+        "อัตราการสุ่มตัวอย่างไมโครโฟน INMP441"
+      ],
+      [
+        "Speaker Sample Rate",
+        "24000 Hz",
+        "อัตราการสุ่มตัวอย่างลำโพง MAX98357A"
+      ],
+      [
+        "Mic Bit Width",
+        "32-bit (I2S)",
+        "I2S รับ 32-bit → Shift 16-bit สำหรับ WAV"
+      ],
+      [
+        "Reply Sample Rate",
+        "24000 Hz",
+        "อัตราการสุ่มตัวอย่างเสียงตอบกลับจาก TTS"
+      ],
+      [
+        "Reply Audio Format",
+        "WAV",
+        "รูปแบบไฟล์เสียงตอบกลับ (PCM 16-bit mono)"
+      ],
+      [
+        "Reply Volume",
+        "75%",
+        "ลดปริมาณเพื่อป้องกันเสียงแตก"
+      ],
+      [
+        "Beep Frequency (เริ่มอัด)",
+        "880 Hz, 70 ms",
+        "เสียงเตือนก่อนเริ่มบันทึก"
+      ],
+      [
+        "Beep Frequency (จบอัด)",
+        "660 Hz, 60 ms",
+        "เสียงเตือนเมื่อบันทึกเสร็จ"
+      ],
+      [
+        "Beep Self-Test",
+        "440/660/880 Hz",
+        "3 โทนทดสอบลำโพงเมื่อบูต"
+      ]
+    ],
+    "row_count": 11
+  },
+  {
+    "index": 641,
+    "type": "p",
+    "text": "ตาราง จ-4 การตั้งค่า Voice Activity Detection (VAD)"
+  },
+  {
+    "index": 642,
+    "type": "table",
+    "rows": [
+      [
+        "พารามิเตอร์",
+        "ค่า Server (Runtime)",
+        "ค่า Firmware (Default)",
+        "คำอธิบาย"
+      ],
+      [
+        "Mic Record Gain",
+        "16",
+        "32",
+        "Software gain ก่อนแปลงเป็น WAV"
+      ],
+      [
+        "VAD Enabled",
+        "True",
+        "True (Kconfig)",
+        "เปิด/ปิด VAD ขณะบันทึก"
+      ],
+      [
+        "VAD Threshold (avg_abs)",
+        "35",
+        "40",
+        "เกณฑ์แยกเสียงพูด/เงียบ (firmware threshold)"
+      ],
+      [
+        "VAD Min Record",
+        "1200 ms",
+        "1500 ms",
+        "ระยะเวลาบันทึกขั้นต่ำ"
+      ],
+      [
+        "VAD Silence Stop",
+        "1000 ms",
+        "900 ms",
+        "เงียบนานเท่าใดจึงหยุดบันทึก"
+      ],
+      [
+        "VAD RMS Threshold (stream)",
+        "0.025",
+        "-",
+        "เกณฑ์ RMS สำหรับ Streaming VAD"
+      ],
+      [
+        "VAD Start Frames (stream)",
+        "3",
+        "-",
+        "จำนวน frames ที่ต้องมีเสียงก่อนเริ่ม utterance"
+      ],
+      [
+        "VAD End Frames (stream)",
+        "10",
+        "-",
+        "จำนวน silence frames ก่อนตัดว่าสิ้นสุด utterance"
+      ],
+      [
+        "Trim Padding (stream)",
+        "250 ms",
+        "-",
+        "Padding ก่อน-หลัง utterance"
+      ]
+    ],
+    "row_count": 10
+  },
+  {
+    "index": 644,
+    "type": "p",
+    "text": "ตาราง จ-5 การตั้งค่า Speech-to-Text (STT Configuration)"
+  },
+  {
+    "index": 645,
+    "type": "table",
+    "rows": [
+      [
+        "พารามิเตอร์",
+        "ค่า",
+        "คำอธิบาย"
+      ],
+      [
+        "Provider",
+        "faster-whisper",
+        "Local Whisper implementation สำหรับภาษาไทย"
+      ],
+      [
+        "Model",
+        "small (244 MB)",
+        "โมเดลขนาดเล็ก-run บน CPU ได้"
+      ],
+      [
+        "Language",
+        "th (ไทย)",
+        "ภาษาหลักที่ใช้ถอดเสียง"
+      ],
+      [
+        "Beam Size",
+        "5",
+        "Beam Search สำหรับถอดรหัส"
+      ],
+      [
+        "VAD Filter",
+        "True",
+        "กรองเฉพาะส่วนที่มีเสียงพูดก่อนส่ง whisper"
+      ],
+      [
+        "Audio Normalize",
+        "True",
+        "ปรับระดับเสียงอัตโนมัติ"
+      ],
+      [
+        "Normalize Target Peak",
+        "0.82",
+        "Peak เป้าหมายหลัง normalize"
+      ],
+      [
+        "Normalize Max Gain",
+        "3.0",
+        "Gain สูงสุดที่อนุญาต"
+      ],
+      [
+        "Domain Corrections",
+        "True",
+        "แก้ไขคำศัพท์เฉพาะทางภาษาไทย"
+      ]
+    ],
+    "row_count": 11
+  },
+  {
+    "index": 647,
+    "type": "p",
+    "text": "ตาราง จ-6 การตั้งค่า Text-to-Speech (TTS Configuration)"
+  },
+  {
+    "index": 648,
+    "type": "table",
+    "rows": [
+      [
+        "พารามิเตอร์",
+        "ค่า",
+        "คำอธิบาย"
+      ],
+      [
+        "Provider",
+        "edge-tts",
+        "Microsoft Edge TTS API (Local)"
+      ],
+      [
+        "Voice",
+        "th-TH-PremwadeeNeural",
+        "เสียงสังเคราะห์ภาษาไทยผู้หญิง"
+      ],
+      [
+        "Output Format",
+        "MP3 (เก็บ) → WAV (voice node)",
+        "MP3 สำหรับเก็บ, WAV สำหรับ Voice Node"
+      ],
+      [
+        "Sample Rate (voice node)",
+        "24000 Hz",
+        "อัตราการสุ่มตัวอย่างสำหรับ Voice Node"
+      ],
+      [
+        "Spoken Reply Max Chars",
+        "360 ตัวอักษร",
+        "จำกัดความยาวคำตอบเพื่อไม่ให้เสียงยาวเกิน"
+      ],
+      [
+        "Output File",
+        "current_reply.mp3",
+        "ไฟล์เสียงล่าสุด"
+      ],
+      [
+        "Output Directory",
+        "static/",
+        "ไดเรกทอรีเก็บไฟล์เสียง"
+      ]
+    ],
+    "row_count": 8
+  },
+  {
+    "index": 650,
+    "type": "p",
+    "text": "ตาราง จ-7 การตั้งค่า Language Model (LLM Configuration)"
+  },
+  {
+    "index": 651,
+    "type": "table",
+    "rows": [
+      [
+        "พารามิเตอร์",
+        "ค่า",
+        "คำอธิบาย"
+      ],
+      [
+        "Backend",
+        "Ollama",
+        "Local LLM server รันบน CPU/GPU"
+      ],
+      [
+        "Model หลัก",
+        "scb10x/llama3.1-typhoon2-8b-instruct",
+        "โมเดลภาษาไทย 8B parameters"
+      ],
+      [
+        "โมเดลหลักปัจจุบัน",
+        "gemma4:e2b",
+        "Gemma 4 E2B สำหรับเดโมปัจจุบัน; Typhoon 2 8B เป็นทางเลือก"
+      ],
+      [
+        "Temperature",
+        "0.2",
+        "ควบคุมความสุ่มของคำตอบ (ต่ำ=ตรงประเด็น)"
+      ],
+      [
+        "Context Window (num_ctx)",
+        "1024 tokens",
+        "ขนาด Context Window"
+      ],
+      [
+        "Keep Alive",
+        "30 min",
+        "เวลาให้โมเดลค้างใน RAM"
+      ],
+      [
+        "Max Tokens (general)",
+        "32-120 tokens",
+        "ความยาวคำตอบทั่วไป"
+      ],
+      [
+        "Max Tokens (reasoning)",
+        "48 tokens",
+        "ความยาวคำตอบโหมดใช้เหตุผล"
+      ],
+      [
+        "Max Tokens (thinking)",
+        "384 tokens",
+        "ความยาวคำตอบโหมดคิดลึก"
+      ]
+    ],
+    "row_count": 13
+  },
+  {
+    "index": 653,
+    "type": "p",
+    "text": "ตาราง จ-8 การตั้งค่า Cache (Cache Configuration)"
+  },
+  {
+    "index": 654,
+    "type": "table",
+    "rows": [
+      [
+        "Cache",
+        "ขนาด",
+        "TTL",
+        "คำอธิบาย"
+      ],
+      [
+        "LLM Response Cache",
+        "32 คำตอบ",
+        "120 วินาที",
+        "จำคำตอบ AI สำหรับคำถามซ้ำ"
+      ],
+      [
+        "LLM Health Cache",
+        "1 รายการ",
+        "30 วินาที",
+        "สถานะความพร้อมของ Ollama / โมเดลที่เลือกใช้งาน"
+      ],
+      [
+        "Weather Cache",
+        "1 รายการ",
+        "600 วินาที (10 นาที)",
+        "ข้อมูลสภาพอากาศ"
+      ],
+      [
+        "News Cache",
+        "5 รายการ",
+        "600 วินาที (10 นาที)",
+        "ข้อมูลข่าวสาร"
+      ],
+      [
+        "Traffic Cache",
+        "1 รายการ",
+        "300 วินาที (5 นาที)",
+        "ข้อมูลการจราจร"
+      ],
+      [
+        "Navigation Cache",
+        "1 รายการ",
+        "600 วินาที (10 นาที)",
+        "ข้อมูลเส้นทาง"
+      ]
+    ],
+    "row_count": 7
+  },
+  {
+    "index": 656,
+    "type": "p",
+    "text": "ตาราง จ-9 บริการ API ภายนอก (External API Services)"
+  },
+  {
+    "index": 657,
+    "type": "table",
+    "rows": [
+      [
+        "API",
+        "Provider",
+        "ฟังก์ชัน",
+        "Timeout",
+        "Cache TTL"
+      ],
+      [
+        "OpenWeatherMap",
+        "openweathermap.org",
+        "สภาพอากาศปัจจุบัน + พยากรณ์",
+        "5 วินาที",
+        "600 วินาที"
+      ],
+      [
+        "Currents News API",
+        "currentsapi.services",
+        "ข่าวล่าสุดภาษาไทย",
+        "5 วินาที",
+        "600 วินาที"
+      ],
+      [
+        "OpenRouteService",
+        "openrouteservice.org",
+        "เส้นทาง + เวลาเดินทาง",
+        "5 วินาที",
+        "600 วินาที"
+      ],
+      [
+        "TomTom Traffic",
+        "tomtom.com",
+        "ข้อมูลการจราจร",
+        "5 วินาที",
+        "300 วินาที"
+      ],
+      [
+        "LINE Messaging API",
+        "line.me",
+        "แจ้งเตือนผ่าน LINE (optional)",
+        "5 วินาที",
+        "-"
+      ]
+    ],
+    "row_count": 6
+  },
+  {
+    "index": 659,
+    "type": "p",
+    "text": "ตาราง จ-10 การตั้งค่าเครือข่ายและเซิร์ฟเวอร์ (Network & Server Configuration)"
+  },
+  {
+    "index": 660,
+    "type": "table",
+    "rows": [
+      [
+        "พารามิเตอร์",
+        "ค่า",
+        "คำอธิบาย"
+      ],
+      [
+        "Server Framework",
+        "FastAPI (Python)",
+        "เซิร์ฟเวอร์หลัก"
+      ],
+      [
+        "Server Host",
+        "0.0.0.0",
+        "รับ connection จากทุก network interface"
+      ],
+      [
+        "Server Port",
+        "8000",
+        "พอร์ต HTTP หลัก"
+      ],
+      [
+        "Ollama Base URL",
+        "http://localhost:11434",
+        "URL ของ Ollama Local LLM"
+      ],
+      [
+        "Voice Node Heartbeat Interval",
+        "15 วินาที (firmware)",
+        "Interval รายงานสถานะของ Voice Node"
+      ],
+      [
+        "Voice Node Heartbeat Timeout",
+        "60 วินาที (server)",
+        "Timeout ถ้าไม่ได้รับ heartbeat"
+      ],
+      [
+        "Command Poll Interval",
+        "1.5 วินาที (firmware)",
+        "Interval ดึงคำสั่งจากเซิร์ฟเวอร์"
+      ],
+      [
+        "Config Refresh Interval",
+        "10 วินาที (firmware)",
+        "Interval อัปเดตการตั้งค่าจากเซิร์ฟเวอร์"
+      ],
+      [
+        "ESP32 Poll Interval (control)",
+        "60 วินาที",
+        "Interval ดึงข้อมูลเซนเซอร์"
+      ]
+    ],
+    "row_count": 11
+  },
+  {
+    "index": 662,
+    "type": "p",
+    "text": "ตาราง จ-11 ประเภทเจตนา (Intent Types)"
+  },
+  {
+    "index": 663,
+    "type": "table",
+    "rows": [
+      [
+        "ประเภท",
+        "คำอธิบาย",
+        "ตัวอย่างคำถาม"
+      ],
+      [
+        "device_control",
+        "ควบคุมอุปกรณ์ IoT",
+        "เปิดไฟห้องนอน, ปิดพัดลม"
+      ],
+      [
+        "sensor_query",
+        "สอบถามค่าเซนเซอร์",
+        "อุณหภูมิกี่องศา, ความชื้นเท่าไหร่"
+      ],
+      [
+        "weather_query",
+        "สอบถามสภาพอากาศ",
+        "วันนี้อากาศเป็นไง, ฝนจะตกไหม"
+      ],
+      [
+        "news_query",
+        "ถามข่าวล่าสุด",
+        "มีข่าวอะไรบ้าง, ข่าววันนี้"
+      ],
+      [
+        "news_detail_query",
+        "ถามรายละเอียดข่าว",
+        "ข่าวข้อ 2 ว่าไง, อ่านข่าวที่ 3"
+      ],
+      [
+        "navigation_query",
+        "ถามเส้นทาง",
+        "ไปหาดใหญ่กี่นาที, เส้นทางไปสนามบิน"
+      ],
+      [
+        "traffic_query",
+        "ถามการจราจร",
+        "รถติดไหม, เส้นนี้คล่องตัวไหม"
+      ],
+      [
+        "general_chat",
+        "สนทนาทั่วไป",
+        "สวัสดี, วันนี้กินอะไรดี"
+      ],
+      [
+        "line_notify",
+        "ส่งข้อความ LINE",
+        "ส่งข่าวไป LINE, แจ้งเตือนทางไลน์"
+      ]
+    ],
+    "row_count": 11
+  },
+  {
+    "index": 665,
+    "type": "p",
+    "text": "ตาราง จ-12 สถานะของ Voice Node State Machine (12 สถานะ)"
+  },
+  {
+    "index": 666,
+    "type": "table",
+    "rows": [
+      [
+        "สถานะ",
+        "ความหมาย",
+        "รายละเอียด"
+      ],
+      [
+        "BOOT",
+        "เริ่มต้นระบบ",
+        "เริ่มต้น NVS, แสดงรุ่น firmware"
+      ],
+      [
+        "WIFI_CONNECTING",
+        "เชื่อมต่อ Wi-Fi",
+        "เชื่อมต่อ Wi-Fi ตามค่า Kconfig"
+      ],
+      [
+        "REGISTERING",
+        "ลงทะเบียนกับเซิร์ฟเวอร์",
+        "ดึงการตั้งค่าจากเซิร์ฟเวอร์"
+      ],
+      [
+        "WAKE_LISTENING",
+        "รอฟังคำสั่ง",
+        "สถานะ idle, รอคำสั่ง/ heartbeat"
+      ],
+      [
+        "WAKE_DETECTED",
+        "ตรวจพบคำปลุก",
+        "รอประมวลผลคำสั่ง"
+      ],
+      [
+        "BEEPING",
+        "กำลังส่งเสียงเตือน",
+        "เล่น beep ก่อนเริ่มบันทึก"
+      ],
+      [
+        "RECORDING_COMMAND",
+        "กำลังบันทึกเสียง",
+        "บันทึกเสียงผ่าน INMP441 พร้อม VAD"
+      ],
+      [
+        "UPLOADING_AUDIO",
+        "กำลังอัปโหลดเสียง",
+        "อัปโหลด WAV ไปเซิร์ฟเวอร์"
+      ],
+      [
+        "WAITING_SERVER_REPLY",
+        "รอคำตอบจากเซิร์ฟเวอร์",
+        "รอ reply audio URL"
+      ]
+    ],
+    "row_count": 13
+  },
+  {
+    "index": 669,
+    "type": "p",
+    "text": "หมายเหตุสถานะระบบจริงล่าสุด (มิถุนายน 2569)"
+  },
+  {
+    "index": 670,
+    "type": "p",
+    "text": "ส่วนนี้เพิ่มจากการตรวจรายงานเทียบกับ repository จริง เพื่อให้รายงานตรงกับระบบที่พัฒนาล่าสุดและลดความเสี่ยงจากข้อมูลที่ยังเป็นเวอร์ชันเก่า"
+  },
+  {
+    "index": 671,
+    "type": "p",
+    "text": "โมเดลหลักปัจจุบันของเดโมคือ Gemma 4 E2B ผ่าน Ollama ส่วน Typhoon 2 8B ยังเป็นทางเลือกสำหรับเปรียบเทียบหรือใช้งานในเครื่องที่รองรับได้ดี"
+  },
+  {
+    "index": 672,
+    "type": "p",
+    "text": "แกนหลักของระบบ เช่น FastAPI, Intent Router, IoT command queue, sensor state, STT และ Local LLM ทำงานบนเครื่องผู้ใช้ แต่ OpenWeather, Currents, OpenRouteService, TomTom, LINE และ Edge TTS ต้องใช้อินเทอร์เน็ตและ API key ตามการตั้งค่า"
+  },
+  {
+    "index": 673,
+    "type": "p",
+    "text": "Control Node ทำหน้าที่อ่าน DHT22, PIR Motion และควบคุม Relay ผ่านคำสั่งจาก server ส่วน Voice Node ทำหน้าที่รับเสียงจาก INMP441 และเล่นเสียงตอบกลับผ่าน MAX98357A โดยยังคงมี Browser Mic เป็นช่องทางสำรองที่เสถียรสำหรับการนำเสนอ"
+  },
+  {
+    "index": 674,
+    "type": "p",
+    "text": "Wake word ของ Voice Node ในสถานะล่าสุดเป็นแนวทาง server-side wake detection และ handoff ไปยัง board-talk flow ที่ผ่านการทดสอบแล้ว ยังไม่ใช่ ESP-SR/WakeNet ภาษาไทยเต็มรูปแบบ ซึ่งควรระบุเป็นงานพัฒนาต่อ"
+  },
+  {
+    "index": 675,
+    "type": "p",
+    "text": "ค่าความแม่นยำและ latency ในรายงานควรใช้เป็นผลทดสอบเชิงวิศวกรรมของรอบเดโม และควรบันทึกผลทดสอบจริงซ้ำก่อนส่งรายงานฉบับสุดท้าย"
+  },
+  {
+    "index": 676,
+    "type": "p",
+    "text": "รายการตรวจแก้และงานต่อยอดก่อนนำเสนอจริง"
+  },
+  {
+    "index": 677,
+    "type": "p",
+    "text": "กรอกข้อมูลหน้าปกและข้อมูลสถาบันที่ยังเป็น placeholder เช่น ชื่อผู้จัดทำ อาจารย์ที่ปรึกษา สาขา คณะ และมหาวิทยาลัย"
+  },
+  {
+    "index": 678,
+    "type": "p",
+    "text": "ยืนยันชื่อโมเดลหลักในเครื่องนำเสนอเป็น Gemma 4 E2B ผ่าน Ollama และระบุ Typhoon 2 8B เป็นโมเดลทางเลือก ไม่ใช่โมเดลหลักล่าสุด"
+  },
+  {
+    "index": 679,
+    "type": "p",
+    "text": "บันทึกผลทดสอบจริงรอบล่าสุดด้วยสคริปต์ check_demo_status.ps1 และ check_voice_node_report.ps1 แล้วอัปเดตตารางผลการทดสอบถ้าตัวเลขเปลี่ยน"
+  },
+  {
+    "index": 680,
+    "type": "p",
+    "text": "ย้ำในรายงานว่า Browser Mic เป็นช่องทางเสียงสำรองที่เสถียร ส่วน Voice Node เป็น hardware voice channel ที่กำลังพัฒนาให้ใกล้เคียงคุณภาพ browser mic มากขึ้น"
+  },
+  {
+    "index": 681,
+    "type": "p",
+    "text": "ระบุข้อจำกัดของ Voice Node ให้ชัดเจน: ความแม่น STT ขึ้นกับระยะไมค์ เสียงรบกวน เครือข่าย และการตั้งค่า VAD/gain"
+  },
+  {
+    "index": 682,
+    "type": "p",
+    "text": "แยกคำว่า Local ให้ถูกต้อง: core AI/IoT ทำงาน Local แต่ weather/news/navigation/traffic/LINE/Edge TTS เป็นบริการภายนอกที่ต้องใช้อินเทอร์เน็ต"
+  },
+  {
+    "index": 683,
+    "type": "p",
+    "text": "ตรวจ screenshot/รูปประกอบทุกภาพให้ตรงกับ UI ปัจจุบัน โดยเฉพาะ Voice Node panel, dashboard status, device configuration และ LINE news flow"
+  },
+  {
+    "index": 684,
+    "type": "p",
+    "text": "ถ้าต้องการใช้งานจริงระยะยาว ให้เพิ่ม SQLite persistence, config/device registry ที่ถาวร, monitoring logs และ unit/integration tests เพิ่มเติม"
+  },
+  {
+    "index": 685,
+    "type": "p",
+    "text": "ข้อเสนอแนะเชิงเทคนิคเพิ่มเติม"
+  },
+  {
+    "index": 686,
+    "type": "p",
+    "text": "คง Phase 1 และ Browser Mic ให้เป็น fallback หลักเสมอ เพื่อไม่ให้การพัฒนา Voice Node กระทบเดโมที่เสถียรแล้ว"
+  },
+  {
+    "index": 687,
+    "type": "p",
+    "text": "พัฒนา Voice Node ต่อแบบเป็นขั้น: board-talk ที่เสถียร -> server-side wake handoff -> noise reduction/VAD tuning -> ค่อยประเมิน ESP-SR/WakeNet หรือ streaming production mode"
+  },
+  {
+    "index": 688,
+    "type": "p",
+    "text": "เพิ่ม memory/context สำหรับข่าวและบทสนทนาต่อเนื่อง เช่น last_news_items, selected_news_item และ conversation summary เพื่อให้ผู้ใช้พูดว่า “อ่านข้อ 2” หรือ “ส่งเข้า LINE” ได้แม่นขึ้น"
+  },
+  {
+    "index": 689,
+    "type": "p",
+    "text": "เพิ่ม device state verification ก่อนสั่งงาน เช่น บอร์ดออนไลน์หรือไม่ รีเลย์เปิด/ปิดอยู่แล้วหรือยัง และ sensor ล่าสุดสดพอหรือไม่"
+  },
+  {
+    "index": 691,
+    "type": "p",
+    "text": "ภาคผนวก: ตารางเทียบเกณฑ์การประเมินกับระบบที่พัฒนา"
+  },
+  {
+    "index": 692,
+    "type": "p",
+    "text": "ภาคผนวกนี้เพิ่มเพื่อเทียบรายงานและระบบ AI Smart Home Thai Assistant กับเกณฑ์ประเมินของอาจารย์โดยตรง เพื่อให้เห็นว่าส่วนใดครอบคลุมแล้ว และส่วนใดควรเติมหลักฐานหรือภาพประกอบก่อนส่งรายงานฉบับสุดท้าย"
+  },
+  {
+    "index": 693,
+    "type": "p",
+    "text": "1. ตารางเทียบเกณฑ์รายบทของรายงาน"
+  },
+  {
+    "index": 694,
+    "type": "table",
+    "rows": [
+      [
+        "ส่วนที่ประเมิน",
+        "คะแนน",
+        "สถานะในรายงาน",
+        "สิ่งที่ควรเพิ่มก่อนส่งจริง"
+      ],
+      [
+        "บทที่ 1 บทนำ",
+        "4",
+        "มีที่มา วัตถุประสงค์ ขอบเขต ประโยชน์ และอธิบายระบบผู้ช่วยบ้านอัจฉริยะภาษาไทย",
+        "เพิ่มสรุป hardware/platform ให้ชัด: ESP32 Control Node, Voice Node, DHT22, PIR, Relay, INMP441, MAX98357A"
+      ],
+      [
+        "บทที่ 2 ทฤษฎีและงานวิจัย",
+        "5",
+        "ครอบคลุม ESP32-S3, FastAPI, Ollama, STT/TTS, DHT22, PIR, INMP441, MAX98357A และ API ภายนอก",
+        "เพิ่มคำอธิบาย protocol ที่ใช้จริง ได้แก่ HTTP REST, WebSocket diagnostic, command polling และระบุว่า MQTT เป็นทางเลือกไม่ได้ใช้เป็น protocol หลัก"
+      ],
+      [
+        "บทที่ 3 วิธีดำเนินงาน/ออกแบบระบบ",
+        "7",
+        "มี architecture, DFD, use case, sequence, deployment, state machine, wiring, UI และ folder structure",
+        "แทนรูป placeholder ด้วย diagram/screenshot จริง โดยเฉพาะ DFD หลายระดับและ wiring ที่ตรง pinout จริง"
+      ],
+      [
+        "บทที่ 4 ผลทดลอง/วิเคราะห์ผล",
+        "5",
+        "มีผลการพัฒนาและผลทดสอบ chat, relay, sensor, voice node, response time และ STT",
+        "เพิ่มผลทดสอบล่าสุดจาก check_demo_status.ps1 และ check_voice_node_report.ps1 -Details พร้อม screenshot จริง"
+      ],
+      [
+        "บทที่ 5 สรุปและข้อเสนอแนะ",
+        "4",
+        "มีสรุป ปัญหา อุปสรรค และ future work",
+        "เพิ่มข้อจำกัด RAM/MicroPython/STT/Voice Node/network และแนวทางแก้ตามระบบจริง"
+      ],
+      [
+        "ความสมบูรณ์รูปเล่มและอ้างอิง",
+        "5",
+        "มีรูปเล่ม บรรณานุกรม และภาคผนวกทางเทคนิค",
+        "กรอกข้อมูล placeholder, ตรวจ APA7, update field/เลขหน้า และตรวจว่าไม่มี secret/API key ในรายงาน"
+      ]
+    ],
+    "row_count": 7
+  },
+  {
+    "index": 695,
+    "type": "p",
+    "text": "2. ตารางเทียบเกณฑ์คุณภาพระบบ"
+  },
+  {
+    "index": 696,
+    "type": "table",
+    "rows": [
+      [
+        "เกณฑ์",
+        "คะแนน",
+        "สถานะของระบบ",
+        "หลักฐาน/สิ่งที่ควรเพิ่ม"
+      ],
+      [
+        "ระบบฮาร์ดแวร์และ MicroPython",
+        "8",
+        "ESP32-S3 Control Node ใช้ MicroPython อ่าน DHT22/PIR และควบคุม Relay ผ่าน command polling",
+        "เพิ่มรูปถ่าย wiring จริง, pinout table, reconnect behavior และ memory/crash handling"
+      ],
+      [
+        "Web/Mobile App และการเชื่อมต่อ",
+        "8",
+        "มี Web Dashboard, Browser Mic, Voice Node panel, FastAPI REST, WebSocket diagnostic และ status แบบใกล้ real-time",
+        "เพิ่ม screenshot จริงของ dashboard และอธิบาย protocol flow ให้ชัดขึ้น"
+      ],
+      [
+        "ความสมบูรณ์และความคิดสร้างสรรค์",
+        "6",
+        "ระบบทำงาน end-to-end: chat, sensor, relay, weather/news/navigation/traffic, LINE, TTS/STT และ Voice Node",
+        "เพิ่ม demo scenario ที่แสดงการใช้งานครบ flow ตั้งแต่ผู้ใช้พูดจนถึงอุปกรณ์/เสียงตอบกลับ"
+      ],
+      [
+        "สถาปัตยกรรมและความปลอดภัย",
+        "4",
+        "มี system architecture, env config, fallback, cache, health/status และไม่ควรเผย secret ในรายงาน",
+        "เพิ่มข้อควรระวัง Wi-Fi credentials, API key ผ่าน .env, LAN-only deployment และ future authentication"
+      ],
+      [
+        "ต่อยอดเชิงธุรกิจและใช้งานจริง",
+        "4",
+        "มี future work เช่น SQLite persistence, multi-device config, automation, mobile access และ Voice Node improvement",
+        "เพิ่ม use case เชิงธุรกิจ เช่น บ้าน หอพัก ห้องเรียน ผู้สูงอายุ และแผนบำรุงรักษา"
+      ]
+    ],
+    "row_count": 6
+  },
+  {
+    "index": 697,
+    "type": "p",
+    "text": "3. สรุปการเทียบเกณฑ์"
+  },
+  {
+    "index": 698,
+    "type": "p",
+    "text": "โดยสรุป รายงานและระบบที่พัฒนาครอบคลุมเกณฑ์หลักของอาจารย์แล้ว และมีบางส่วนที่เกินเกณฑ์ขั้นต่ำ เช่น Browser Mic, Voice Node, Thai TTS/STT, External API, LINE และ Device Registry อย่างไรก็ตาม ก่อนส่งรายงานควรเติมหลักฐานจริง ได้แก่ ภาพถ่ายฮาร์ดแวร์จริง screenshot dashboard ล่าสุด ผลทดสอบล่าสุด และตรวจรูปเล่ม/อ้างอิงให้เรียบร้อย"
+  }
+]

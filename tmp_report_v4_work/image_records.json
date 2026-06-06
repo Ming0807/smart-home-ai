@@ -1,0 +1,338 @@
+[
+  {
+    "idx": 273,
+    "rid": "rId6",
+    "before": "ESP32-S3 เป็นไมโครคอนโทรลเลอร์จาก Espressif Systems ที่ออกแบบมาสำหรับ งาน AIoT โดยเฉพาะ มีคุณสมบัติดังนี้\n\n- CPU: Xtensa LX7 Dual-Core 32-bit สูงสุด 240 MHz\n- RAM: 512 KB SRAM + สูงสุด 8 MB PSRAM (รุ่น N16R8)\n- Flash: สูงสุด 16 MB\n- Wireless: Wi-Fi 802.11 b/g/n + Bluetooth 5.0 LE\n- Interfaces: I2S, I2C, SPI, UART, USB OTG, LCD, Camera\n- AI Accelerator: Vector instructions สำหรับงาน Neural Network\n\nจุดเด่นของ ESP32-S3 ที่สำคัญต่อโครงงานนี้คือ I2S Interface ซึ่งรองรับการเชื่อมต่อ ไมโครโฟนดิจิทัล (INMP441) และแอมป์ลำโพง (MAX98357A) ได้โดยตรง และมี PSRAM ขนาดใหญ่พอสำหรับบัฟเฟอร์เสียง",
+    "after": "",
+    "text": "",
+    "target": "media/image1.jpg"
+  },
+  {
+    "idx": 279,
+    "rid": "rId7",
+    "before": "FastAPI เป็นเว็บเฟรมเวิร์กภาษา Python ที่ได้รับความนิยมสำหรับสร้าง REST API มีจุดเด่นด้านประสิทธิภาพสูงด้วยการรองรับ Asynchronous Programming ผ่าน Python asyncio มีระบบ Type Validation ด้วย Pydantic สร้างเอกสาร API อัตโนมัติด้วย Swagger UI และ ReDoc และรองรับ WebSocket สำหรับการสื่อสาร แบบ Real-time\n\nเหตุผลที่เลือก FastAPI: (1) ความเร็วสูงเทียบเท่า Go และ Node.js (2) การตรวจสอบชนิดข้อมูลอัตโนมัติช่วยลด Bug (3) รองรับ WebSocket สำหรับสตรีมเสียง (4) มีระบบ Dependency Injection ที่ยืดหยุ่น (5) ชุมชนขนาดใหญ่และเอกสารครบถ้วน",
+    "after": "",
+    "text": "",
+    "target": "media/image2.png"
+  },
+  {
+    "idx": 285,
+    "rid": "rId8",
+    "before": "Ollama เป็นเครื่องมือ Open-Source สำหรับรัน LLM ในเครื่องส่วนตัว รองรับ โมเดลหลากหลาย เช่น Llama, Gemma, Mistral และ Typhoon มีฟีเจอร์:\n- การจัดการโมเดล: ดาวน์โหลด จัดเก็บ และสลับโมเดลได้ง่าย\n- REST API: รองรับ OpenAI-compatible API\n- Keep Alive: รักษาโมเดลในหน่วยความจำเพื่อลด Cold Start Latency\n- Quantization: รองรับการบีบอัดโมเดล (Q4, Q8) เพื่อลดการใช้ทรัพยากร\n\nระบบนี้ใช้ Ollama เพื่อรัน Local LLM บนเครื่องผู้ใช้ โดยเดโมล่าสุดเลือก Gemma 4 E2B เป็นโมเดลหลักเพราะตอบสนองเร็วกว่าในเครื่องที่มีทรัพยากรจำกัด ส่วน Typhoon 2 8B ยังเป็นโมเดลทางเลือกสำหรับงานภาษาไทยที่ต้องการเปรียบเทียบคุณภาพคำตอบ ทั้งสองแนวทางช่วยให้ส่วนสนทนาหลักทำงานได้โดยไม่ต้องพึ่ง API ของ LLM ภายนอก",
+    "after": "",
+    "text": "",
+    "target": "media/image3.png"
+  },
+  {
+    "idx": 297,
+    "rid": "rId9",
+    "before": "DHT22 (AM2302) เป็นเซนเซอร์วัดอุณหภูมิและความชื้น มีคุณสมบัติ:\n- วัดอุณหภูมิได้ -40 ถึง 80°C (±0.5°C)\n- วัดความชื้นได้ 0-100% RH (±2-5% RH)\n- Sampling Rate: 0.5 Hz (ทุก 2 วินาที)\n- แรงดันไฟ: 3.3-6V DC\n- การสื่อสาร: 1-Wire Protocol\n\nDHT22 ถูกเลือกใช้เพราะมีความแม่นยำสูงกว่า DHT11 และมีราคาที่เหมาะสม",
+    "after": "",
+    "text": "",
+    "target": "media/image4.png"
+  },
+  {
+    "idx": 303,
+    "rid": "rId10",
+    "before": "HC-SR501 เป็นเซนเซอร์ตรวจจับการเคลื่อนไหวด้วยรังสีอินฟราเรดแบบพาสซีฟ (Passive Infrared Sensor) มีคุณสมบัติ:\n- ระยะตรวจจับ: 3-7 เมตร (ปรับได้)\n- มุมตรวจจับ: < 120 องศา\n- แรงดันไฟ: 5-20V DC\n- Output: Digital (0/1)\n- สามารถปรับ Delay Time และ Sensitivity ได้",
+    "after": "",
+    "text": "",
+    "target": "media/image5.jpg"
+  },
+  {
+    "idx": 309,
+    "rid": "rId11",
+    "before": "INMP441 เป็นไมโครโฟนดิจิทัลที่ใช้ Interface แบบ I2S มีคุณสมบัติ:\n- Omnidirectional Microphone\n- Signal-to-Noise Ratio: 61 dBA\n- Sensitivity: -26 dBFS (ที่ 1 kHz)\n- แบนด์วิธ: 60 Hz - 15 kHz\n- แรงดันไฟ: 1.5-3.63V\n- รองรับ I2S 16/24/32-bit Sample\n\nINMP441 ถูกเลือกใช้เพราะเป็น I2S Microphone ที่มีคุณภาพดีและมีราคาเหมาะสม สำหรับงานรับเสียงพูดในระยะใกล้",
+    "after": "",
+    "text": "",
+    "target": "media/image6.jpg"
+  },
+  {
+    "idx": 315,
+    "rid": "rId12",
+    "before": "MAX98357A เป็นแอมป์ขยายเสียงดิจิทัลที่ใช้ I2S Interface มีคุณสมบัติ:\n- Output Power: 3.2W ที่ 4 Ohm (5V Supply)\n- ประสิทธิภาพ: Class D (สูงถึง 92%)\n- รองรับ Sample Rate: 8-96 kHz\n- แรงดันไฟ: 2.5-5.5V\n- มี I2S Interface เข้าในตัว\n- ไม่ต้องใช้ DAC แยก\n\nMAX98357A ถูกเลือกใช้เพราะต่อกับ ESP32-S3 ผ่าน I2S ได้โดยตรง และให้เสียงดังพอสำหรับการใช้งานในห้อง",
+    "after": "",
+    "text": "",
+    "target": "media/image7.jpg"
+  },
+  {
+    "idx": 398,
+    "rid": "rId13",
+    "before": "การดำเนินงานโครงงานแบ่งออกเป็น 5 ระยะ รวมระยะเวลาทั้งหมด 10 สัปดาห์ ตามผังการดำเนินงานดังรูปที่ 3.1",
+    "after": "",
+    "text": "",
+    "target": "media/image8.png"
+  },
+  {
+    "idx": 565,
+    "rid": "rId14",
+    "before": "ระบบถูกออกแบบแบบ 3-Tier Architecture ประกอบด้วย 3 ชั้นหลัก ได้แก่ Presentation Layer, Server Layer และ IoT Layer",
+    "after": "",
+    "text": "",
+    "target": "media/image9.png"
+  },
+  {
+    "idx": 576,
+    "rid": "rId15",
+    "before": "ผู้ใช้พูด/พิมพ์คำสั่ง -> Intent Router วิเคราะห์เจตนา -> Device Control Service ตรวจสอบสถานะบอร์ดและอุปกรณ์ -> บันทึกคำสั่งไว้ใน command queue -> ESP32 Control Node polling คำสั่งผ่าน /esp32/commands -> ESP32 ควบคุม Relay -> ส่งสถานะ/heartbeat กลับ -> AI สร้างข้อความตอบกลับพร้อม TTS",
+    "after": "",
+    "text": "",
+    "target": "media/image10.png"
+  },
+  {
+    "idx": 578,
+    "rid": "rId16",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image11.png"
+  },
+  {
+    "idx": 580,
+    "rid": "rId17",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image12.png"
+  },
+  {
+    "idx": 582,
+    "rid": "rId18",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image13.png"
+  },
+  {
+    "idx": 587,
+    "rid": "rId19",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image14.png"
+  },
+  {
+    "idx": 590,
+    "rid": "rId20",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image15.png"
+  },
+  {
+    "idx": 593,
+    "rid": "rId21",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image16.png"
+  },
+  {
+    "idx": 595,
+    "rid": "rId22",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image17.png"
+  },
+  {
+    "idx": 597,
+    "rid": "rId23",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image18.png"
+  },
+  {
+    "idx": 599,
+    "rid": "rId24",
+    "before": "",
+    "after": "รูป: แผนภาพ Data Flow การควบคุมอุปกรณ์ (Sequence Diagram)",
+    "text": "",
+    "target": "media/image19.png"
+  },
+  {
+    "idx": 604,
+    "rid": "rId25",
+    "before": "",
+    "after": "Data Flow แบบย่อ",
+    "text": "",
+    "target": "media/image20.png"
+  },
+  {
+    "idx": 613,
+    "rid": "rId26",
+    "before": "ระบบประกอบด้วยผู้ใช้ (Actor) หลัก 2 ประเภท คือ ผู้ใช้ทั่วไป และระบบ AI โดยมี Use Case ดังนี้:",
+    "after": "รูป: Use Case Diagram แสดงความสัมพันธ์ระหว่างผู้ใช้ ระบบ AI และระบบภายนอก",
+    "text": "",
+    "target": "media/image21.png"
+  },
+  {
+    "idx": 622,
+    "rid": "rId27",
+    "before": "ลำดับการทำงานเมื่อผู้ใช้สั่ง \"เปิดไฟ\":\n1. ผู้ใช้พิมพ์/พูด \"เปิดไฟ\"\n2. Intent Router จำแนกเป็น device_control\n3. Device Control Service สร้างคำสั่งเปิด Relay\n4. Server สั่ง ESP32 ผ่าน HTTP POST /esp32/commands\n5. ESP32 Polling รับคำสั่งและจ่ายไฟให้ Relay\n6. ESP32 ส่ง Command Result กลับ\n7. AI สร้างข้อความ \"เปิดไฟให้แล้ว\"\n8. TTS สร้างเสียงตอบกลับ",
+    "after": "",
+    "text": "",
+    "target": "media/image22.png"
+  },
+  {
+    "idx": 628,
+    "rid": "rId28",
+    "before": "ลำดับการทำงานเมื่อผู้ใช้ถาม \"ข้างนอกร้อนไหม\":\n1. ผู้ใช้พิมพ์/พูดคำถาม\n2. Intent Router จำแนกเป็น weather_query\n3. Weather Service เรียก OpenWeather API\n4. ได้ข้อมูลสภาพอากาศกลับมา\n5. ส่งข้อมูลให้ LLM เรียบเรียงเป็นภาษาไทย\n6. AI สร้างคำตอบ เช่น \"ตอนนี้ยะลา 33 องศา ค่อนข้างร้อน\"\n7. TTS สร้างเสียงตอบกลับ",
+    "after": "",
+    "text": "",
+    "target": "media/image23.png"
+  },
+  {
+    "idx": 634,
+    "rid": "rId29",
+    "before": "ระบบถูกติดตั้งบนอุปกรณ์ 3 ชนิดในเครือข่าย LAN เดียวกัน:\n- คอมพิวเตอร์ (Server + Web UI): รัน FastAPI, Ollama, ไฟล์ static\n- Control Node ESP32: เชื่อมต่อ Wi-Fi, ส่ง Sensor Data, รับคำสั่ง Relay\n- Voice Node ESP32: เชื่อมต่อ Wi-Fi, ส่ง Audio, รับ Audio Reply",
+    "after": "",
+    "text": "",
+    "target": "media/image24.png"
+  },
+  {
+    "idx": 640,
+    "rid": "rId30",
+    "before": "Voice Node ถูกออกแบบให้ทำงานตาม State Machine (เครื่องสถานะ) ดังนี้:",
+    "after": "รูป: แผนภาพ State Machine ของ Voice Node พร้อมคำอธิบายแต่ละสถานะ",
+    "text": "",
+    "target": "media/image25.png"
+  },
+  {
+    "idx": 811,
+    "rid": "rId31",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image26.png"
+  },
+  {
+    "idx": 819,
+    "rid": "rId32",
+    "before": "โครงสร้างโปรเจ็กต์ถูกออกแบบให้แยก Layer ชัดเจนตามหลักการ Single Responsibility",
+    "after": "",
+    "text": "",
+    "target": "media/image27.png"
+  },
+  {
+    "idx": 894,
+    "rid": "rId33",
+    "before": "Control Node พัฒนาด้วย MicroPython บน ESP32-S3 มีหน้าที่:\n1. เชื่อมต่อ Wi-Fi และรักษาการเชื่อมต่อ\n2. ส่ง Heartbeat ทุก 30 วินาที\n3. อ่านค่า DHT22 ทุก 5-10 วินาที\n4. อ่านค่า PIR เมื่อมีการเคลื่อนไหว\n5. Polling คำสั่งจาก Server ทุก 2-3 วินาที\n6. ควบคุม Relay ตามคำสั่ง\n7. รายงานผลการทำงานกลับ Server",
+    "after": "",
+    "text": "",
+    "target": "media/image28.png"
+  },
+  {
+    "idx": 900,
+    "rid": "rId34",
+    "before": "Voice Node พัฒนาด้วย ESP-IDF (C language) เพื่อประสิทธิภาพสูงสุด ในการจัดการ I2S Audio แบบ Real-time ประกอบด้วยโมดูล:\n\n- app_main.c: State Machine หลักและ Main Loop\n- wifi_manager.c: จัดการการเชื่อมต่อ Wi-Fi\n- mic_reader.c: อ่านเสียงจาก INMP441 ผ่าน I2S พร้อม VAD\n- http_client.c: HTTP Multipart Upload และ Download\n- stream_client.c: WebSocket Streaming สำหรับ PCM\n- speaker_player.c: เล่น WAV ผ่าน MAX98357A\n- button_reader.c: อ่านสถานะปุ่มกด\n- voice_state.h: นิยามสถานะทั้งหมด",
+    "after": "",
+    "text": "",
+    "target": "media/image29.png"
+  },
+  {
+    "idx": 906,
+    "rid": "rId35",
+    "before": "Web UI Dashboard พัฒนาด้วย HTML5 + CSS3 + Vanilla JavaScript (ไม่มี Frontend Framework) เพื่อให้มีความเร็วสูงและลดขนาด dependencies\n\nส่วนประกอบหลัก:\n- Top Bar: สถานะ ESP32, อุณหภูมิ, ความชื้น, สถานะ Relay\n- Chat Panel: แชทพร้อม Quick Actions, Voice Mode Switch, Streaming\n- Relay Control: เปิด/ปิด Relay แบบ Manual\n- AI Status Panel: สถานะโมเดล, Warmup, Sleep, Latency\n- Sensor Panel: อุณหภูมิ, ความชื้น, สถานะข้อมูล\n- Motion Panel: สถานะ PIR และประวัติ\n- Voice Node Test: ทดสอบการทำงานของ Voice Node\n- Voice/TTS: ทดสอบ TTS และดูสถานะ\n- Weather: ถามสภาพอากาศ\n- Device Registry: จัดการอุปกรณ์\n\nJavaScript Modules (11 ไฟล์):\n- api.js: เรียก API ทั้งหมด, Chat Streaming (SSE)\n- audio.js: จัดการ Audio Playback, Retry\n- voice_utils.js: Speech Recognition, Wake Word Detect\n- app.js: Event Loop, Voice Mode Logic\n- chat_ui.js: UI การแชท\n- chat_flow.js: Flow การส่งข้อความ\n- dashboard.js: Status Panels, Device Registry\n- ui_state.js: State Management\n- utils.js: Utility Functions\n- app_boot.js: Initialization, Event Binding",
+    "after": "",
+    "text": "",
+    "target": "media/image30.png"
+  },
+  {
+    "idx": 963,
+    "rid": "rId36",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image31.png"
+  },
+  {
+    "idx": 969,
+    "rid": "rId37",
+    "before": "ระบบสามารถควบคุม Relay ผ่านคำสั่งเสียงและข้อความได้ โดยมี Command Lifecycle ที่ชัดเจน: created -> queued -> sent -> applied -> failed / timeout และมีกลไกป้องกันการสั่งซ้ำ",
+    "after": "",
+    "text": "",
+    "target": "media/image32.png"
+  },
+  {
+    "idx": 975,
+    "rid": "rId38",
+    "before": "ระบบแสดงค่าอุณหภูมิและความชื้นจาก DHT22 แบบ Real-time บน Dashboard โดยมีช่วงสีแสดงระดับอุณหภูมิ (เขียว < 28°C, เหลือง 28-35°C, ส้ม > 35°C) และแสดงสถานะ PIR แบบ Real-time",
+    "after": "",
+    "text": "",
+    "target": "media/image33.png"
+  },
+  {
+    "idx": 981,
+    "rid": "rId39",
+    "before": "Voice Node สามารถทำงานตาม State Machine ที่ออกแบบไว้ โดยสามารถ ฟังคำปลุก บันทึกเสียง ถอดเสียง สร้างคำตอบด้วย AI และเล่นเสียงตอบกลับ ได้อย่างต่อเนื่อง",
+    "after": "",
+    "text": "",
+    "target": "media/image34.png"
+  },
+  {
+    "idx": 987,
+    "rid": "rId40",
+    "before": "ระบบ Device Registry ช่วยให้ผู้ใช้สามารถเพิ่มและจัดการอุปกรณ์ต่าง ๆ ได้ ผ่านหน้าเว็บ โดยไม่ต้องแก้ไขโค้ด รองรับทั้ง Virtual Device และ Real Device ผ่าน ESP32",
+    "after": "",
+    "text": "",
+    "target": "media/image35.png"
+  },
+  {
+    "idx": 1050,
+    "rid": "rId41",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image36.png"
+  },
+  {
+    "idx": 1137,
+    "rid": "rId42",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image37.png"
+  },
+  {
+    "idx": 1193,
+    "rid": "rId43",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image38.png"
+  },
+  {
+    "idx": 1251,
+    "rid": "rId44",
+    "before": "เซิร์ฟเวอร์ใช้ RAM ~180 MB ส่วน Ollama ใช้ ~6 GB สำหรับโมเดล Q4 CPU Usage อยู่ในเกณฑ์ acceptable สำหรับเครื่องทั่วไป",
+    "after": "",
+    "text": "",
+    "target": "media/image39.png"
+  },
+  {
+    "idx": 1345,
+    "rid": "rId45",
+    "before": "ภาคผนวก ข: การเชื่อมต่อวงจรโดยละเอียด",
+    "after": "",
+    "text": "",
+    "target": "media/image40.png"
+  },
+  {
+    "idx": 1349,
+    "rid": "rId46",
+    "before": "",
+    "after": "",
+    "text": "",
+    "target": "media/image41.png"
+  },
+  {
+    "idx": 1451,
+    "rid": "rId43",
+    "before": "[อีเมล]",
+    "after": "",
+    "text": "",
+    "target": "media/image38.png"
+  }
+]

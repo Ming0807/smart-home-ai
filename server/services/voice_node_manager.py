@@ -43,6 +43,7 @@ class VoiceNodeRecord:
 class VoiceNodeAudioRecord:
     device_id: str
     received_at: datetime
+    server_received_at: datetime
     stt_ok: bool
     stt_error: str | None
     stt_raw_text: str | None
@@ -175,9 +176,11 @@ class VoiceNodeManager:
         data: AssistantAudioData,
         uploaded_audio_bytes: bytes,
         uploaded_audio_content_type: str | None,
+        server_received_at: datetime | None = None,
     ) -> datetime:
         resolved_device_id = self._resolve_device_id(device_id)
         now = datetime.now(timezone.utc)
+        resolved_server_received_at = server_received_at or now
         should_auto_wake = False
         with self._lock:
             expected_text = self._active_expected_text.pop(resolved_device_id, None)
@@ -190,6 +193,7 @@ class VoiceNodeManager:
         record = VoiceNodeAudioRecord(
             device_id=resolved_device_id,
             received_at=now,
+            server_received_at=resolved_server_received_at,
             stt_ok=stt_ok,
             stt_error=stt_error,
             stt_raw_text=stt_raw_text,
@@ -687,6 +691,12 @@ class VoiceNodeManager:
             device_id=resolved_device_id,
             has_result=True,
             received_at=record.received_at,
+            server_received_at=record.server_received_at,
+            server_processing_ms=self._duration_ms(record.server_received_at, record.received_at),
+            playback_after_processing_ms=self._duration_ms(
+                record.received_at,
+                resolved_playback_record.reported_at if resolved_playback_record else None,
+            ),
             seconds_since_received=self._seconds_since(record.received_at),
             stt_ok=record.stt_ok,
             stt_error=record.stt_error,
@@ -1011,6 +1021,12 @@ class VoiceNodeManager:
         metrics = record.audio_metrics
         return VoiceNodeAudioHistoryItem(
             received_at=record.received_at,
+            server_received_at=record.server_received_at,
+            server_processing_ms=self._duration_ms(record.server_received_at, record.received_at),
+            playback_after_processing_ms=self._duration_ms(
+                record.received_at,
+                playback_record.reported_at if playback_record else None,
+            ),
             seconds_since_received=self._seconds_since(record.received_at),
             stt_ok=record.stt_ok,
             stt_error=record.stt_error,
@@ -1043,6 +1059,16 @@ class VoiceNodeManager:
         if timestamp.tzinfo is None:
             timestamp = timestamp.replace(tzinfo=timezone.utc)
         return max(0, int((datetime.now(timezone.utc) - timestamp).total_seconds()))
+
+    @staticmethod
+    def _duration_ms(start: datetime | None, end: datetime | None) -> float | None:
+        if start is None or end is None:
+            return None
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=timezone.utc)
+        if end.tzinfo is None:
+            end = end.replace(tzinfo=timezone.utc)
+        return round(max(0.0, (end - start).total_seconds() * 1000), 1)
 
     @staticmethod
     def _calculate_similarity(expected_text: str | None, heard_text: str) -> float | None:

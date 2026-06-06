@@ -90,11 +90,11 @@ class Settings(BaseModel):
     voice_node_wav_target_peak: float = Field(default=0.88)
     voice_node_wav_max_gain: float = Field(default=2.2)
     voice_node_record_seconds: int = Field(default=4)
-    voice_node_mic_record_gain: int = Field(default=24)
+    voice_node_mic_record_gain: int = Field(default=16)
     voice_node_vad_enabled: bool = Field(default=True)
-    voice_node_vad_threshold: int = Field(default=40)
-    voice_node_vad_min_record_ms: int = Field(default=1500)
-    voice_node_vad_silence_stop_ms: int = Field(default=900)
+    voice_node_vad_threshold: int = Field(default=35)
+    voice_node_vad_min_record_ms: int = Field(default=1200)
+    voice_node_vad_silence_stop_ms: int = Field(default=1000)
     voice_node_timeout_seconds: float = Field(default=30.0)
     voice_node_heartbeat_timeout_seconds: int = Field(default=60)
     voice_node_command_ttl_seconds: int = Field(default=30)
@@ -279,11 +279,11 @@ def get_settings() -> Settings:
         voice_node_wav_target_peak=_get_float_env("VOICE_NODE_WAV_TARGET_PEAK", 0.88),
         voice_node_wav_max_gain=_get_float_env("VOICE_NODE_WAV_MAX_GAIN", 2.2),
         voice_node_record_seconds=_get_int_env("VOICE_NODE_RECORD_SECONDS", 4),
-        voice_node_mic_record_gain=_get_int_env("VOICE_NODE_MIC_RECORD_GAIN", 24),
+        voice_node_mic_record_gain=_get_int_env("VOICE_NODE_MIC_RECORD_GAIN", 16),
         voice_node_vad_enabled=_get_bool_env("VOICE_NODE_VAD_ENABLED", True),
-        voice_node_vad_threshold=_get_int_env("VOICE_NODE_VAD_THRESHOLD", 40),
-        voice_node_vad_min_record_ms=_get_int_env("VOICE_NODE_VAD_MIN_RECORD_MS", 1500),
-        voice_node_vad_silence_stop_ms=_get_int_env("VOICE_NODE_VAD_SILENCE_STOP_MS", 900),
+        voice_node_vad_threshold=_get_int_env("VOICE_NODE_VAD_THRESHOLD", 35),
+        voice_node_vad_min_record_ms=_get_int_env("VOICE_NODE_VAD_MIN_RECORD_MS", 1200),
+        voice_node_vad_silence_stop_ms=_get_int_env("VOICE_NODE_VAD_SILENCE_STOP_MS", 1000),
         voice_node_timeout_seconds=_get_float_env("VOICE_NODE_TIMEOUT_SECONDS", 30.0),
         voice_node_heartbeat_timeout_seconds=_get_int_env(
             "VOICE_NODE_HEARTBEAT_TIMEOUT_SECONDS",

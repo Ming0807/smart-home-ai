@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+from datetime import datetime, timezone
 
 from fastapi import BackgroundTasks, UploadFile
 
@@ -23,8 +24,17 @@ logger = logging.getLogger(__name__)
 VOICE_NODE_WAKE_SOURCE = "voice_node_wake"
 VOICE_NODE_WAKE_PHRASES: tuple[str, ...] = (
     "สวัสดีน้องฟ้า",
+    "สวัสดีน้องฝ่า",
     "หวัดดีน้องฟ้า",
+    "หวัดดีน้องฝ่า",
+    "ดีน้องฟ้า",
+    "ดีน้องฝ่า",
+    "สวัสดีครับ",
+    "สวัสดีค่ะ",
+    "หวัดดีครับ",
+    "หวัดดีค่ะ",
     "น้องฟ้า",
+    "น้องฝ่า",
     "น้องฟ้าจ๋า",
 )
 VOICE_NODE_SLEEP_PHRASES: tuple[str, ...] = (
@@ -38,6 +48,51 @@ VOICE_NODE_SLEEP_PHRASES: tuple[str, ...] = (
 )
 VOICE_NODE_WAKE_ACK_REPLY = "ฟังอยู่ครับ พูดต่อได้เลย"
 VOICE_NODE_SLEEP_REPLY = "ได้เลย น้องฟ้าจะรอฟังคำปลุกอยู่นะ"
+VOICE_NODE_WAKE_FAST_ACK_REPLY = "wake detected"
+VOICE_NODE_MEANINGFUL_HINTS: tuple[str, ...] = (
+    "เปิด",
+    "ปิด",
+    "ไฟ",
+    "พัดลม",
+    "รีเลย์",
+    "ห้อง",
+    "ร้อน",
+    "เย็น",
+    "ความชื้น",
+    "อุณหภูมิ",
+    "เซนเซอร์",
+    "บอร์ด",
+    "ออนไลน์",
+    "ระบบ",
+    "อากาศ",
+    "ฝน",
+    "ข่าว",
+    "ข้อ",
+    "LINE",
+    "ไลน์",
+    "รถ",
+    "ติด",
+    "ทาง",
+    "เส้นทาง",
+    "ไป",
+    "กี่",
+    "นาที",
+    "สวัสดี",
+    "น้องฟ้า",
+    "ช่วย",
+    "แนะนำ",
+    "อะไร",
+    "ยังไง",
+    "ทำไม",
+    "หิว",
+    "กิน",
+    "ข้าว",
+    "เรียน",
+    "เข้าใจ",
+    "ขอบคุณ",
+    "พอแล้ว",
+    "หยุด",
+)
 
 
 class AssistantAudioService:
@@ -121,6 +176,7 @@ class AssistantAudioService:
         content_type: str | None,
         background_tasks: BackgroundTasks,
     ) -> AssistantAudioResponse:
+        server_received_at = datetime.now(timezone.utc)
         voice_data = self._voice_conversation_service.build_stt_unavailable_response(
             background_tasks=background_tasks,
             audio_mode="none",
@@ -149,6 +205,7 @@ class AssistantAudioService:
             data=audio_data,
             uploaded_audio_bytes=audio_bytes,
             uploaded_audio_content_type=content_type,
+            server_received_at=server_received_at,
         )
         return AssistantAudioResponse(data=audio_data)
 
@@ -162,17 +219,46 @@ class AssistantAudioService:
         source: str,
         background_tasks: BackgroundTasks,
     ) -> tuple[AssistantAudioData, str]:
+        server_received_at = datetime.now(timezone.utc)
         status_text = "ok"
+        source_normalized = source.strip().lower()
         stt_result = self._stt_service.transcribe_bytes(
             filename=filename,
             content_type=content_type,
             audio_bytes=audio_bytes,
+            retry_without_vad=not source_normalized.startswith("voice_node"),
         )
-        is_wake_upload = source.strip().lower() == VOICE_NODE_WAKE_SOURCE
+        is_wake_upload = source_normalized == VOICE_NODE_WAKE_SOURCE
         if not stt_result.ok:
             status_text = "stt_fallback"
             if is_wake_upload:
                 audio_data = self._build_silent_wake_response(device_id=device_id)
+                self._voice_node_manager.record_audio_result(
+                    device_id=device_id,
+                    stt_ok=stt_result.ok,
+                    stt_error=stt_result.error,
+                    stt_raw_text=stt_result.raw_text,
+                    data=audio_data,
+                    uploaded_audio_bytes=audio_bytes,
+                    uploaded_audio_content_type=content_type,
+                    server_received_at=server_received_at,
+                )
+                return audio_data, status_text
+            if source_normalized.startswith("voice_node"):
+                audio_data = self._build_silent_voice_node_retry_response(
+                    heard_text=stt_result.raw_text or "",
+                    keep_mic_open=True,
+                )
+                self._voice_node_manager.record_audio_result(
+                    device_id=device_id,
+                    stt_ok=stt_result.ok,
+                    stt_error=stt_result.error,
+                    stt_raw_text=stt_result.raw_text,
+                    data=audio_data,
+                    uploaded_audio_bytes=audio_bytes,
+                    uploaded_audio_content_type=content_type,
+                    server_received_at=server_received_at,
+                )
                 return audio_data, status_text
 
             voice_data = self._voice_conversation_service.build_stt_unavailable_response(
@@ -194,7 +280,7 @@ class AssistantAudioService:
                     device_id=device_id,
                     background_tasks=background_tasks,
                 )
-                if self._should_record_wake_audio(audio_data):
+                if self._should_record_wake_audio(audio_data) or normalized_text.strip():
                     self._voice_node_manager.record_audio_result(
                         device_id=device_id,
                         stt_ok=stt_result.ok,
@@ -203,7 +289,25 @@ class AssistantAudioService:
                         data=audio_data,
                         uploaded_audio_bytes=audio_bytes,
                         uploaded_audio_content_type=content_type,
+                        server_received_at=server_received_at,
                     )
+                return audio_data, status_text
+
+            if self._is_likely_spurious_voice_node_text(source_normalized, normalized_text):
+                audio_data = self._build_silent_voice_node_retry_response(
+                    heard_text=normalized_text,
+                    keep_mic_open=True,
+                )
+                self._voice_node_manager.record_audio_result(
+                    device_id=device_id,
+                    stt_ok=stt_result.ok,
+                    stt_error=stt_result.error,
+                    stt_raw_text=stt_result.raw_text,
+                    data=audio_data,
+                    uploaded_audio_bytes=audio_bytes,
+                    uploaded_audio_content_type=content_type,
+                    server_received_at=server_received_at,
+                )
                 return audio_data, status_text
 
             voice_data = self._voice_conversation_service.handle_turn(
@@ -232,6 +336,7 @@ class AssistantAudioService:
             data=audio_data,
             uploaded_audio_bytes=audio_bytes,
             uploaded_audio_content_type=content_type,
+            server_received_at=server_received_at,
         )
         return audio_data, status_text
 
@@ -258,11 +363,7 @@ class AssistantAudioService:
             cleaned_text = wake_remainder.strip()
             if not cleaned_text:
                 self._handoff_wake_to_board_talk(device_id)
-                return self._build_wake_response(
-                    heard_text=heard_text,
-                    reply=VOICE_NODE_WAKE_ACK_REPLY,
-                    keep_mic_open=True,
-                )
+                return self._build_fast_wake_handoff_response(heard_text=heard_text)
 
         if self._contains_sleep_phrase(cleaned_text):
             self._voice_node_manager.set_wake_conversation_active(device_id, False)
@@ -340,6 +441,54 @@ class AssistantAudioService:
             reply_audio_url=self._resolve_reply_audio_url(reply_audio_url),
             reply_audio_format=self._settings.voice_node_reply_audio_format,
         )
+
+    def _build_fast_wake_handoff_response(self, heard_text: str) -> AssistantAudioData:
+        return AssistantAudioData(
+            heard_text=heard_text,
+            reply=VOICE_NODE_WAKE_FAST_ACK_REPLY,
+            intent="general_chat",
+            source="voice_control",
+            action="none",
+            keep_mic_open=True,
+            reply_audio_url=None,
+            reply_audio_format=self._settings.voice_node_reply_audio_format,
+        )
+
+    def _build_silent_voice_node_retry_response(
+        self,
+        heard_text: str,
+        keep_mic_open: bool,
+    ) -> AssistantAudioData:
+        return AssistantAudioData(
+            heard_text=heard_text,
+            reply="",
+            intent="general_chat",
+            source="voice_control",
+            action="none",
+            keep_mic_open=keep_mic_open,
+            reply_audio_url=None,
+            reply_audio_format=self._settings.voice_node_reply_audio_format,
+        )
+
+    @staticmethod
+    def _is_likely_spurious_voice_node_text(source: str, text: str) -> bool:
+        if source != "voice_node":
+            return False
+
+        cleaned = " ".join(text.split()).strip()
+        if not cleaned:
+            return True
+        if len(cleaned) > 24:
+            return False
+
+        upper_cleaned = cleaned.upper()
+        if any(hint in cleaned or hint in upper_cleaned for hint in VOICE_NODE_MEANINGFUL_HINTS):
+            return False
+
+        words = cleaned.split()
+        if len(words) >= 2:
+            return True
+        return len(cleaned) <= 12
 
     @staticmethod
     def _is_unclear_voice_result(error: str | None) -> bool:

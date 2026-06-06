@@ -15,6 +15,7 @@
 #define MIC_SAMPLE_BUFFER_COUNT 512
 #define WAV_HEADER_SIZE 44
 #define MS_PER_SECOND 1000
+#define VAD_SPEECH_START_CHUNKS 6
 
 static const char *TAG = "mic_reader";
 static i2s_chan_handle_t s_rx_handle;
@@ -215,6 +216,7 @@ esp_err_t mic_reader_record_wav(
 
     int samples_written = 0;
     bool speech_detected = false;
+    int speech_candidate_chunks = 0;
     int silence_samples_after_speech = 0;
     int32_t samples[MIC_SAMPLE_BUFFER_COUNT] = { 0 };
     int16_t *pcm = (int16_t *)(buffer + WAV_HEADER_SIZE);
@@ -255,8 +257,16 @@ esp_err_t mic_reader_record_wav(
         }
         const double average_abs = sum_abs / (double)sample_count;
         const bool chunk_has_speech = average_abs >= (double)vad_threshold;
-        if (chunk_has_speech) {
+        if (!speech_detected && chunk_has_speech) {
+            speech_candidate_chunks++;
+        } else if (!speech_detected) {
+            speech_candidate_chunks = 0;
+        }
+
+        if (!speech_detected && speech_candidate_chunks >= VAD_SPEECH_START_CHUNKS) {
             speech_detected = true;
+            silence_samples_after_speech = 0;
+        } else if (speech_detected && chunk_has_speech) {
             silence_samples_after_speech = 0;
         } else if (speech_detected) {
             silence_samples_after_speech += sample_count;

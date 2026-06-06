@@ -1,0 +1,59 @@
+digraph "System Architecture - AI Smart Home Thai Assistant" {
+	graph [fontcolor="#2D3436" fontname="Sans-Serif" fontsize=15 label="System Architecture - AI Smart Home Thai Assistant" nodesep=0.60 pad=2.0 rankdir=TB ranksep=0.75 splines=ortho]
+	node [fixedsize=true fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13 height=1.4 imagescale=true labelloc=b shape=box style=rounded width=1.4]
+	edge [color="#7B8894"]
+	subgraph "cluster_User Layer" {
+		graph [bgcolor="#E5F5FD" fontname="Sans-Serif" fontsize=12 label="User Layer" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"6c712a1ae981485f9c8aa8516b7be14e" [label="User
+ผู้ใช้" height=2.3 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/client\user.png" shape=none]
+		"3d68ee2da8f842e6b312298da0ee93f8" [label="Web Browser
+(Chrome/Edge)" height=2.3 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/generic/blank\blank.png" shape=none]
+	}
+	subgraph "cluster_Server Layer (Local Machine)" {
+		graph [bgcolor="#E5F5FD" fontname="Sans-Serif" fontsize=12 label="Server Layer (Local Machine)" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		subgraph "cluster_FastAPI Server" {
+			graph [bgcolor="#EBF3E7" fontname="Sans-Serif" fontsize=12 label="FastAPI Server" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+			"2de6fdb5b3cc47409b7e83f2194a5219" [label="FastAPI
+Uvicorn :8000" height=2.3 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/programming/framework\fastapi.png" shape=none]
+			"940be6550bbb406099887d970aa499f1" [label="Intent Router
+9 types" height=2.3 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/compute\server.png" shape=none]
+			bdba4ecd996d4b4281d1f778a09c231d [label="Chat Service" height=1.9 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/compute\server.png" shape=none]
+		}
+		subgraph "cluster_AI Services" {
+			graph [bgcolor="#EBF3E7" fontname="Sans-Serif" fontsize=12 label="AI Services" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+			"4d3bc5e8c62f4c62a4645b6ea591b802" [label="Ollama
+Typhoon 2 8B" height=2.3 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/compute\server.png" shape=none]
+			fdd92e12e8394ff2b34e7d2151c15bb2 [label="faster-whisper
+Thai STT" height=2.3 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/compute\server.png" shape=none]
+			"299275fb85904810af4eb8a87e88ce8f" [label="Edge TTS
+Premwadee" height=2.3 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/compute\server.png" shape=none]
+		}
+		subgraph "cluster_External APIs" {
+			graph [bgcolor="#EBF3E7" fontname="Sans-Serif" fontsize=12 label="External APIs" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+			"1b351514ba6f4ef0a4d7d9250783a863" [label=OpenWeather height=1.9 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/compute\server.png" shape=none]
+			"1af20fcff87d4ffdb4c910b74d2248dc" [label="Currents API" height=1.9 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/compute\server.png" shape=none]
+			a17a9cfd56404f1ab965d36204d51b54 [label=TomTom height=1.9 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/compute\server.png" shape=none]
+			"22f0e45a2c1e4a56a7ab1a819c37f1c4" [label=OpenRoute height=1.9 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/onprem/compute\server.png" shape=none]
+		}
+	}
+	subgraph "cluster_IoT Layer (ESP32-S3)" {
+		graph [bgcolor="#E5F5FD" fontname="Sans-Serif" fontsize=12 label="IoT Layer (ESP32-S3)" labeljust=l pencolor="#AEB6BE" rankdir=LR shape=box style=rounded]
+		"309173f70fe74ad0b879a30c5999dcb6" [label="Control Node
+MicroPython
+DHT22 | PIR | Relay" height=2.7 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/aws/iot\iot-core.png" shape=none]
+		c88b44e85ce7431ea769611e758d07cf [label="Voice Node
+ESP-IDF C
+INMP441 | MAX98357A" height=2.7 image="C:\Users\NOTEBOOK\AppData\Local\Programs\Python\Python310\lib\site-packages\resources/aws/iot\iot-core.png" shape=none]
+	}
+	"6c712a1ae981485f9c8aa8516b7be14e" -> "3d68ee2da8f842e6b312298da0ee93f8" [label="Type/Voice" dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"3d68ee2da8f842e6b312298da0ee93f8" -> "2de6fdb5b3cc47409b7e83f2194a5219" [label="HTTP/WS" dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"2de6fdb5b3cc47409b7e83f2194a5219" -> "940be6550bbb406099887d970aa499f1" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"940be6550bbb406099887d970aa499f1" -> bdba4ecd996d4b4281d1f778a09c231d [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	bdba4ecd996d4b4281d1f778a09c231d -> "4d3bc5e8c62f4c62a4645b6ea591b802" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"2de6fdb5b3cc47409b7e83f2194a5219" -> "309173f70fe74ad0b879a30c5999dcb6" [color=blue dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	"2de6fdb5b3cc47409b7e83f2194a5219" -> c88b44e85ce7431ea769611e758d07cf [color=green dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	bdba4ecd996d4b4281d1f778a09c231d -> "1b351514ba6f4ef0a4d7d9250783a863" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	bdba4ecd996d4b4281d1f778a09c231d -> "1af20fcff87d4ffdb4c910b74d2248dc" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	bdba4ecd996d4b4281d1f778a09c231d -> a17a9cfd56404f1ab965d36204d51b54 [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+	bdba4ecd996d4b4281d1f778a09c231d -> "22f0e45a2c1e4a56a7ab1a819c37f1c4" [dir=forward fontcolor="#2D3436" fontname="Sans-Serif" fontsize=13]
+}

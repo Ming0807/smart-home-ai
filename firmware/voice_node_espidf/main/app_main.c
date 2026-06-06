@@ -21,9 +21,14 @@
 static const char *TAG = "voice_node";
 static const uint32_t VOICE_NODE_TASK_STACK_SIZE = 12288;
 static const UBaseType_t VOICE_NODE_TASK_PRIORITY = 5;
+static const uint32_t VOICE_NODE_STATUS_TASK_STACK_SIZE = 4096;
+static const UBaseType_t VOICE_NODE_STATUS_TASK_PRIORITY = 4;
 static const int64_t VOICE_NODE_COMMAND_POLL_INTERVAL_MS = 1500;
 static const int64_t VOICE_NODE_CONFIG_REFRESH_INTERVAL_MS = 10000;
 static const int64_t VOICE_NODE_CONVERSATION_COOLDOWN_MS = 800;
+static const int64_t VOICE_NODE_CONVERSATION_AFTER_REPLY_COOLDOWN_MS = 1600;
+static const int64_t VOICE_NODE_STATUS_ACTIVE_INTERVAL_MS = 1000;
+static const int64_t VOICE_NODE_STATUS_IDLE_INTERVAL_MS = 3000;
 static const int64_t VOICE_NODE_WAKE_IDLE_RETRY_MS = 300;
 static const int VOICE_NODE_RECORD_START_SETTLE_MS = 350;
 
@@ -31,11 +36,21 @@ static voice_node_state_t s_state = VOICE_NODE_STATE_BOOT;
 static voice_node_server_config_t s_server_config;
 static bool s_conversation_mode = false;
 static bool s_wake_listen_mode = false;
+static bool s_state_reporting_enabled = false;
 static int64_t s_next_conversation_record_ms = 0;
 
 static esp_err_t stream_reply_audio_chunk(const uint8_t *data, size_t data_size, void *user_data)
 {
     return speaker_player_wav_stream_write((speaker_wav_stream_t *)user_data, data, data_size);
+}
+
+static bool is_active_state(voice_node_state_t state)
+{
+    return state == VOICE_NODE_STATE_BEEPING ||
+           state == VOICE_NODE_STATE_RECORDING_COMMAND ||
+           state == VOICE_NODE_STATE_UPLOADING_AUDIO ||
+           state == VOICE_NODE_STATE_WAITING_SERVER_REPLY ||
+           state == VOICE_NODE_STATE_PLAYING_REPLY;
 }
 
 static void set_state(voice_node_state_t next_state)
@@ -454,11 +469,14 @@ static void voice_node_main_loop(void)
                 "voice_node",
                 true,
                 0,
-                false,
+                true,
                 &reply_audio_played);
             if (keep_mic_open) {
+                const int64_t cooldown_ms = reply_audio_played
+                    ? VOICE_NODE_CONVERSATION_AFTER_REPLY_COOLDOWN_MS
+                    : VOICE_NODE_CONVERSATION_COOLDOWN_MS;
                 s_next_conversation_record_ms =
-                    (esp_timer_get_time() / 1000) + VOICE_NODE_CONVERSATION_COOLDOWN_MS;
+                    (esp_timer_get_time() / 1000) + cooldown_ms;
             } else {
                 ESP_LOGI(TAG, "Continuous conversation stopped by assistant response");
                 s_conversation_mode = false;
@@ -550,6 +568,27 @@ static void run_audio_upload_test_once(void)
         NULL);
 }
 
+static void voice_node_status_task(void *params)
+{
+    (void)params;
+
+    while (true) {
+        if (s_state_reporting_enabled) {
+            const voice_node_state_t state_snapshot = s_state;
+            esp_err_t err = voice_node_http_send_heartbeat(state_snapshot);
+            if (err != ESP_OK) {
+                ESP_LOGW(TAG, "Status heartbeat failed: %s", esp_err_to_name(err));
+            }
+            const int64_t delay_ms = is_active_state(state_snapshot)
+                ? VOICE_NODE_STATUS_ACTIVE_INTERVAL_MS
+                : VOICE_NODE_STATUS_IDLE_INTERVAL_MS;
+            vTaskDelay(pdMS_TO_TICKS(delay_ms));
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(1000));
+        }
+    }
+}
+
 static void voice_node_task(void *params)
 {
     (void)params;
@@ -567,6 +606,7 @@ static void voice_node_task(void *params)
         return;
     }
 
+    s_state_reporting_enabled = true;
     set_state(VOICE_NODE_STATE_REGISTERING);
     s_server_config = voice_node_default_server_config();
     err = voice_node_http_get_config(&s_server_config);
@@ -611,5 +651,18 @@ void app_main(void)
 
     if (created != pdPASS) {
         ESP_LOGE(TAG, "Failed to create voice node task");
+        return;
+    }
+
+    created = xTaskCreate(
+        voice_node_status_task,
+        "voice_status",
+        VOICE_NODE_STATUS_TASK_STACK_SIZE,
+        NULL,
+        VOICE_NODE_STATUS_TASK_PRIORITY,
+        NULL);
+
+    if (created != pdPASS) {
+        ESP_LOGE(TAG, "Failed to create voice node status task");
     }
 }
