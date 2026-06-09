@@ -24,6 +24,28 @@ def index() -> FileResponse:
     return FileResponse(resolve_project_path("webui/index.html"))
 
 
+@router.get("/app", include_in_schema=False)
+@router.get("/app/", include_in_schema=False)
+def mobile_app() -> FileResponse:
+    return FileResponse(resolve_project_path("webui/mobile.html"))
+
+
+@router.get("/manifest.webmanifest", include_in_schema=False)
+def web_manifest() -> FileResponse:
+    return FileResponse(
+        resolve_project_path("webui/manifest.webmanifest"),
+        media_type="application/manifest+json",
+    )
+
+
+@router.get("/mobile-service-worker.js", include_in_schema=False)
+def mobile_service_worker() -> FileResponse:
+    return FileResponse(
+        resolve_project_path("webui/mobile-service-worker.js"),
+        media_type="application/javascript",
+    )
+
+
 @router.get(
     "/dashboard/status",
     response_model=DashboardStatusResponse,

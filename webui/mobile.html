@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07111f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="น้องฟ้า" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="description" content="น้องฟ้า AI Smart Home Assistant" />
+    <title>น้องฟ้า - Mobile PWA</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/webui/assets/nongfa-icon-180.png" />
+    <link rel="icon" href="/webui/assets/nongfa-icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/webui/mobile.css?v=pwa-20260607-9" />
+  </head>
+  <body>
+    <div class="mobile-app" id="top">
+      <header class="app-topbar" aria-label="หัวแอป">
+        <button class="icon-button" type="button" aria-label="เปิดเมนู">
+          <i data-lucide="menu" aria-hidden="true"></i>
+        </button>
+        <div class="brand-block">
+          <p class="brand-title">น้องฟ้า <span aria-hidden="true">✦</span></p>
+          <p class="brand-subtitle">AI Smart Home Assistant</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-button status-alert" id="status-shortcut" type="button" aria-label="แจ้งเตือน">
+            <i data-lucide="bell" aria-hidden="true"></i>
+          </button>
+          <button class="avatar-button" id="settings-shortcut" type="button" aria-label="บัญชีผู้ใช้">
+            <img src="/webui/assets/nongfa-icon.svg" alt="" />
+            <span class="online-dot" aria-hidden="true"></span>
+          </button>
+        </div>
+      </header>
+
+      <main class="app-main">
+        <section class="app-view active" data-view="home" id="home">
+        <section class="welcome-panel" aria-labelledby="welcome-title">
+          <div class="welcome-copy">
+            <p class="eyebrow">สวัสดีตอนเช้า</p>
+            <h1 id="welcome-title">วันนี้น้องฟ้าพร้อมช่วยคุณแล้ว</h1>
+            <p class="sensor-line">
+              <span>อุณหภูมิ <strong id="hero-temperature">--</strong></span>
+              <span>ความชื้น <strong id="hero-humidity">--</strong></span>
+              <span id="hero-air">กำลังตรวจสอบ</span>
+            </p>
+          </div>
+          <img class="hero-robot" src="/webui/assets/nongfa-robot.svg" alt="" />
+        </section>
+
+        <section class="quick-grid" aria-label="ทางลัด">
+          <a class="quick-action" href="#status">
+            <span class="quick-icon blue"><i data-lucide="activity" aria-hidden="true"></i></span>
+            <span>Status</span>
+          </a>
+          <a class="quick-action" href="#chat">
+            <span class="quick-icon green"><i data-lucide="message-circle" aria-hidden="true"></i></span>
+            <span>AI Chat</span>
+          </a>
+          <button class="voice-orb" id="voice-orb" type="button" aria-label="พูดคุยผ่านเสียง">
+            <i data-lucide="audio-lines" aria-hidden="true"></i>
+            <span>พูดคุยผ่านเสียง</span>
+          </button>
+          <a class="quick-action" href="#devices">
+            <span class="quick-icon purple"><i data-lucide="list" aria-hidden="true"></i></span>
+            <span>อุปกรณ์</span>
+          </a>
+          <a class="quick-action" href="#settings">
+            <span class="quick-icon amber"><i data-lucide="settings" aria-hidden="true"></i></span>
+            <span>ตั้งค่า</span>
+          </a>
+        </section>
+
+        <p class="voice-status" id="voice-status">แตะปุ่มเสียงเพื่อเริ่ม</p>
+
+        <section class="wake-card" aria-labelledby="wake-card-title">
+          <div>
+            <p class="eyebrow">Wake Mode</p>
+            <h2 id="wake-card-title">ปลุกน้องฟ้าจากหน้าแอป</h2>
+            <p id="wake-summary-status">ใช้ได้เมื่อแอปเปิดอยู่และได้รับอนุญาตไมค์</p>
+          </div>
+          <a class="wake-card-button" href="#wake">
+            <i data-lucide="radio-tower" aria-hidden="true"></i>
+            <span>ตั้งค่า Wake</span>
+          </a>
+        </section>
+
+        <section class="section-heading" aria-labelledby="devices-title">
+          <h2 id="devices-title">อุปกรณ์ที่ใช้งานบ่อย</h2>
+          <a href="#devices">ดูทั้งหมด</a>
+        </section>
+
+        <section class="device-strip" aria-label="อุปกรณ์ที่ใช้งานบ่อย">
+          <article class="device-card">
+            <i class="device-icon yellow" data-lucide="lightbulb" aria-hidden="true"></i>
+            <h3>ไฟห้องนั่งเล่น</h3>
+            <p class="device-state" id="light-state">รอบอร์ด</p>
+            <button class="switch-control" id="light-toggle" type="button" aria-label="เปิดปิดไฟห้องนั่งเล่น">
+              <span></span>
+            </button>
+          </article>
+
+          <article class="device-card">
+            <i class="device-icon blue" data-lucide="fan" aria-hidden="true"></i>
+            <h3>พัดลม</h3>
+            <p class="device-state blue-text">ความเร็ว 3</p>
+            <div class="stepper" aria-label="ระดับพัดลม">
+              <button type="button" aria-label="ลดความเร็ว">-</button>
+              <span aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></span>
+              <button type="button" aria-label="เพิ่มความเร็ว">+</button>
+            </div>
+          </article>
+
+          <article class="device-card">
+            <i class="device-icon orange" data-lucide="thermometer" aria-hidden="true"></i>
+            <h3>อุณหภูมิ</h3>
+            <p class="device-state orange-text" id="temperature-card">--</p>
+            <svg class="sparkline orange-line" viewBox="0 0 120 32" role="img" aria-label="แนวโน้มอุณหภูมิ">
+              <path d="M4 22 L18 18 L31 21 L45 12 L58 17 L72 15 L84 22 L97 16 L116 14" />
+            </svg>
+          </article>
+
+          <article class="device-card">
+            <i class="device-icon cyan" data-lucide="droplets" aria-hidden="true"></i>
+            <h3>ความชื้น</h3>
+            <p class="device-state blue-text" id="humidity-card">--</p>
+            <svg class="sparkline blue-line" viewBox="0 0 120 32" role="img" aria-label="แนวโน้มความชื้น">
+              <path d="M4 24 L18 21 L30 13 L43 20 L55 23 L68 25 L83 18 L96 20 L116 15" />
+            </svg>
+          </article>
+        </section>
+
+        <section class="recommend-panel">
+          <div class="recommend-title">
+            <i data-lucide="sparkles" aria-hidden="true"></i>
+            <h2>แนะนำสำหรับคุณ</h2>
+          </div>
+          <button class="recommend-item" type="button">
+            <i data-lucide="leaf" aria-hidden="true"></i>
+            <span>
+              <strong>อากาศดีมาก เปิดหน้าต่างรับลม</strong>
+              <small>ช่วยประหยัดพลังงานและอากาศถ่ายเท</small>
+            </span>
+            <i data-lucide="chevron-right" aria-hidden="true"></i>
+          </button>
+          <div class="pager-dots" aria-hidden="true"><b></b><b></b><b></b><b></b></div>
+        </section>
+
+        <section class="section-heading" aria-labelledby="activity-title">
+          <h2 id="activity-title">กิจกรรมล่าสุด</h2>
+          <a href="#status">ดูทั้งหมด</a>
+        </section>
+
+        <section class="activity-card" id="activity" aria-label="กิจกรรมล่าสุด">
+          <article>
+            <i class="green-text" data-lucide="lightbulb" aria-hidden="true"></i>
+            <div>
+              <h3 id="activity-command">ยังไม่มีคำสั่งล่าสุด</h3>
+              <p id="activity-command-meta">รอการเชื่อมต่อบอร์ด</p>
+            </div>
+            <time id="activity-command-time">--:--</time>
+          </article>
+          <article>
+            <i class="blue-text" data-lucide="thermometer" aria-hidden="true"></i>
+            <div>
+              <h3>อ่านค่าอุณหภูมิ</h3>
+              <p id="activity-sensor">ยังไม่มีข้อมูลเซ็นเซอร์</p>
+            </div>
+            <time id="activity-sensor-time">--:--</time>
+          </article>
+          <article>
+            <i class="purple-text" data-lucide="message-circle" aria-hidden="true"></i>
+            <div>
+              <h3>พร้อมรับคำถาม</h3>
+              <p>แตะปุ่มเสียงหรือเปิด AI Chat</p>
+            </div>
+            <time>ตอนนี้</time>
+          </article>
+        </section>
+        </section>
+
+        <section class="app-view wake-view" data-view="wake" id="wake" aria-labelledby="wake-title">
+          <div class="view-header">
+            <p class="eyebrow">Wake Word</p>
+            <h1 id="wake-title">โหมดปลุก AI</h1>
+            <p>พูดว่า “น้องฟ้า” เมื่อเปิดโหมดนี้ไว้</p>
+          </div>
+
+          <article class="mode-card primary">
+            <div class="mode-card-title">
+              <i data-lucide="smartphone" aria-hidden="true"></i>
+              <div>
+                <h2>Phone Wake Mode</h2>
+                <p id="phone-wake-status">ยังไม่ได้เปิด</p>
+              </div>
+            </div>
+            <div class="mode-actions">
+              <button id="phone-wake-start" class="solid-action" type="button">เปิด Wake บนมือถือ</button>
+              <button id="phone-wake-stop" class="soft-action" type="button">ปิด</button>
+            </div>
+            <p class="mode-note">ทำงานเฉพาะตอนแอปเปิดอยู่ foreground และ browser รองรับ Web Speech API</p>
+          </article>
+
+          <article class="mode-card">
+            <div class="mode-card-title">
+              <i data-lucide="cpu" aria-hidden="true"></i>
+              <div>
+                <h2>Board Wake Mode</h2>
+                <p id="board-wake-status">รอสถานะ voice node</p>
+              </div>
+            </div>
+            <div class="mode-actions">
+              <button id="board-wake-start" class="solid-action" type="button">สั่งบอร์ดรอฟัง</button>
+              <button id="board-wake-stop" class="soft-action" type="button">หยุดบอร์ด</button>
+            </div>
+            <p class="mode-note">ถ้าต้องการปลุกได้เสมอ ให้ใช้ ESP32 Voice Node เป็นตัวฟังคำปลุกหลัก</p>
+          </article>
+
+          <article class="mode-card">
+            <div class="mode-card-title">
+              <i data-lucide="shield-alert" aria-hidden="true"></i>
+              <div>
+                <h2>ข้อจำกัดของ PWA</h2>
+                <p>PWA ไม่สามารถฟังไมค์ต่อเนื่องเมื่อแอปปิด อยู่เบื้องหลัง หรือจอล็อก</p>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="app-view chat-panel-mobile" data-view="chat" id="chat" aria-labelledby="chat-title">
+          <div class="chat-title-row">
+            <h2 id="chat-title">AI Chat</h2>
+            <span id="mobile-chat-status-label">พร้อม</span>
+          </div>
+          <div class="chat-command-status" id="mobile-chat-status" aria-live="polite" aria-label="สถานะคำสั่ง">
+            <div class="chat-status-head">
+              <span class="chat-status-dot" id="mobile-chat-status-dot" aria-hidden="true"></span>
+              <div>
+                <strong id="mobile-chat-status-title">พร้อมรับคำสั่ง</strong>
+                <small id="mobile-chat-status-detail">พิมพ์หรือพูดกับน้องฟ้าได้เลย</small>
+              </div>
+            </div>
+            <div class="chat-step-track" id="mobile-chat-steps" aria-hidden="true"></div>
+          </div>
+          <div class="voice-transcript-panel" id="mobile-voice-transcript-panel">
+            <span>คำสั่งเสียงล่าสุด</span>
+            <p id="mobile-voice-transcript">ยังไม่มีคำสั่งเสียง</p>
+          </div>
+          <div class="chat-history-mobile" id="mobile-chat-history" aria-live="polite">
+            <article class="chat-bubble assistant">สวัสดีค่ะ พิมพ์หรือกดปุ่มเสียงเพื่อคุยกับน้องฟ้าได้เลย</article>
+          </div>
+          <form id="mobile-chat-form">
+            <label class="sr-only" for="mobile-chat-input">ข้อความ</label>
+            <textarea id="mobile-chat-input" rows="2" placeholder="พิมพ์ข้อความถึงน้องฟ้า"></textarea>
+            <button id="mobile-chat-submit" type="submit" aria-label="ส่งข้อความ">
+              <i data-lucide="send" aria-hidden="true"></i>
+            </button>
+          </form>
+          <p id="mobile-chat-reply">ยังไม่มีข้อความ</p>
+        </section>
+
+        <section class="app-view" data-view="devices" id="devices" aria-labelledby="mobile-devices-title">
+          <div class="view-header">
+            <p class="eyebrow">Devices</p>
+            <h1 id="mobile-devices-title">อุปกรณ์ทั้งหมด</h1>
+            <p id="devices-summary">กำลังโหลดสถานะอุปกรณ์</p>
+          </div>
+          <div class="device-list-mobile" id="mobile-device-list"></div>
+        </section>
+
+        <section class="app-view" data-view="device-detail" id="device-detail" aria-labelledby="device-detail-title">
+          <div class="device-detail-header">
+            <button id="device-detail-back" class="soft-icon-button" type="button" aria-label="กลับไปหน้าอุปกรณ์">
+              <i data-lucide="arrow-left" aria-hidden="true"></i>
+            </button>
+            <div>
+              <p class="eyebrow" id="device-detail-type">Device</p>
+              <h1 id="device-detail-title">กำลังโหลดอุปกรณ์</h1>
+              <p id="device-detail-summary">รอสถานะล่าสุด</p>
+            </div>
+          </div>
+
+          <section class="device-detail-hero" aria-label="สถานะอุปกรณ์">
+            <div class="device-detail-icon">
+              <i id="device-detail-icon" data-lucide="plug" aria-hidden="true"></i>
+            </div>
+            <div>
+              <span id="device-detail-state-badge" class="device-badge">unknown</span>
+              <strong id="device-detail-state">ยังไม่มีสถานะ</strong>
+              <p id="device-detail-last">ยังไม่มีข้อมูลล่าสุด</p>
+            </div>
+          </section>
+
+          <section class="device-detail-grid" aria-label="รายละเอียดอุปกรณ์">
+            <article><span>ห้อง</span><strong id="device-detail-room">--</strong></article>
+            <article><span>GPIO</span><strong id="device-detail-gpio">--</strong></article>
+            <article><span>Board</span><strong id="device-detail-board">--</strong></article>
+            <article><span>Channel</span><strong id="device-detail-channel">--</strong></article>
+            <article><span>State</span><strong id="device-detail-state-meta">--</strong></article>
+            <article><span>Command</span><strong id="device-detail-command">--</strong></article>
+          </section>
+
+          <section class="device-action-panel" aria-label="คำสั่งอุปกรณ์">
+            <div class="device-action-buttons">
+              <button id="device-action-on" class="solid-action" type="button">เปิด</button>
+              <button id="device-action-off" class="soft-action" type="button">ปิด</button>
+              <button id="device-action-query" class="soft-action" type="button">ถามสถานะ</button>
+            </div>
+            <p id="device-detail-action-status">เลือกคำสั่งที่ต้องการ</p>
+          </section>
+
+          <section class="device-alias-panel" aria-label="ชื่อเรียกอุปกรณ์">
+            <h2>ชื่อเรียก</h2>
+            <div id="device-detail-aliases"></div>
+          </section>
+        </section>
+
+        <section class="app-view" data-view="status" id="status" aria-labelledby="mobile-status-title">
+          <div class="view-header">
+            <p class="eyebrow">System Status</p>
+            <h1 id="mobile-status-title">สถานะระบบ</h1>
+            <p>AI, บอร์ดควบคุม, บอร์ดเสียง และอุปกรณ์</p>
+          </div>
+          <div class="status-grid-mobile">
+            <article class="status-card-mobile"><i data-lucide="brain" aria-hidden="true"></i><span>AI</span><strong id="status-ai">--</strong></article>
+            <article class="status-card-mobile"><i data-lucide="router" aria-hidden="true"></i><span>Control Board</span><strong id="status-control-board">--</strong></article>
+            <article class="status-card-mobile"><i data-lucide="mic" aria-hidden="true"></i><span>Voice Board</span><strong id="status-voice-board">--</strong></article>
+            <article class="status-card-mobile"><i data-lucide="boxes" aria-hidden="true"></i><span>Devices</span><strong id="status-devices">--</strong></article>
+          </div>
+          <section class="activity-card status-activity" aria-label="สถานะล่าสุด">
+            <article>
+              <i class="green-text" data-lucide="radio-tower" aria-hidden="true"></i>
+              <div><h3>Wake Mode</h3><p id="status-wake-detail">ยังไม่ได้เปิด</p></div>
+              <time id="status-refresh-time">--:--</time>
+            </article>
+            <article>
+              <i class="blue-text" data-lucide="thermometer" aria-hidden="true"></i>
+              <div><h3>Sensor</h3><p id="status-sensor-detail">ยังไม่มีข้อมูล</p></div>
+              <time id="status-sensor-time">--:--</time>
+            </article>
+          </section>
+        </section>
+
+        <section class="app-view" data-view="settings" id="settings" aria-labelledby="mobile-settings-title">
+          <div class="view-header">
+            <p class="eyebrow">Settings</p>
+            <h1 id="mobile-settings-title">ตั้งค่า</h1>
+            <p>การติดตั้ง PWA, สิทธิ์ไมค์ และโหมดเดโม</p>
+          </div>
+          <div class="settings-list-mobile">
+            <article class="settings-action-row">
+              <i data-lucide="download" aria-hidden="true"></i>
+              <div><h2>ติดตั้งลงมือถือ</h2><p id="settings-install-status">กำลังตรวจสอบ</p></div>
+              <button id="settings-install-app" class="soft-action" type="button">ติดตั้ง</button>
+            </article>
+            <article>
+              <i data-lucide="lock-keyhole" aria-hidden="true"></i>
+              <div><h2>สิทธิ์ไมค์</h2><p>ต้องเปิดผ่าน HTTPS หรือ localhost และผู้ใช้ต้องอนุญาตก่อน</p></div>
+            </article>
+            <article class="settings-action-row">
+              <i data-lucide="mic-vocal" aria-hidden="true"></i>
+              <div><h2>ทดสอบไมค์</h2><p id="settings-mic-test-status">ยังไม่ได้ทดสอบ</p></div>
+              <button id="settings-test-mic" class="soft-action" type="button">ทดสอบ</button>
+            </article>
+            <article class="settings-action-row">
+              <i data-lucide="monitor-smartphone" aria-hidden="true"></i>
+              <div><h2>Demo Mode</h2><p id="settings-demo-status">ใช้ข้อมูลจริงจาก backend</p></div>
+              <button id="settings-demo-toggle" class="soft-action" type="button" aria-pressed="false">ปิด</button>
+            </article>
+            <article>
+              <i data-lucide="gauge" aria-hidden="true"></i>
+              <div><h2>Admin Dashboard</h2><p><a href="/">เปิดหน้า dashboard เดิมสำหรับ debug และตั้งค่าละเอียด</a></p></div>
+            </article>
+          </div>
+
+          <section class="settings-diagnostics" aria-label="ความพร้อมของ PWA">
+            <div class="settings-section-title">
+              <h2>Diagnostics</h2>
+              <button id="settings-refresh-diagnostics" class="soft-action" type="button">รีเฟรช</button>
+            </div>
+            <div class="diagnostic-list">
+              <article id="diag-secure"><span></span><div><strong>HTTPS / localhost</strong><p>--</p></div></article>
+              <article id="diag-mic"><span></span><div><strong>Microphone API</strong><p>--</p></div></article>
+              <article id="diag-speech"><span></span><div><strong>Speech Recognition</strong><p>--</p></div></article>
+              <article id="diag-service-worker"><span></span><div><strong>Service Worker</strong><p>--</p></div></article>
+              <article id="diag-pwa"><span></span><div><strong>PWA Install</strong><p>--</p></div></article>
+              <article id="diag-api"><span></span><div><strong>Backend API</strong><p>--</p></div></article>
+            </div>
+          </section>
+
+          <section class="settings-diagnostics api-target-panel" aria-label="Backend API target">
+            <div class="settings-section-title">
+              <div>
+                <h2>Backend API</h2>
+                <p id="settings-api-base-current">same-origin</p>
+              </div>
+              <button id="settings-api-test" class="soft-action" type="button">ทดสอบ</button>
+            </div>
+            <form id="settings-api-form" class="api-target-form">
+              <label class="sr-only" for="settings-api-base-input">Backend API URL</label>
+              <input id="settings-api-base-input" type="url" inputmode="url" autocomplete="url" placeholder="https://backend.example.com" />
+              <button class="solid-action" type="submit">บันทึก</button>
+            </form>
+            <div class="api-target-actions">
+              <button id="settings-api-reset" class="soft-action" type="button">รีเซ็ต</button>
+              <p id="settings-api-base-status">ใช้ same-origin ถ้าไม่ตั้งค่า</p>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="เมนูหลัก">
+        <a class="active" href="#home" data-nav-view="home"><i data-lucide="home" aria-hidden="true"></i><span>หน้าหลัก</span></a>
+        <a href="#devices" data-nav-view="devices"><i data-lucide="layout-grid" aria-hidden="true"></i><span>อุปกรณ์</span></a>
+        <button id="nav-voice" type="button" aria-label="พูดคุยผ่านเสียง"><i data-lucide="audio-lines" aria-hidden="true"></i></button>
+        <a href="#chat"><i data-lucide="messages-square" aria-hidden="true"></i><span>AI Chat</span></a>
+        <a href="#settings" data-nav-view="settings"><i data-lucide="list" aria-hidden="true"></i><span>เมนู</span></a>
+      </nav>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="/webui/mobile-icons-fallback.js?v=pwa-20260607-9"></script>
+    <script src="/webui/mobile.js?v=pwa-20260607-9"></script>
+  </body>
+</html>

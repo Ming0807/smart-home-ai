@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 360" role="img" aria-label="น้องฟ้า">
+  <defs>
+    <linearGradient id="body" x1="96" y1="104" x2="278" y2="326" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#bfe5ff"/>
+    </linearGradient>
+    <linearGradient id="visor" x1="92" y1="88" x2="278" y2="186" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06101c"/>
+      <stop offset="1" stop-color="#182b45"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <path d="M105 209c0-63 33-108 75-108s75 45 75 108v28c0 55-30 94-75 94s-75-39-75-94z" fill="url(#body)"/>
+    <path d="M82 156c0-54 41-96 98-96s98 42 98 96c0 42-41 73-98 73s-98-31-98-73z" fill="#f3fbff"/>
+    <path d="M106 152c0-36 30-61 74-61s74 25 74 61c0 32-30 52-74 52s-74-20-74-52z" fill="url(#visor)"/>
+    <rect x="135" y="141" width="42" height="18" rx="9" fill="#3df2ff"/>
+    <rect x="205" y="141" width="42" height="18" rx="9" fill="#3df2ff"/>
+    <path d="M163 246h34l14 31-31 19-31-19z" fill="#41e7ff"/>
+    <path d="M180 259l10 10-10 8-10-8z" fill="#efffff"/>
+    <path d="M91 216c-28 8-45 29-49 56" fill="none" stroke="#d9f1ff" stroke-width="22" stroke-linecap="round"/>
+    <path d="M269 216c28 8 45 29 49 56" fill="none" stroke="#d9f1ff" stroke-width="22" stroke-linecap="round"/>
+    <circle cx="54" cy="285" r="18" fill="#f3fbff"/>
+    <circle cx="306" cy="285" r="18" fill="#f3fbff"/>
+    <circle cx="82" cy="156" r="28" fill="#d9f1ff"/>
+    <circle cx="278" cy="156" r="28" fill="#d9f1ff"/>
+  </g>
+</svg>

@@ -1,0 +1,90 @@
+{
+  "id": "/app",
+  "name": "น้องฟ้า AI Smart Home Assistant",
+  "short_name": "น้องฟ้า",
+  "description": "ผู้ช่วยบ้านอัจฉริยะภาษาไทยสำหรับควบคุมอุปกรณ์และพูดคุยผ่านเสียง",
+  "lang": "th",
+  "dir": "ltr",
+  "start_url": "/app?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "categories": ["productivity", "utilities", "lifestyle"],
+  "icons": [
+    {
+      "src": "/webui/assets/nongfa-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/webui/assets/nongfa-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/webui/assets/nongfa-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ปลุก AI",
+      "short_name": "Wake AI",
+      "description": "เปิดหน้า Wake Mode ของน้องฟ้า",
+      "url": "/app#wake",
+      "icons": [
+        {
+          "src": "/webui/assets/nongfa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "สถานะระบบ",
+      "short_name": "Status",
+      "description": "ดูสถานะ AI, บอร์ด และอุปกรณ์",
+      "url": "/app#status",
+      "icons": [
+        {
+          "src": "/webui/assets/nongfa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "AI Chat",
+      "short_name": "Chat",
+      "description": "เปิดช่องแชท AI",
+      "url": "/app#chat",
+      "icons": [
+        {
+          "src": "/webui/assets/nongfa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "อุปกรณ์",
+      "short_name": "Devices",
+      "description": "ดูรายการอุปกรณ์ทั้งหมด",
+      "url": "/app#devices",
+      "icons": [
+        {
+          "src": "/webui/assets/nongfa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

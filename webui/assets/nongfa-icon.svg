@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Nong Fa">
+  <defs>
+    <linearGradient id="bg" x1="92" y1="64" x2="432" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e8f6ff"/>
+      <stop offset="0.52" stop-color="#74c8ff"/>
+      <stop offset="1" stop-color="#2f72ff"/>
+    </linearGradient>
+    <linearGradient id="face" x1="160" y1="156" x2="352" y2="310" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#091523"/>
+      <stop offset="1" stop-color="#142842"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#07111f"/>
+  <circle cx="256" cy="256" r="196" fill="url(#bg)"/>
+  <path d="M142 270c0-76 50-132 114-132s114 56 114 132v44c0 58-48 104-114 104s-114-46-114-104z" fill="#f6fbff"/>
+  <path d="M154 258c6-65 48-104 102-104s96 39 102 104c-20 26-57 42-102 42s-82-16-102-42z" fill="url(#face)"/>
+  <circle cx="214" cy="238" r="18" fill="#3df2ff"/>
+  <circle cx="298" cy="238" r="18" fill="#3df2ff"/>
+  <path d="M230 334h52l18 38-44 28-44-28z" fill="#3df2ff"/>
+  <path d="M256 348l19 19-19 13-19-13z" fill="#eaffff"/>
+  <circle cx="130" cy="274" r="28" fill="#d8efff"/>
+  <circle cx="382" cy="274" r="28" fill="#d8efff"/>
+  <path d="M206 134c0-22 18-40 50-40s50 18 50 40" fill="none" stroke="#f6fbff" stroke-width="18" stroke-linecap="round"/>
+</svg>
