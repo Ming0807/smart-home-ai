@@ -41,6 +41,11 @@ class Settings(BaseModel):
     device_registry_path: str = Field(default="data/device_registry.json")
     device_command_timeout_seconds: int = Field(default=15)
     sensor_freshness_seconds: int = Field(default=300)
+    database_enabled: bool = Field(default=False)
+    database_url: str = Field(default="")
+    supabase_url: str = Field(default="")
+    supabase_anon_key: str = Field(default="")
+    supabase_service_role_key: str = Field(default="")
     openweather_api_key: str = Field(default="")
     default_weather_location: str = Field(default="Yala,TH")
     weather_timeout_seconds: float = Field(default=5.0)
@@ -227,6 +232,11 @@ def get_settings() -> Settings:
         device_registry_path=getenv("DEVICE_REGISTRY_PATH", "data/device_registry.json"),
         device_command_timeout_seconds=_get_int_env("DEVICE_COMMAND_TIMEOUT_SECONDS", 15),
         sensor_freshness_seconds=_get_int_env("SENSOR_FRESHNESS_SECONDS", 300),
+        database_enabled=_get_bool_env("DATABASE_ENABLED", False),
+        database_url=getenv("DATABASE_URL", ""),
+        supabase_url=getenv("SUPABASE_URL", ""),
+        supabase_anon_key=getenv("SUPABASE_ANON_KEY", ""),
+        supabase_service_role_key=getenv("SUPABASE_SERVICE_ROLE_KEY", ""),
         openweather_api_key=getenv("OPENWEATHER_API_KEY", ""),
         default_weather_location=getenv("DEFAULT_WEATHER_LOCATION", "Yala,TH"),
         weather_timeout_seconds=_get_float_env("WEATHER_TIMEOUT_SECONDS", 5.0),

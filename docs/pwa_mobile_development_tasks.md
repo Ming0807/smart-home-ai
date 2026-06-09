@@ -97,17 +97,18 @@ Build a mobile-first PWA for Nong Fa that lets a user install the app on iOS or 
 
 ## Phase 5 - Supabase Database
 
-- [ ] Add SQL schema for `devices`.
-- [ ] Add SQL schema for `sensor_readings`.
-- [ ] Add SQL schema for `motion_events`.
-- [ ] Add SQL schema for `relay_commands`.
-- [ ] Add SQL schema for `command_results`.
-- [ ] Add SQL schema for `chat_messages`.
-- [ ] Add SQL schema for `voice_sessions`.
-- [ ] Add SQL schema for `system_logs`.
-- [ ] Add SQL schema for `activity_logs`.
+- [x] Add SQL schema for `devices`.
+- [x] Add SQL schema for `sensor_readings`.
+- [x] Add SQL schema for `motion_events`.
+- [x] Add SQL schema for `relay_commands`.
+- [x] Add SQL schema for `command_results`.
+- [x] Add SQL schema for `chat_messages`.
+- [x] Add SQL schema for `voice_sessions`.
+- [x] Add SQL schema for `system_logs`.
+- [x] Add SQL schema for `activity_logs`.
+- [x] Add seed data for the current ESP32 demo devices.
 - [ ] Add repository/service layer in FastAPI so local in-memory managers can be migrated carefully.
-- [ ] Add migrations and seed data.
+- [x] Add migrations and seed data.
 
 ## Phase 6 - PIR Motion
 
