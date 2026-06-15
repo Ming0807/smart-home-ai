@@ -66,6 +66,31 @@ function Write-Status {
     Write-Host $message -ForegroundColor $color
 }
 
+function Get-PreferredLanIp {
+    $configs = @(Get-NetIPConfiguration |
+        Where-Object {
+            $_.NetAdapter.Status -eq "Up" -and
+            $_.IPv4Address -and
+            $_.IPv4Address.IPAddress -notlike "127.*" -and
+            $_.IPv4Address.IPAddress -notlike "169.254.*"
+        })
+
+    $preferred = $configs |
+        Sort-Object {
+            if ($_.InterfaceAlias -eq "Wi-Fi") { 0 }
+            elseif ($_.IPv4DefaultGateway) { 1 }
+            elseif ($_.InterfaceAlias -like "vEthernet*") { 3 }
+            else { 2 }
+        } |
+        Select-Object -First 1
+
+    if (-not $preferred) {
+        return $null
+    }
+
+    return $preferred.IPv4Address.IPAddress
+}
+
 $firmwareUrl = Get-FirmwareServerUrl
 $firmwareHost = Get-HostFromUrl $firmwareUrl
 $localIps = @(Get-NetIPAddress -AddressFamily IPv4 |
@@ -75,7 +100,7 @@ $localIps = @(Get-NetIPAddress -AddressFamily IPv4 |
         $_.AddressState -eq "Preferred"
     } |
     Select-Object InterfaceAlias, IPAddress, PrefixLength, SkipAsSource)
-$primaryLanIp = ($localIps | Where-Object { -not $_.SkipAsSource } | Select-Object -First 1 -ExpandProperty IPAddress)
+$primaryLanIp = Get-PreferredLanIp
 
 Write-Host "Voice Node Network Check" -ForegroundColor White
 Write-Host "Project: $ProjectRoot"

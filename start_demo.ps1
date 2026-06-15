@@ -50,6 +50,45 @@ function Get-EnvValue {
     return (($line -replace "^\s*$([regex]::Escape($Name))\s*=\s*", "").Trim('"').Trim("'"))
 }
 
+function Resolve-OllamaExe {
+    $configured = Get-EnvValue -Name "OLLAMA_EXE" -DefaultValue ""
+    $candidates = New-Object System.Collections.Generic.List[string]
+
+    if ($configured) {
+        [void]$candidates.Add($configured)
+    }
+    if ($env:LOCALAPPDATA) {
+        [void]$candidates.Add((Join-Path $env:LOCALAPPDATA "Programs\Ollama\ollama.exe"))
+        [void]$candidates.Add((Join-Path $env:LOCALAPPDATA "Ollama\ollama.exe"))
+    }
+    if ($env:ProgramFiles) {
+        [void]$candidates.Add((Join-Path $env:ProgramFiles "Ollama\ollama.exe"))
+    }
+    [void]$candidates.Add("ollama")
+
+    foreach ($candidate in $candidates) {
+        $candidate = $candidate.Trim()
+        if (-not $candidate) {
+            continue
+        }
+
+        if ($candidate -eq "ollama") {
+            $command = Get-Command "ollama" -ErrorAction SilentlyContinue
+            if ($command) {
+                return $command.Source
+            }
+            continue
+        }
+
+        $expanded = [Environment]::ExpandEnvironmentVariables($candidate)
+        if (Test-Path -LiteralPath $expanded -PathType Leaf) {
+            return $expanded
+        }
+    }
+
+    return ""
+}
+
 function Resolve-PythonCommand {
     $candidates = @(
         @{
@@ -221,14 +260,21 @@ function Start-OllamaIfNeeded {
         return
     }
 
+    $ollamaExe = Resolve-OllamaExe
+    if (-not $ollamaExe) {
+        Write-Warn "Ollama executable was not found. Install Ollama or set OLLAMA_EXE in .env."
+        return
+    }
+
     $modelsDir = Get-EnvValue -Name "OLLAMA_MODELS" -DefaultValue "D:\Ollama_Models"
     if (-not (Test-Path $modelsDir)) {
         Write-Warn "Ollama model folder was not found: $modelsDir"
     }
 
     Write-Step "Starting Ollama serve"
-    $command = "set `"OLLAMA_MODELS=$modelsDir`" && ollama serve"
-    Start-Process -FilePath "cmd.exe" -ArgumentList @("/k", $command) -WorkingDirectory $ProjectRoot -WindowStyle Minimized
+    Write-Ok "Ollama executable: $ollamaExe"
+    $command = "set `"OLLAMA_MODELS=$modelsDir`" && `"$ollamaExe`" serve"
+    Start-Process -FilePath "cmd.exe" -ArgumentList @("/c", $command) -WorkingDirectory $ProjectRoot -WindowStyle Hidden
     Wait-HttpReady -Uri "http://127.0.0.1:11434/api/tags" -TimeoutSeconds 60 -Name "Ollama" | Out-Null
 }
 

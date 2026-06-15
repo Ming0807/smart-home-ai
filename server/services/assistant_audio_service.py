@@ -48,7 +48,6 @@ VOICE_NODE_SLEEP_PHRASES: tuple[str, ...] = (
 )
 VOICE_NODE_WAKE_ACK_REPLY = "ฟังอยู่ครับ พูดต่อได้เลย"
 VOICE_NODE_SLEEP_REPLY = "ได้เลย น้องฟ้าจะรอฟังคำปลุกอยู่นะ"
-VOICE_NODE_WAKE_FAST_ACK_REPLY = "wake detected"
 VOICE_NODE_MEANINGFUL_HINTS: tuple[str, ...] = (
     "เปิด",
     "ปิด",
@@ -92,6 +91,54 @@ VOICE_NODE_MEANINGFUL_HINTS: tuple[str, ...] = (
     "ขอบคุณ",
     "พอแล้ว",
     "หยุด",
+)
+
+
+VOICE_NODE_SHORT_MEANINGFUL_HINTS: tuple[str, ...] = (
+    "\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49",
+    "\u0e15\u0e2d\u0e19\u0e19\u0e35\u0e49",
+    "\u0e1e\u0e23\u0e38\u0e48\u0e07\u0e19\u0e35\u0e49",
+    "\u0e40\u0e21\u0e37\u0e48\u0e2d\u0e27\u0e32\u0e19",
+    "\u0e40\u0e27\u0e25\u0e32",
+    "\u0e27\u0e31\u0e19",
+    "\u0e01\u0e35\u0e48\u0e42\u0e21\u0e07",
+)
+VOICE_NODE_SHORT_FILLER_TEXTS: frozenset[str] = frozenset(
+    {
+        "\u0e04\u0e23\u0e31\u0e1a",
+        "\u0e04\u0e48\u0e30",
+        "\u0e04\u0e30",
+        "\u0e08\u0e49\u0e30",
+        "\u0e08\u0e49\u0e32",
+        "\u0e2d\u0e37\u0e21",
+        "\u0e2d\u0e37\u0e2d",
+        "\u0e40\u0e2d\u0e48\u0e2d",
+        "\u0e2d\u0e48\u0e32",
+        "\u0e2e\u0e37\u0e21",
+        "\u0e42\u0e2d\u0e40\u0e04",
+    }
+)
+VOICE_NODE_WAKE_DIRECT_COMMAND_HINTS: tuple[str, ...] = (
+    "\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49",
+    "\u0e15\u0e2d\u0e19\u0e19\u0e35\u0e49",
+    "\u0e1e\u0e23\u0e38\u0e48\u0e07\u0e19\u0e35\u0e49",
+    "\u0e40\u0e27\u0e25\u0e32",
+    "\u0e01\u0e35\u0e48\u0e42\u0e21\u0e07",
+    "\u0e44\u0e2b\u0e21",
+    "\u0e2d\u0e30\u0e44\u0e23",
+    "\u0e0a\u0e48\u0e27\u0e22",
+    "\u0e40\u0e1b\u0e34\u0e14",
+    "\u0e1b\u0e34\u0e14",
+    "\u0e44\u0e1f",
+    "\u0e1e\u0e31\u0e14\u0e25\u0e21",
+    "\u0e23\u0e35\u0e40\u0e25\u0e22\u0e4c",
+    "\u0e2d\u0e32\u0e01\u0e32\u0e28",
+    "\u0e1d\u0e19",
+    "\u0e2d\u0e38\u0e13\u0e2b\u0e20\u0e39\u0e21\u0e34",
+    "\u0e04\u0e27\u0e32\u0e21\u0e0a\u0e37\u0e49\u0e19",
+    "\u0e02\u0e48\u0e32\u0e27",
+    "\u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c",
+    "\u0e1a\u0e2d\u0e23\u0e4c\u0e14",
 )
 
 
@@ -350,20 +397,26 @@ class AssistantAudioService:
         active = self._voice_node_manager.is_wake_conversation_active(device_id)
         wake_remainder = self._extract_wake_remainder(cleaned_text)
         activated_by_wake = False
+        handoff_after_reply = False
 
         if not active:
             if wake_remainder is None:
-                return self._build_silent_wake_response(
-                    device_id=device_id,
-                    heard_text=cleaned_text,
-                )
+                if self._is_meaningful_wake_direct_command(cleaned_text):
+                    self._voice_node_manager.set_wake_conversation_active(device_id, True)
+                    handoff_after_reply = True
+                else:
+                    return self._build_silent_wake_response(
+                        device_id=device_id,
+                        heard_text=cleaned_text,
+                    )
 
-            self._voice_node_manager.set_wake_conversation_active(device_id, True)
-            activated_by_wake = True
-            cleaned_text = wake_remainder.strip()
-            if not cleaned_text:
-                self._handoff_wake_to_board_talk(device_id)
-                return self._build_fast_wake_handoff_response(heard_text=heard_text)
+            else:
+                self._voice_node_manager.set_wake_conversation_active(device_id, True)
+                activated_by_wake = True
+                handoff_after_reply = True
+                cleaned_text = wake_remainder.strip()
+                if not cleaned_text:
+                    return self._build_wake_ack_response(heard_text=heard_text)
 
         if self._contains_sleep_phrase(cleaned_text):
             self._voice_node_manager.set_wake_conversation_active(device_id, False)
@@ -374,7 +427,7 @@ class AssistantAudioService:
             )
 
         if activated_by_wake:
-            self._handoff_wake_to_board_talk(device_id)
+            handoff_after_reply = True
 
         if not cleaned_text:
             return self._build_silent_wake_response(device_id=device_id)
@@ -385,7 +438,10 @@ class AssistantAudioService:
             background_tasks=background_tasks,
             audio_mode="none",
         )
-        if not voice_data.keep_mic_open:
+        if voice_data.keep_mic_open:
+            if handoff_after_reply:
+                self._handoff_wake_to_board_talk(device_id)
+        else:
             self._voice_node_manager.set_wake_conversation_active(device_id, False)
 
         reply_audio_url = self._synthesize_voice_node_reply(voice_data.reply)
@@ -407,6 +463,21 @@ class AssistantAudioService:
     @staticmethod
     def _should_record_wake_audio(audio_data: AssistantAudioData) -> bool:
         return bool(audio_data.reply.strip() or audio_data.reply_audio_url)
+
+    @staticmethod
+    def _is_meaningful_wake_direct_command(text: str) -> bool:
+        cleaned = " ".join(text.split()).strip()
+        if not cleaned:
+            return False
+
+        compact_cleaned = "".join(cleaned.casefold().split())
+        if len(compact_cleaned) <= 2 or compact_cleaned in VOICE_NODE_SHORT_FILLER_TEXTS:
+            return False
+
+        return any(
+            hint in cleaned or hint in compact_cleaned
+            for hint in VOICE_NODE_WAKE_DIRECT_COMMAND_HINTS
+        )
 
     def _build_silent_wake_response(
         self,
@@ -442,16 +513,11 @@ class AssistantAudioService:
             reply_audio_format=self._settings.voice_node_reply_audio_format,
         )
 
-    def _build_fast_wake_handoff_response(self, heard_text: str) -> AssistantAudioData:
-        return AssistantAudioData(
+    def _build_wake_ack_response(self, heard_text: str) -> AssistantAudioData:
+        return self._build_wake_response(
             heard_text=heard_text,
-            reply=VOICE_NODE_WAKE_FAST_ACK_REPLY,
-            intent="general_chat",
-            source="voice_control",
-            action="none",
+            reply=VOICE_NODE_WAKE_ACK_REPLY,
             keep_mic_open=True,
-            reply_audio_url=None,
-            reply_audio_format=self._settings.voice_node_reply_audio_format,
         )
 
     def _build_silent_voice_node_retry_response(
@@ -481,14 +547,19 @@ class AssistantAudioService:
         if len(cleaned) > 24:
             return False
 
+        compact_cleaned = "".join(cleaned.casefold().split())
         upper_cleaned = cleaned.upper()
         if any(hint in cleaned or hint in upper_cleaned for hint in VOICE_NODE_MEANINGFUL_HINTS):
             return False
+        if any(hint in cleaned or hint in compact_cleaned for hint in VOICE_NODE_SHORT_MEANINGFUL_HINTS):
+            return False
+        if compact_cleaned in VOICE_NODE_SHORT_FILLER_TEXTS:
+            return True
 
         words = cleaned.split()
         if len(words) >= 2:
             return True
-        return len(cleaned) <= 12
+        return len(compact_cleaned) <= 2
 
     @staticmethod
     def _is_unclear_voice_result(error: str | None) -> bool:
