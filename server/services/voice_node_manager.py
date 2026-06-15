@@ -148,6 +148,7 @@ class VoiceNodeManager:
         self._wake_conversation_active: dict[str, bool] = {}
         self._auto_wake_suspended: dict[str, bool] = {}
         self._last_auto_wake_at: dict[str, datetime] = {}
+        self._pending_conversation_timeout_notice: dict[str, datetime] = {}
         self._stream_status: dict[str, VoiceNodeStreamRecord] = {}
 
     def record_heartbeat(
@@ -163,8 +164,13 @@ class VoiceNodeManager:
                 ip_address=request.ip_address,
                 last_seen_at=now,
             )
-            self._reconcile_stale_modes_unlocked(request.device_id, request.state, now)
-            self._ensure_auto_wake_unlocked(request.device_id)
+            timed_out = self._reconcile_stale_modes_unlocked(
+                request.device_id,
+                request.state,
+                now,
+            )
+            if not timed_out:
+                self._ensure_auto_wake_unlocked(request.device_id)
         return now
 
     def record_audio_result(
@@ -621,6 +627,14 @@ class VoiceNodeManager:
             self._last_auto_wake_at.pop(resolved_device_id, None)
         return self.queue_command("wake_listen_stop", device_id=resolved_device_id)
 
+    def pop_conversation_timeout_notice(self, device_id: str | None = None) -> bool:
+        resolved_device_id = self._resolve_device_id(device_id)
+        with self._lock:
+            return (
+                self._pending_conversation_timeout_notice.pop(resolved_device_id, None)
+                is not None
+            )
+
     def is_wake_conversation_active(self, device_id: str | None = None) -> bool:
         resolved_device_id = self._resolve_device_id(device_id)
         with self._lock:
@@ -944,28 +958,31 @@ class VoiceNodeManager:
         device_id: str,
         board_state: str,
         now: datetime,
-    ) -> None:
+    ) -> bool:
         if not self._conversation_mode_enabled.get(device_id, False):
-            return
+            return False
         if board_state != "WAKE_LISTENING":
-            return
+            return False
         if self._commands.get(device_id):
-            return
+            return False
 
         started_at = self._conversation_mode_started_at.get(device_id)
         latest_audio = self._latest_audio.get(device_id)
         reference_at = latest_audio.received_at if latest_audio is not None else started_at
         if reference_at is None:
             self._conversation_mode_started_at[device_id] = now
-            return
+            return False
 
         stale_after_seconds = max(25, int(self._settings.voice_node_timeout_seconds))
         if (now - reference_at).total_seconds() < stale_after_seconds:
-            return
+            return False
 
         self._conversation_mode_enabled[device_id] = False
         self._conversation_mode_started_at.pop(device_id, None)
         self._wake_conversation_active[device_id] = False
+        self._auto_wake_suspended[device_id] = True
+        self._pending_conversation_timeout_notice[device_id] = now
+        return True
 
     def _ensure_auto_wake_unlocked(self, device_id: str) -> bool:
         if not self._settings.voice_node_enabled or not self._settings.voice_node_auto_wake_enabled:

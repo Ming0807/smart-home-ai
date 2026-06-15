@@ -36,6 +36,52 @@ from server.utils.pcm_audio import pcm16_to_wav_bytes, prepare_pcm16_for_stt
 
 router = APIRouter(prefix="/voice-node", tags=["voice-node"])
 
+VOICE_NODE_CONVERSATION_TIMEOUT_REPLY = (
+    "\u0e08\u0e30\u0e1b\u0e34\u0e14\u0e01\u0e32\u0e23\u0e1f\u0e31\u0e07\u0e23\u0e2d\u0e1a\u0e19\u0e35\u0e49\u0e01\u0e48\u0e2d\u0e19\u0e19\u0e30 "
+    "\u0e16\u0e49\u0e32\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e04\u0e38\u0e22\u0e15\u0e48\u0e2d "
+    "\u0e40\u0e23\u0e35\u0e22\u0e01\u0e2a\u0e27\u0e31\u0e2a\u0e14\u0e35\u0e19\u0e49\u0e2d\u0e07\u0e1f\u0e49\u0e32\u0e44\u0e14\u0e49\u0e40\u0e25\u0e22"
+)
+
+
+def _to_voice_node_wav_url(
+    audio_url: str | None,
+    voice_node_manager: VoiceNodeManager,
+    settings: Settings,
+) -> str | None:
+    voice_node_url = voice_node_manager.to_voice_node_audio_url(audio_url)
+    if (
+        voice_node_url is not None
+        and settings.voice_node_reply_audio_format.strip().lower() == "wav"
+    ):
+        voice_node_url = voice_node_url.replace(
+            "/voice-node/audio/current",
+            "/voice-node/audio/current.wav",
+            1,
+        )
+    return voice_node_url
+
+
+def _queue_conversation_timeout_notice(
+    device_id: str,
+    voice_node_manager: VoiceNodeManager,
+    tts_service: TTSService,
+    settings: Settings,
+) -> None:
+    voice_node_manager.queue_command("conversation_stop", device_id=device_id)
+    tts_result = tts_service.synthesize(VOICE_NODE_CONVERSATION_TIMEOUT_REPLY)
+    audio_url = _to_voice_node_wav_url(
+        tts_result.audio_url if tts_result.ok else None,
+        voice_node_manager,
+        settings,
+    )
+    if audio_url:
+        voice_node_manager.queue_command(
+            "play_audio",
+            device_id=device_id,
+            audio_url=audio_url,
+        )
+    voice_node_manager.queue_wake_listen_start(device_id=device_id)
+
 
 @router.post(
     "/heartbeat",
@@ -45,8 +91,17 @@ router = APIRouter(prefix="/voice-node", tags=["voice-node"])
 def voice_node_heartbeat(
     request: VoiceNodeHeartbeatRequest,
     voice_node_manager: VoiceNodeManager = Depends(get_voice_node_manager),
+    tts_service: TTSService = Depends(get_tts_service),
+    settings: Settings = Depends(get_settings),
 ) -> VoiceNodeHeartbeatResponse:
     server_time = voice_node_manager.record_heartbeat(request)
+    if voice_node_manager.pop_conversation_timeout_notice(request.device_id):
+        _queue_conversation_timeout_notice(
+            device_id=request.device_id,
+            voice_node_manager=voice_node_manager,
+            tts_service=tts_service,
+            settings=settings,
+        )
     return VoiceNodeHeartbeatResponse(server_time=server_time)
 
 
@@ -373,16 +428,7 @@ def queue_voice_node_speech_test(
             detail=tts_result.error or "voice node speech test audio not ready",
         )
 
-    audio_url = voice_node_manager.to_voice_node_audio_url(tts_result.audio_url)
-    if (
-        audio_url is not None
-        and settings.voice_node_reply_audio_format.strip().lower() == "wav"
-    ):
-        audio_url = audio_url.replace(
-            "/voice-node/audio/current",
-            "/voice-node/audio/current.wav",
-            1,
-        )
+    audio_url = _to_voice_node_wav_url(tts_result.audio_url, voice_node_manager, settings)
     return voice_node_manager.queue_command(
         "play_audio",
         device_id=device_id,
