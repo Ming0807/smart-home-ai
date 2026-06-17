@@ -1,4 +1,8 @@
 const RECORDING_MAX_MS = 9000;
+const RECORDING_MIN_MS = 900;
+const RECORDING_SILENCE_STOP_MS = 1200;
+const RECORDING_NO_SPEECH_STOP_MS = 4500;
+const RECORDING_RMS_THRESHOLD = 0.035;
 const SpeechRecognitionConstructor =
   window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const WAKE_WORDS = ["น้องฟ้า", "นองฟ้า", "nong fa", "nongfa"];
@@ -232,6 +236,13 @@ const state = {
   deviceRegistryStatus: null,
   mediaRecorder: null,
   mediaStream: null,
+  audioContext: null,
+  analyser: null,
+  voiceVadTimer: 0,
+  voiceRecordingStartedAt: 0,
+  voiceLastSpeechAt: 0,
+  voiceSpeechStarted: false,
+  voiceConversationMode: false,
   audioChunks: [],
   recordingTimeout: 0,
   chatBusy: false,
@@ -1147,6 +1158,7 @@ async function refreshDiagnostics() {
 
 async function testMicrophonePermission() {
   if (!window.isSecureContext) {
+    state.voiceConversationMode = false;
     setText(els.settingsMicTestStatus, "ต้องเปิดผ่าน HTTPS หรือ localhost");
     await refreshDiagnostics();
     return;
@@ -1344,6 +1356,15 @@ function audioExtension(mimeType) {
 }
 
 function stopMediaStream() {
+  if (state.voiceVadTimer) {
+    window.cancelAnimationFrame(state.voiceVadTimer);
+    state.voiceVadTimer = 0;
+  }
+  if (state.audioContext) {
+    void state.audioContext.close().catch(() => {});
+  }
+  state.audioContext = null;
+  state.analyser = null;
   if (state.mediaStream) {
     for (const track of state.mediaStream.getTracks()) {
       track.stop();
@@ -1352,8 +1373,69 @@ function stopMediaStream() {
   state.mediaStream = null;
 }
 
-async function startRecording() {
+function startVoiceActivityMonitor(stream) {
+  if (state.voiceVadTimer) {
+    window.cancelAnimationFrame(state.voiceVadTimer);
+  }
+  const AudioContextConstructor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextConstructor) {
+    return;
+  }
+  const audioContext = new AudioContextConstructor();
+  const source = audioContext.createMediaStreamSource(stream);
+  const analyser = audioContext.createAnalyser();
+  analyser.fftSize = 1024;
+  source.connect(analyser);
+
+  state.audioContext = audioContext;
+  state.analyser = analyser;
+  state.voiceRecordingStartedAt = Date.now();
+  state.voiceLastSpeechAt = 0;
+  state.voiceSpeechStarted = false;
+  const samples = new Uint8Array(analyser.fftSize);
+
+  const tick = () => {
+    if (!state.mediaRecorder || state.mediaRecorder.state !== "recording") {
+      return;
+    }
+    analyser.getByteTimeDomainData(samples);
+    let sumSquares = 0;
+    for (const value of samples) {
+      const normalized = (value - 128) / 128;
+      sumSquares += normalized * normalized;
+    }
+    const rms = Math.sqrt(sumSquares / samples.length);
+    const now = Date.now();
+    const elapsedMs = now - state.voiceRecordingStartedAt;
+    if (rms >= RECORDING_RMS_THRESHOLD) {
+      state.voiceSpeechStarted = true;
+      state.voiceLastSpeechAt = now;
+    }
+    if (
+      state.voiceSpeechStarted &&
+      elapsedMs >= RECORDING_MIN_MS &&
+      now - state.voiceLastSpeechAt >= RECORDING_SILENCE_STOP_MS
+    ) {
+      stopRecording();
+      return;
+    }
+    if (!state.voiceSpeechStarted && elapsedMs >= RECORDING_NO_SPEECH_STOP_MS) {
+      stopRecording();
+      return;
+    }
+    state.voiceVadTimer = window.requestAnimationFrame(tick);
+  };
+
+  state.voiceVadTimer = window.requestAnimationFrame(tick);
+}
+
+async function startRecording(options = {}) {
+  const continueConversation = Boolean(options.continueConversation);
+  if (!continueConversation) {
+    state.voiceConversationMode = true;
+  }
   if (!window.isSecureContext) {
+    state.voiceConversationMode = false;
     setVoiceStatus("ต้องเปิดผ่าน HTTPS หรือ localhost เพื่อใช้ไมค์มือถือ", "warn");
     updateChatStatus({
       title: "เปิดไมค์ไม่ได้",
@@ -1366,6 +1448,7 @@ async function startRecording() {
     return;
   }
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    state.voiceConversationMode = false;
     setVoiceStatus("เบราว์เซอร์นี้ยังไม่รองรับการอัดเสียง", "warn");
     updateChatStatus({
       title: "เบราว์เซอร์ไม่รองรับไมค์",
@@ -1424,11 +1507,12 @@ async function startRecording() {
     });
 
     mediaRecorder.start();
+    startVoiceActivityMonitor(stream);
     els.voiceOrb?.classList.add("is-recording");
-    setVoiceStatus("กำลังฟังอยู่ แตะอีกครั้งเพื่อส่งเสียง", "live");
+    setVoiceStatus("กำลังฟังอยู่ พูดให้จบประโยคแล้วระบบจะส่งเอง", "live");
     updateChatStatus({
       title: "กำลังบันทึกเสียง",
-      detail: "น้องฟ้ากำลังฟังคำสั่งจากไมค์มือถือ",
+      detail: "พูดให้จบประโยค ระบบจะหยุดและส่งให้อัตโนมัติ",
       label: "กำลังฟัง",
       tone: "live",
       activeStep: "audio",
@@ -1437,6 +1521,7 @@ async function startRecording() {
     window.clearTimeout(state.recordingTimeout);
     state.recordingTimeout = window.setTimeout(stopRecording, RECORDING_MAX_MS);
   } catch (error) {
+    state.voiceConversationMode = false;
     stopMediaStream();
     const denied = error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError";
     setVoiceStatus(denied ? "ยังไม่ได้อนุญาตใช้ไมค์" : "เปิดไมค์ไม่สำเร็จ", "warn");
@@ -1469,6 +1554,7 @@ function stopRecording() {
 }
 
 async function uploadRecordedAudio(mimeType) {
+  let shouldContinueConversation = false;
   els.voiceOrb?.classList.remove("is-recording");
   setVoiceStatus("กำลังส่งเสียงให้น้องฟ้า...");
   state.voiceBusy = true;
@@ -1545,6 +1631,7 @@ async function uploadRecordedAudio(mimeType) {
     }
 
     const result = data.data || data;
+    shouldContinueConversation = Boolean(result.keep_mic_open);
     setVoiceStatus(result.heard_text ? `ได้ยิน: ${result.heard_text}` : "น้องฟ้าตอบกลับแล้ว");
     setVoiceTranscript(result.heard_text || "ยังไม่ได้ยินคำสั่งชัดเจน", result.heard_text ? "success" : "warn");
     clearChatStatusTimers();
@@ -1572,7 +1659,7 @@ async function uploadRecordedAudio(mimeType) {
         completedSteps: ["audio", "upload", "stt", "thinking", "reply"],
         mirrorToFooter: false,
       });
-      void playReplyAudio(result.audio_url);
+      await playReplyAudio(result.audio_url);
     }
     await refreshDashboardStatus();
   } catch (error) {
@@ -1592,11 +1679,21 @@ async function uploadRecordedAudio(mimeType) {
     clearChatStatusTimers();
     state.voiceBusy = false;
     setChatBusy(false);
+    if (state.voiceConversationMode && shouldContinueConversation) {
+      window.setTimeout(() => {
+        if (!state.voiceBusy && state.voiceConversationMode) {
+          void startRecording({ continueConversation: true });
+        }
+      }, 500);
+    } else {
+      state.voiceConversationMode = false;
+    }
   }
 }
 
 function handleVoiceTap() {
   if (state.voiceBusy) {
+    state.voiceConversationMode = false;
     updateChatStatus({
       title: "กำลังประมวลผลเสียงเดิม",
       detail: "รอผลการแปลงเสียงและคำตอบจาก AI ก่อน",
@@ -1608,6 +1705,7 @@ function handleVoiceTap() {
     return;
   }
   if (state.mediaRecorder && state.mediaRecorder.state === "recording") {
+    state.voiceConversationMode = false;
     stopRecording();
     return;
   }
@@ -1649,6 +1747,10 @@ async function playReplyAudio(audioUrl) {
     });
     await waitForAudioReady(audioUrl);
     const audio = new Audio(apiUrl(audioUrl));
+    const endedPromise = new Promise((resolve) => {
+      audio.addEventListener("ended", resolve, { once: true });
+      audio.addEventListener("error", resolve, { once: true });
+    });
     audio.addEventListener("ended", () => {
       updateChatStatus({
         title: "เล่นเสียงตอบกลับแล้ว",
@@ -1670,6 +1772,7 @@ async function playReplyAudio(audioUrl) {
       completedSteps: ["input", "audio", "upload", "stt", "thinking", "reply"],
       mirrorToFooter: false,
     });
+    await endedPromise;
   } catch (error) {
     updateChatStatus({
       title: "AI ตอบกลับแล้ว",

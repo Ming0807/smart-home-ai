@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 
 from server.config import get_settings, resolve_project_path
 from server.routes.assistant import router as assistant_router
@@ -33,6 +34,14 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         debug=settings.debug,
     )
+    if settings.cors_allowed_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_allowed_origins,
+            allow_credentials=False,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
     static_dir = resolve_project_path(settings.tts_output_dir)
     webui_dir = resolve_project_path("webui")
     static_dir.mkdir(parents=True, exist_ok=True)

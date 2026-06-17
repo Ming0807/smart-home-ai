@@ -13,6 +13,13 @@ class Settings(BaseModel):
     environment: str = Field(default="development")
     debug: bool = Field(default=False)
     debug_logs: bool = Field(default=False)
+    cors_allowed_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "https://smart-home-ai-lyart.vercel.app",
+        ]
+    )
     demo_mode: bool = Field(default=True)
     ollama_base_url: str = Field(default="http://localhost:11434")
     ollama_model: str = Field(default="scb10x/llama3.1-typhoon2-8b-instruct:latest")
@@ -109,11 +116,11 @@ class Settings(BaseModel):
     voice_node_stream_preprocess: bool = Field(default=True)
     voice_node_stream_trim_padding_ms: int = Field(default=250)
     stt_provider: str = Field(default="faster_whisper")
-    stt_model: str = Field(default="small")
+    stt_model: str = Field(default="base")
     stt_language: str = Field(default="th")
     stt_timeout_seconds: float = Field(default=30.0)
     stt_warmup_on_start: bool = Field(default=True)
-    stt_beam_size: int = Field(default=5)
+    stt_beam_size: int = Field(default=1)
     stt_vad_filter: bool = Field(default=True)
     stt_initial_prompt: str = Field(
         default=(
@@ -159,6 +166,18 @@ def _get_int_env(name: str, default: int) -> int:
         return default
 
 
+def _get_list_env(name: str, default: list[str]) -> list[str]:
+    value = getenv(name, "")
+    if not value.strip():
+        return default
+    values = [
+        item.strip()
+        for item in value.replace("\n", ",").split(",")
+        if item.strip()
+    ]
+    return values or default
+
+
 def _load_dotenv() -> None:
     """Load project-root .env values without overriding real environment variables."""
     env_path = Path(__file__).resolve().parents[1] / ".env"
@@ -201,6 +220,14 @@ def get_settings() -> Settings:
         environment=getenv("APP_ENV", "development"),
         debug=_get_bool_env("APP_DEBUG", False),
         debug_logs=_get_bool_env("DEBUG_LOGS", False),
+        cors_allowed_origins=_get_list_env(
+            "CORS_ALLOWED_ORIGINS",
+            [
+                "http://localhost:8000",
+                "http://127.0.0.1:8000",
+                "https://smart-home-ai-lyart.vercel.app",
+            ],
+        ),
         demo_mode=_get_bool_env("DEMO_MODE", True),
         ollama_base_url=getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
         ollama_model=getenv(
@@ -318,11 +345,11 @@ def get_settings() -> Settings:
             250,
         ),
         stt_provider=getenv("STT_PROVIDER", "faster_whisper"),
-        stt_model=getenv("STT_MODEL", "small"),
+        stt_model=getenv("STT_MODEL", "base"),
         stt_language=getenv("STT_LANGUAGE", "th"),
         stt_timeout_seconds=_get_float_env("STT_TIMEOUT_SECONDS", 30.0),
         stt_warmup_on_start=_get_bool_env("STT_WARMUP_ON_START", True),
-        stt_beam_size=_get_int_env("STT_BEAM_SIZE", 5),
+        stt_beam_size=_get_int_env("STT_BEAM_SIZE", 1),
         stt_vad_filter=_get_bool_env("STT_VAD_FILTER", True),
         stt_initial_prompt=getenv(
             "STT_INITIAL_PROMPT",
