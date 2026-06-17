@@ -5,15 +5,15 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/webui/index.html"
+      "destination": "/webui/index"
     },
     {
       "source": "/app",
-      "destination": "/webui/mobile.html"
+      "destination": "/webui/mobile"
     },
     {
       "source": "/app/:path*",
-      "destination": "/webui/mobile.html"
+      "destination": "/webui/mobile"
     },
     {
       "source": "/manifest.webmanifest",
