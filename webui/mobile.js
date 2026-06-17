@@ -132,7 +132,7 @@ const DEMO_DEVICE_STATUS = {
   enabled: DEMO_DEVICES.filter((device) => device.enabled).length,
 };
 
-let apiBase = normalizeApiBase(readStorage(API_BASE_STORAGE_KEY) || DEFAULT_API_BASE);
+let apiBase = getInitialApiBase();
 
 const els = {
   heroTemperature: document.getElementById("hero-temperature"),
@@ -279,6 +279,16 @@ function normalizeApiBase(value) {
   return "";
 }
 
+function getInitialApiBase() {
+  const params = new URLSearchParams(window.location.search);
+  const queryApiBase = normalizeApiBase(params.get("apiBase") || params.get("api_base") || "");
+  if (queryApiBase) {
+    writeStorage(API_BASE_STORAGE_KEY, queryApiBase);
+    return queryApiBase;
+  }
+  return normalizeApiBase(readStorage(API_BASE_STORAGE_KEY) || DEFAULT_API_BASE);
+}
+
 function apiBaseLabel() {
   return apiBase || "same-origin";
 }
@@ -347,6 +357,37 @@ function formatTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
+
+function mobileVoiceNodeStateLabel(stateValue) {
+  const value = String(stateValue || "");
+  const labels = {
+    BOOT: "กำลังเริ่มระบบ",
+    WIFI_CONNECTING: "กำลังต่อ Wi-Fi",
+    REGISTERING: "กำลังลงทะเบียน",
+    WAKE_LISTENING: "รอฟังคำปลุก",
+    WAKE_DETECTED: "ได้ยินคำปลุก",
+    BEEPING: "กำลังส่งเสียงติ๊ด",
+    RECORDING_COMMAND: "กำลังฟังประโยค",
+    UPLOADING_AUDIO: "กำลังส่งเสียง",
+    WAITING_SERVER_REPLY: "AI กำลังตอบ",
+    PLAYING_REPLY: "กำลังเล่นเสียง",
+    COOLDOWN: "พักรอบสนทนา",
+    ERROR: "บอร์ดมีปัญหา",
+  };
+  return labels[value] || value || "online";
+}
+
+function mobileVoiceNodeWakeStatus(nodeStatus) {
+  if (!nodeStatus?.online) {
+    return "ยังไม่พบ voice node";
+  }
+  if (!nodeStatus.wake_mode_enabled) {
+    return "บอร์ดยังไม่ได้เปิด wake";
+  }
+  return nodeStatus.wake_conversation_active
+    ? "บอร์ดคุยอยู่หลังคำปลุก"
+    : "บอร์ดรอฟังคำว่า น้องฟ้า";
 }
 
 function setVoiceStatus(message, tone = "neutral") {
@@ -588,8 +629,8 @@ async function refreshVoiceNodeStatus() {
       throw new Error("voice node status failed");
     }
     state.voiceNodeStatus = data;
-    const boardStatus = data.online ? `${data.state || "online"}` : "offline";
-    const wakeStatus = data.wake_mode_enabled ? "บอร์ดกำลังรอคำปลุก" : "บอร์ดยังไม่ได้เปิด wake";
+    const boardStatus = data.online ? mobileVoiceNodeStateLabel(data.state) : "offline";
+    const wakeStatus = mobileVoiceNodeWakeStatus(data);
     setText(els.statusVoiceBoard, boardStatus);
     setText(els.boardWakeStatus, wakeStatus);
     setText(
@@ -597,7 +638,7 @@ async function refreshVoiceNodeStatus() {
       state.phoneWakeListening
         ? "มือถือกำลังรอคำว่า น้องฟ้า"
         : data.wake_mode_enabled
-          ? "Voice Node กำลังรอคำปลุก"
+          ? `${wakeStatus} • ${boardStatus}`
           : "ยังไม่ได้เปิด Wake Mode"
     );
   } catch (error) {

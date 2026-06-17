@@ -90,6 +90,8 @@ Build a mobile-first PWA for Nong Fa that lets a user install the app on iOS or 
 
 - [ ] Decide backend target: Render, Railway, Fly.io, Cloud Run, or local server via Cloudflare Tunnel for demo.
 - [x] Add frontend runtime API base URL config for Vercel/static builds.
+- [x] Add Vercel static routing for `/`, `/app`, manifest, service worker, and web assets.
+- [x] Add `.vercelignore` so frontend deploys do not upload backend, firmware, reports, or local data.
 - [ ] Keep ESP32 `SERVER_BASE_URL` pointed at the public FastAPI backend.
 - [ ] Confirm ESP32 polling still uses `/esp32/commands`.
 - [ ] Add CORS policy only for trusted frontend origins.
