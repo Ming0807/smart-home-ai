@@ -16,6 +16,11 @@ static/*.mp3
 data/device_registry.json
 output/
 
+# Local tunnel binaries
+cloudflared*.exe
+cloudflared*.msi
+tools/*.exe
+
 # ESP-IDF generated files
 firmware/**/build/
 firmware/**/managed_components/

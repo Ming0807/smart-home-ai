@@ -6,6 +6,21 @@
 
 > สำคัญ: ไฟล์ `.env` ถูก ignore และจะไม่ถูก clone ไปด้วย เพราะมี API keys/secrets ต้องสร้างใหม่บนเครื่องใหม่เอง
 
+## คู่มือรันเดโมล่าสุด
+
+สำหรับการเปิดคอมใหม่, ใช้ PWA ผ่าน Cloudflare Tunnel, หรือ clone โปรเจกต์ไปเครื่องเพื่อน ให้เริ่มจากเอกสารนี้ก่อน:
+
+- [docs/operating_runbook.md](docs/operating_runbook.md)
+
+คำสั่งที่ใช้บ่อย:
+
+```powershell
+.\start_demo.ps1
+.\start_pwa_tunnel.ps1
+.\stop_pwa_tunnel.ps1
+.\stop_demo.ps1
+```
+
 ---
 
 ## 1. สิ่งที่ต้องติดตั้งบนเครื่องใหม่

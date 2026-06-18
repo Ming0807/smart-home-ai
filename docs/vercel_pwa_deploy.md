@@ -20,6 +20,15 @@ The PWA needs a public FastAPI origin for real device control. Good demo options
 
 The ESP32 control board and voice node must use the same public FastAPI base URL when testing outside the local LAN.
 
+For the current local-notebook demo flow, use:
+
+```powershell
+.\start_demo.ps1
+.\start_pwa_tunnel.ps1
+```
+
+See `docs/operating_runbook.md` for the full restart/clone checklist.
+
 ## Configure Backend URL
 
 There are two supported ways:
