@@ -1511,8 +1511,8 @@ async function startBrowserSpeechTurn(options = {}) {
   const continueConversation = Boolean(options.continueConversation);
   if (!continueConversation) {
     state.voiceConversationMode = true;
-    state.voiceTurnId += 1;
   }
+  state.voiceTurnId += 1;
   const turnId = state.voiceTurnId;
   if (options.resumeWakeOnEnd) {
     state.voiceResumeWakeAfterTurn = true;
