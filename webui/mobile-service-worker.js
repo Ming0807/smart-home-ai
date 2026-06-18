@@ -1,11 +1,11 @@
-const CACHE_NAME = "nongfa-mobile-pwa-v15";
+const CACHE_NAME = "nongfa-mobile-pwa-v16";
 const APP_SHELL = [
   "/app",
   "/app/",
-  "/webui/mobile.css?v=pwa-20260618-2",
-  "/webui/pwa-config.js?v=pwa-20260618-2",
-  "/webui/mobile-icons-fallback.js?v=pwa-20260618-2",
-  "/webui/mobile.js?v=pwa-20260618-2",
+  "/webui/mobile.css?v=pwa-20260618-3",
+  "/webui/pwa-config.js?v=pwa-20260618-3",
+  "/webui/mobile-icons-fallback.js?v=pwa-20260618-3",
+  "/webui/mobile.js?v=pwa-20260618-3",
   "/webui/assets/nongfa-icon.svg",
   "/webui/assets/nongfa-robot.svg",
   "/webui/assets/nongfa-icon-180.png",

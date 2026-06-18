@@ -6,6 +6,8 @@ const RECORDING_RMS_THRESHOLD = 0.035;
 const BROWSER_SPEECH_LISTEN_MAX_MS = 30000;
 const BROWSER_SPEECH_RESTART_GRACE_MS = 600;
 const VOICE_CONTINUE_DELAY_MS = 1400;
+const REPLY_AUDIO_READY_TIMEOUT_MS = 12000;
+const REPLY_AUDIO_STATUS_POLL_MS = 750;
 const SpeechRecognitionConstructor =
   window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const WAKE_WORDS = ["น้องฟ้า", "นองฟ้า", "nong fa", "nongfa"];
@@ -1062,6 +1064,108 @@ async function sendChatMessage(message, options = {}) {
   }
 }
 
+async function sendVoiceTextMessage(message) {
+  const text = message.trim();
+  if (!text) {
+    return null;
+  }
+  appendChatBubble("user", text);
+  clearChatStatusTimers();
+  setChatBusy(true);
+  updateChatStatus({
+    title: "ส่งคำสั่งเสียงแล้ว",
+    detail: `คำสั่งเสียง: ${text}`,
+    label: "กำลังส่ง",
+    tone: "busy",
+    activeStep: "input",
+    completedSteps: ["audio", "stt"],
+  });
+  queueChatStatus(700, {
+    title: "AI กำลังประมวลผล",
+    detail: "กำลังตีความคำสั่งเสียงผ่านโหมดสนทนา",
+    label: "กำลังคิด",
+    tone: "busy",
+    activeStep: "thinking",
+    completedSteps: ["audio", "stt", "input"],
+  });
+  queueChatStatus(2600, {
+    title: "รอคำตอบจาก AI",
+    detail: "กำลังเตรียมคำตอบและเสียงตอบกลับ",
+    label: "กำลังตอบ",
+    tone: "busy",
+    activeStep: "reply",
+    completedSteps: ["audio", "stt", "input", "thinking"],
+  });
+
+  try {
+    const formData = new FormData();
+    formData.append("message", text);
+    formData.append("pir_state", "0");
+
+    const { response, data } = await fetchJson(
+      "/voice/chat",
+      {
+        method: "POST",
+        body: formData,
+      },
+      80000
+    );
+
+    if (!response.ok) {
+      throw new Error(data.detail || "voice chat failed");
+    }
+
+    const result = data.data || data;
+    const heardText = (result.heard_text || text).trim();
+    const reply = result.reply || "น้องฟ้าตอบกลับแล้ว";
+    clearChatStatusTimers();
+    updateChatStatus({
+      title: "AI ตอบกลับแล้ว",
+      detail: heardText ? `คำสั่งเสียง: ${heardText}` : "ประมวลผลคำสั่งเสียงแล้ว",
+      label: "สำเร็จ",
+      tone: "success",
+      activeStep: "reply",
+      completedSteps: ["audio", "stt", "input", "thinking", "reply"],
+      mirrorToFooter: false,
+    });
+    setVoiceStatus(heardText ? `ได้ยิน: ${heardText}` : "น้องฟ้าตอบกลับแล้ว", "success");
+    setVoiceTranscript(heardText || text, "success");
+    setText(els.chatReply, reply);
+    appendChatBubble("assistant", reply);
+
+    if (result.audio_url) {
+      updateChatStatus({
+        title: "AI ตอบกลับแล้ว",
+        detail: "กำลังเตรียมเสียงตอบกลับ",
+        label: "มีเสียงตอบ",
+        tone: "success",
+        activeStep: "reply",
+        completedSteps: ["audio", "stt", "input", "thinking", "reply"],
+        mirrorToFooter: false,
+      });
+      result.audio_playback_ok = await playReplyAudio(result.audio_url);
+    } else {
+      result.audio_playback_ok = false;
+    }
+    await refreshDashboardStatus();
+    return result;
+  } catch (error) {
+    clearChatStatusTimers();
+    updateChatStatus({
+      title: "ส่งคำสั่งเสียงไม่สำเร็จ",
+      detail: "ลองพูดใหม่อีกครั้ง หรือเช็คสถานะ backend",
+      label: "ผิดพลาด",
+      tone: "warn",
+      activeStep: "input",
+      completedSteps: ["audio", "stt"],
+    });
+    throw error;
+  } finally {
+    clearChatStatusTimers();
+    setChatBusy(false);
+  }
+}
+
 function updatePhoneWakeUi() {
   const text = state.phoneWakeListening
     ? "มือถือกำลังรอคำว่า น้องฟ้า"
@@ -1616,11 +1720,8 @@ async function startBrowserSpeechTurn(options = {}) {
     });
 
     try {
-      const data = await sendChatMessage(transcript, {
-        statusText: "ส่งคำสั่งเสียงที่มือถือถอดข้อความแล้ว",
-        awaitAudio: true,
-      });
-      if (shouldEndVoiceConversation(transcript)) {
+      const data = await sendVoiceTextMessage(transcript);
+      if (shouldEndVoiceConversation(transcript) || data?.keep_mic_open === false) {
         state.voiceConversationMode = false;
       }
       if (data?.audio_playback_ok === false) {
@@ -2085,7 +2186,8 @@ async function waitForAudioReady(audioUrl) {
   }
   let lastStatus = null;
   let lastError = null;
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < REPLY_AUDIO_READY_TIMEOUT_MS) {
     try {
       const { response, data } = await fetchJson("/voice/status", {}, 8000);
       if (response.ok) {
@@ -2093,11 +2195,21 @@ async function waitForAudioReady(audioUrl) {
         if (data.current_token === token && data.audio_ready) {
           return { ok: true, reason: "ready" };
         }
+        if (data.current_token && data.current_token !== token) {
+          return {
+            ok: false,
+            reason: data.last_error ? "failed" : "superseded",
+            status: data,
+          };
+        }
+        if (data.current_token === token && data.last_error) {
+          return { ok: false, reason: "failed", status: data };
+        }
       }
     } catch (error) {
       lastError = error;
     }
-    await new Promise((resolve) => window.setTimeout(resolve, 750));
+    await new Promise((resolve) => window.setTimeout(resolve, REPLY_AUDIO_STATUS_POLL_MS));
   }
   return {
     ok: false,
@@ -2122,9 +2234,11 @@ async function playReplyAudio(audioUrl) {
     if (!readyResult.ok) {
       updateChatStatus({
         title: "เสียงตอบยังไม่พร้อม",
-        detail: readyResult.reason === "superseded"
-          ? "เสียงตอบรอบนี้ถูกแทนที่ด้วยรอบใหม่แล้ว"
-          : "ระบบ TTS ยังสร้างเสียงไม่ทันในเวลาที่กำหนด",
+        detail: readyResult.reason === "failed"
+          ? "AI ตอบข้อความแล้ว แต่ระบบสร้างเสียงไม่สำเร็จ"
+          : readyResult.reason === "superseded"
+            ? "เสียงตอบรอบนี้ถูกแทนที่ด้วยรอบใหม่แล้ว"
+            : "AI ตอบข้อความแล้ว แต่ระบบ TTS ยังสร้างเสียงไม่ทัน",
         label: "ไม่มีเสียงตอบ",
         tone: "warn",
         activeStep: "reply",
