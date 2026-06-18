@@ -1033,11 +1033,15 @@ async function sendChatMessage(message, options = {}) {
         completedSteps: ["input", "thinking", "reply"],
         mirrorToFooter: false,
       });
+      let audioPlaybackOk = false;
       if (options.awaitAudio) {
-        await playReplyAudio(data.audio_url);
+        audioPlaybackOk = await playReplyAudio(data.audio_url);
       } else {
         void playReplyAudio(data.audio_url);
       }
+      data.audio_playback_ok = audioPlaybackOk;
+    } else if (options.awaitAudio) {
+      data.audio_playback_ok = false;
     }
     await refreshDashboardStatus();
     return data;
@@ -1619,6 +1623,18 @@ async function startBrowserSpeechTurn(options = {}) {
       if (shouldEndVoiceConversation(transcript)) {
         state.voiceConversationMode = false;
       }
+      if (data?.audio_playback_ok === false) {
+        state.voiceConversationMode = false;
+        updateChatStatus({
+          title: "AI ตอบกลับแล้ว",
+          detail: "เสียงตอบยังไม่พร้อมหรือถูกแทนที่ กดไมค์อีกครั้งเมื่ออยากคุยต่อ",
+          label: "รอกดต่อ",
+          tone: "warn",
+          activeStep: "reply",
+          completedSteps: ["input", "thinking", "reply"],
+          mirrorToFooter: false,
+        });
+      }
       state.voiceBusy = false;
       if (state.voiceConversationMode) {
         window.clearTimeout(state.voiceContinueTimer);
@@ -1978,7 +1994,12 @@ async function uploadRecordedAudio(mimeType) {
         completedSteps: ["audio", "upload", "stt", "thinking", "reply"],
         mirrorToFooter: false,
       });
-      await playReplyAudio(result.audio_url);
+      const audioPlaybackOk = await playReplyAudio(result.audio_url);
+      if (!audioPlaybackOk) {
+        shouldContinueConversation = false;
+      }
+    } else {
+      shouldContinueConversation = false;
     }
     await refreshDashboardStatus();
   } catch (error) {
@@ -2060,15 +2081,30 @@ function getAudioToken(url) {
 async function waitForAudioReady(audioUrl) {
   const token = getAudioToken(audioUrl);
   if (!token) {
-    return;
+    return { ok: true, reason: "no-token" };
   }
-  for (let attempt = 0; attempt < 16; attempt += 1) {
-    const { response, data } = await fetchJson("/voice/status", {}, 8000);
-    if (response.ok && data.current_token === token && data.audio_ready) {
-      return;
+  let lastStatus = null;
+  let lastError = null;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    try {
+      const { response, data } = await fetchJson("/voice/status", {}, 8000);
+      if (response.ok) {
+        lastStatus = data;
+        if (data.current_token === token && data.audio_ready) {
+          return { ok: true, reason: "ready" };
+        }
+      }
+    } catch (error) {
+      lastError = error;
     }
-    await new Promise((resolve) => window.setTimeout(resolve, 700));
+    await new Promise((resolve) => window.setTimeout(resolve, 750));
   }
+  return {
+    ok: false,
+    reason: lastStatus?.current_token && lastStatus.current_token !== token ? "superseded" : "timeout",
+    status: lastStatus,
+    error: lastError,
+  };
 }
 
 async function playReplyAudio(audioUrl) {
@@ -2082,11 +2118,25 @@ async function playReplyAudio(audioUrl) {
       completedSteps: ["input", "audio", "upload", "stt", "thinking", "reply"],
       mirrorToFooter: false,
     });
-    await waitForAudioReady(audioUrl);
+    const readyResult = await waitForAudioReady(audioUrl);
+    if (!readyResult.ok) {
+      updateChatStatus({
+        title: "เสียงตอบยังไม่พร้อม",
+        detail: readyResult.reason === "superseded"
+          ? "เสียงตอบรอบนี้ถูกแทนที่ด้วยรอบใหม่แล้ว"
+          : "ระบบ TTS ยังสร้างเสียงไม่ทันในเวลาที่กำหนด",
+        label: "ไม่มีเสียงตอบ",
+        tone: "warn",
+        activeStep: "reply",
+        completedSteps: ["input", "audio", "upload", "stt", "thinking", "reply"],
+        mirrorToFooter: false,
+      });
+      return false;
+    }
     const audio = new Audio(apiUrl(audioUrl));
-    const endedPromise = new Promise((resolve) => {
+    const endedPromise = new Promise((resolve, reject) => {
       audio.addEventListener("ended", resolve, { once: true });
-      audio.addEventListener("error", resolve, { once: true });
+      audio.addEventListener("error", () => reject(new Error("reply audio failed")), { once: true });
     });
     audio.addEventListener("ended", () => {
       updateChatStatus({
@@ -2110,16 +2160,18 @@ async function playReplyAudio(audioUrl) {
       mirrorToFooter: false,
     });
     await endedPromise;
+    return true;
   } catch (error) {
     updateChatStatus({
-      title: "AI ตอบกลับแล้ว",
-      detail: "เบราว์เซอร์อาจบล็อกการเล่นเสียงอัตโนมัติ",
-      label: "ตอบแล้ว",
-      tone: "success",
+      title: "เสียงตอบเล่นไม่ได้",
+      detail: "AI ตอบเป็นข้อความแล้ว แต่เสียงตอบไม่พร้อม กดไมค์เพื่อคุยต่อเอง",
+      label: "ไม่มีเสียงตอบ",
+      tone: "warn",
       activeStep: "reply",
       completedSteps: ["input", "audio", "upload", "stt", "thinking", "reply"],
       mirrorToFooter: false,
     });
+    return false;
   }
 }
 
