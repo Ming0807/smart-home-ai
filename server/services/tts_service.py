@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 import re
+import time
 from threading import Lock, Thread
 from uuid import uuid4
 import wave
@@ -16,6 +17,9 @@ from server.config import Settings, get_settings, resolve_project_path
 from server.utils.observability import log_timing, start_timer
 
 logger = logging.getLogger(__name__)
+
+EDGE_TTS_MAX_ATTEMPTS = 3
+EDGE_TTS_RETRY_DELAY_SECONDS = 0.45
 
 try:
     import edge_tts
@@ -122,7 +126,11 @@ class TTSService:
                         token=active_token,
                     )
                 self._output_dir.mkdir(parents=True, exist_ok=True)
-                output_path = self._write_audio_file(cleaned_text, output_path, active_token)
+                output_path = self._write_audio_file_with_retries(
+                    cleaned_text,
+                    output_path,
+                    active_token,
+                )
                 with self._state_lock:
                     if (
                         self._settings.tts_overwrite_output
@@ -298,6 +306,34 @@ class TTSService:
                     temp_path.unlink()
                 except OSError:
                     logger.warning("Failed to remove temp audio file: %s", temp_path.name)
+
+    def _write_audio_file_with_retries(
+        self,
+        text: str,
+        output_path: Path,
+        token: str,
+    ) -> Path:
+        last_error: Exception | None = None
+        for attempt in range(1, EDGE_TTS_MAX_ATTEMPTS + 1):
+            try:
+                return self._write_audio_file(text, output_path, token)
+            except Exception as exc:
+                last_error = exc
+                if attempt >= EDGE_TTS_MAX_ATTEMPTS:
+                    break
+                if self._settings.tts_overwrite_output and not self._is_pending_token(token):
+                    break
+                logger.info(
+                    "Retrying TTS generation after %s (%s/%s)",
+                    exc.__class__.__name__,
+                    attempt + 1,
+                    EDGE_TTS_MAX_ATTEMPTS,
+                )
+                time.sleep(EDGE_TTS_RETRY_DELAY_SECONDS)
+
+        if last_error is not None:
+            raise last_error
+        raise RuntimeError("tts retry failed without an exception")
 
     async def _synthesize_with_edge_tts(self, text: str, output_path: Path) -> None:
         communicator = edge_tts.Communicate(

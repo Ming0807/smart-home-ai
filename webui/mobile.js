@@ -6,8 +6,10 @@ const RECORDING_RMS_THRESHOLD = 0.035;
 const BROWSER_SPEECH_LISTEN_MAX_MS = 30000;
 const BROWSER_SPEECH_RESTART_GRACE_MS = 600;
 const VOICE_CONTINUE_DELAY_MS = 1400;
-const REPLY_AUDIO_READY_TIMEOUT_MS = 12000;
+const REPLY_AUDIO_READY_TIMEOUT_MS = 30000;
 const REPLY_AUDIO_STATUS_POLL_MS = 750;
+const MODEL_SLOW_STATUS_MS = 9000;
+const MODEL_VERY_SLOW_STATUS_MS = 20000;
 const SpeechRecognitionConstructor =
   window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const WAKE_WORDS = ["น้องฟ้า", "นองฟ้า", "nong fa", "nongfa"];
@@ -1096,6 +1098,22 @@ async function sendVoiceTextMessage(message) {
     activeStep: "reply",
     completedSteps: ["audio", "stt", "input", "thinking"],
   });
+  queueChatStatus(MODEL_SLOW_STATUS_MS, {
+    title: "โมเดลกำลังคิดนานกว่าปกติ",
+    detail: "ยังรอคำตอบจาก AI อยู่ ระบบไม่ได้หยุดทำงาน",
+    label: "ยังคิดอยู่",
+    tone: "busy",
+    activeStep: "thinking",
+    completedSteps: ["audio", "stt", "input"],
+  });
+  queueChatStatus(MODEL_VERY_SLOW_STATUS_MS, {
+    title: "ยังรอคำตอบจากโมเดล",
+    detail: "คำถามนี้เข้าโมเดล AI โดยตรง อาจใช้เวลานานกว่าคำสั่งบ้านอัจฉริยะ",
+    label: "รอโมเดล",
+    tone: "busy",
+    activeStep: "thinking",
+    completedSteps: ["audio", "stt", "input"],
+  });
 
   try {
     const formData = new FormData();
@@ -1721,14 +1739,14 @@ async function startBrowserSpeechTurn(options = {}) {
 
     try {
       const data = await sendVoiceTextMessage(transcript);
-      if (shouldEndVoiceConversation(transcript) || data?.keep_mic_open === false) {
+      if (shouldEndVoiceConversation(transcript)) {
         state.voiceConversationMode = false;
       }
       if (data?.audio_playback_ok === false) {
         state.voiceConversationMode = false;
         updateChatStatus({
-          title: "AI ตอบกลับแล้ว",
-          detail: "เสียงตอบยังไม่พร้อมหรือถูกแทนที่ กดไมค์อีกครั้งเมื่ออยากคุยต่อ",
+          title: "AI ตอบเป็นข้อความแล้ว",
+          detail: "ระบบสร้างหรือเล่นเสียงตอบไม่สำเร็จ จึงหยุดฟังไว้ก่อนเพื่อไม่ให้รับเสียงผิดจังหวะ",
           label: "รอกดต่อ",
           tone: "warn",
           activeStep: "reply",
