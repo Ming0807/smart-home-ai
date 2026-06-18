@@ -7,6 +7,7 @@ from threading import Lock
 from server.config import get_settings
 from server.models.esp32 import SensorReading, SensorRequest
 from server.services.motion_manager import MotionManager, get_motion_manager
+from server.services.sqlite_log_store import SQLiteLogStore, get_sqlite_log_store
 
 
 @dataclass(frozen=True)
@@ -18,20 +19,27 @@ class SensorAnswer:
 class SensorManager:
     """Store and explain the latest ESP32 sensor readings."""
 
-    def __init__(self, motion_manager: MotionManager | None = None) -> None:
+    def __init__(
+        self,
+        motion_manager: MotionManager | None = None,
+        log_store: SQLiteLogStore | None = None,
+    ) -> None:
         self._lock = Lock()
         self._latest_readings: dict[str, SensorReading] = {}
         self._motion_manager = motion_manager or get_motion_manager()
+        self._log_store = log_store or get_sqlite_log_store()
 
     def record_reading(self, request: SensorRequest) -> None:
+        reading = SensorReading(
+            device_id=request.device_id,
+            temperature=request.temperature,
+            humidity=request.humidity,
+            timestamp=request.timestamp,
+            received_at=self._now(),
+        )
         with self._lock:
-            self._latest_readings[request.device_id] = SensorReading(
-                device_id=request.device_id,
-                temperature=request.temperature,
-                humidity=request.humidity,
-                timestamp=request.timestamp,
-                received_at=self._now(),
-            )
+            self._latest_readings[request.device_id] = reading
+        self._log_store.record_sensor_reading(reading)
 
     def get_latest_reading(self, device_id: str) -> SensorReading | None:
         with self._lock:

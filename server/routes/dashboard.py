@@ -1,12 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import FileResponse
 
 from server.config import Settings, get_settings, resolve_project_path
+from server.models.activity import ActivityLogResponse
 from server.models.dashboard import (
     AppSnapshot,
     DashboardStatusResponse,
     DeviceSnapshot,
     LLMSnapshot,
+    MotionEventSnapshot,
     MotionSnapshot,
     SensorSnapshot,
     VoiceSnapshot,
@@ -15,6 +17,7 @@ from server.services.esp32_manager import Esp32Manager, get_esp32_manager
 from server.services.llm_manager import LLMManager, get_llm_manager
 from server.services.motion_manager import MotionManager, get_motion_manager
 from server.services.sensor_manager import SensorManager, get_sensor_manager
+from server.services.sqlite_log_store import SQLiteLogStore, get_sqlite_log_store
 
 router = APIRouter(tags=["dashboard"])
 
@@ -66,6 +69,7 @@ def dashboard_status(
     latest_command = esp32_manager.get_latest_command(device_id)
     latest_motion_event = motion_manager.get_latest_event(device_id)
     latest_detected_motion = motion_manager.get_latest_detected_event(device_id)
+    motion_insight = motion_manager.build_insight(device_id)
     llm_health = llm_manager.get_health_status()
 
     sensor_snapshot = SensorSnapshot(
@@ -80,6 +84,8 @@ def dashboard_status(
             else False
         ),
     )
+
+
     device_snapshot = DeviceSnapshot(
         device_id=device_id,
         online=device_status.online,
@@ -102,6 +108,16 @@ def dashboard_status(
             latest_motion_event.received_at if latest_motion_event is not None else None
         ),
         greeting_message=motion_manager.get_latest_greeting(device_id),
+        occupancy_status=motion_insight.occupancy_status,
+        recommendation=motion_insight.recommendation,
+        events_last_hour=motion_insight.events_last_hour,
+        recent_events=[
+            MotionEventSnapshot(
+                motion=event.motion,
+                received_at=event.received_at,
+            )
+            for event in motion_insight.recent_events
+        ],
     )
     voice_snapshot = VoiceSnapshot(
         tts_enabled=settings.tts_enabled,
@@ -135,3 +151,14 @@ def dashboard_status(
             max_chat_history_items=settings.max_chat_history_items,
         ),
     )
+
+
+@router.get(
+    "/activity/recent",
+    response_model=ActivityLogResponse,
+)
+def recent_activity(
+    limit: int = Query(default=20, ge=1, le=100),
+    log_store: SQLiteLogStore = Depends(get_sqlite_log_store),
+) -> ActivityLogResponse:
+    return ActivityLogResponse(items=log_store.get_recent_activity(limit=limit))

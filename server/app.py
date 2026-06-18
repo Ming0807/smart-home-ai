@@ -18,6 +18,7 @@ from server.routes.health import router as health_router
 from server.routes.voice import router as voice_router
 from server.routes.voice_node import router as voice_node_router
 from server.services.llm_manager import get_llm_manager
+from server.services.sqlite_log_store import get_sqlite_log_store
 from server.services.stt_service import get_stt_service
 from server.utils.observability import configure_logging
 
@@ -66,6 +67,10 @@ def _register_startup_tasks(app: FastAPI) -> None:
     @app.on_event("startup")
     async def startup() -> None:
         settings = get_settings()
+        try:
+            get_sqlite_log_store().initialize()
+        except Exception:
+            logger.exception("SQLite log store initialization failed")
 
         if settings.llm_warmup_on_start:
             def _warmup_llm() -> None:

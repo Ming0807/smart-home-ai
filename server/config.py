@@ -50,6 +50,8 @@ class Settings(BaseModel):
     sensor_freshness_seconds: int = Field(default=300)
     database_enabled: bool = Field(default=False)
     database_url: str = Field(default="")
+    sqlite_log_enabled: bool = Field(default=True)
+    sqlite_log_path: str = Field(default="data/smart_home.sqlite3")
     supabase_url: str = Field(default="")
     supabase_anon_key: str = Field(default="")
     supabase_service_role_key: str = Field(default="")
@@ -261,6 +263,8 @@ def get_settings() -> Settings:
         sensor_freshness_seconds=_get_int_env("SENSOR_FRESHNESS_SECONDS", 300),
         database_enabled=_get_bool_env("DATABASE_ENABLED", False),
         database_url=getenv("DATABASE_URL", ""),
+        sqlite_log_enabled=_get_bool_env("SQLITE_LOG_ENABLED", True),
+        sqlite_log_path=getenv("SQLITE_LOG_PATH", "data/smart_home.sqlite3"),
         supabase_url=getenv("SUPABASE_URL", ""),
         supabase_anon_key=getenv("SUPABASE_ANON_KEY", ""),
         supabase_service_role_key=getenv("SUPABASE_SERVICE_ROLE_KEY", ""),

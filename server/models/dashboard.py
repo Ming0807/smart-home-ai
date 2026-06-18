@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from server.models.esp32 import RelayCommand
 
@@ -30,6 +30,15 @@ class MotionSnapshot(BaseModel):
     last_motion_at: datetime | None = None
     last_event_at: datetime | None = None
     greeting_message: str | None = None
+    occupancy_status: str | None = None
+    recommendation: str | None = None
+    events_last_hour: int = 0
+    recent_events: list["MotionEventSnapshot"] = Field(default_factory=list)
+
+
+class MotionEventSnapshot(BaseModel):
+    motion: bool
+    received_at: datetime
 
 
 class VoiceSnapshot(BaseModel):

@@ -13,6 +13,9 @@ const relayStateText = document.getElementById("relay-state-text");
 
 // ── Motion dot ref ──
 const motionDot = document.getElementById("motion-dot");
+const motionOccupancy = document.getElementById("motion-occupancy");
+const motionRecommendation = document.getElementById("motion-recommendation");
+const motionEventCount = document.getElementById("motion-event-count");
 
 // ── Sensor temperature card ref ──
 const sensorTempCard = document.getElementById("sensor-temp-card");
@@ -1047,6 +1050,15 @@ async function refreshDashboardStatus() {
     motionLastDetected.textContent = formatDate(data.motion.last_motion_at);
     motionLastEvent.textContent = formatDate(data.motion.last_event_at);
     motionGreeting.textContent = data.motion.greeting_message || "-";
+    if (motionOccupancy) {
+      motionOccupancy.textContent = data.motion.occupancy_status || "-";
+    }
+    if (motionRecommendation) {
+      motionRecommendation.textContent = data.motion.recommendation || "-";
+    }
+    if (motionEventCount) {
+      motionEventCount.textContent = `${data.motion.events_last_hour || 0} ครั้ง`;
+    }
     updateMotionDot(motionDetected);
 
     if (!state.pirTouched) {
@@ -1088,6 +1100,9 @@ async function refreshDashboardStatus() {
     motionLastDetected.textContent = "-";
     motionLastEvent.textContent = "-";
     motionGreeting.textContent = "-";
+    if (motionOccupancy) motionOccupancy.textContent = "-";
+    if (motionRecommendation) motionRecommendation.textContent = "-";
+    if (motionEventCount) motionEventCount.textContent = "-";
     renderEsp32Capabilities(null);
     setPillState(deviceOnlineIndicator, "bad", "อ่านสถานะไม่ได้");
     setPillState(voiceModeIndicator, "bad", "อ่านสถานะไม่ได้");

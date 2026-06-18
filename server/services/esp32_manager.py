@@ -16,6 +16,7 @@ from server.models.esp32 import (
     RelayAction,
     RelayCommand,
 )
+from server.services.sqlite_log_store import SQLiteLogStore, get_sqlite_log_store
 from server.utils.observability import log_timing
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ class Esp32Manager:
     without changing the API layer.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, log_store: SQLiteLogStore | None = None) -> None:
         self._lock = Lock()
         self._heartbeats: dict[str, DeviceHeartbeat] = {}
         self._commands: defaultdict[str, deque[tuple[RelayCommand, datetime]]] = defaultdict(deque)
@@ -36,6 +37,7 @@ class Esp32Manager:
         self._commands_by_id: dict[str, RelayCommand] = {}
         self._latest_command_results: dict[str, CommandResult] = {}
         self._capabilities: dict[str, Esp32Capabilities] = {}
+        self._log_store = log_store or get_sqlite_log_store()
 
     def record_heartbeat(self, request: HeartbeatRequest) -> None:
         with self._lock:
@@ -60,11 +62,13 @@ class Esp32Manager:
                 gpio_pin=gpio_pin,
                 action=action,
             )
-            self._commands[device_id].append((command, self._now()))
+            queued_at = self._now()
+            self._commands[device_id].append((command, queued_at))
             self._latest_commands[device_id] = command
             if command.command_id is not None:
                 self._commands_by_id[command.command_id] = command
-            return command
+        self._log_store.record_relay_command(device_id, command, queued_at)
+        return command
 
     def get_next_command(self, device_id: str) -> RelayCommand | None:
         with self._lock:
@@ -142,6 +146,7 @@ class Esp32Manager:
         )
         with self._lock:
             self._latest_command_results[request.device_id] = result
+        self._log_store.record_command_result(result)
         return result
 
     def get_latest_command_result(self, device_id: str) -> CommandResult | None:

@@ -14,6 +14,9 @@ __pycache__/
 # Generated media
 static/*.mp3
 data/device_registry.json
+data/*.sqlite3
+data/*.sqlite3-shm
+data/*.sqlite3-wal
 output/
 
 # Local tunnel binaries

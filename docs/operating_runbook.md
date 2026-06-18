@@ -59,6 +59,19 @@ curl.exe http://127.0.0.1:8000/health
 curl.exe http://127.0.0.1:8000/voice/status
 ```
 
+SQLite log จะถูกสร้างอัตโนมัติที่:
+
+```text
+data/smart_home.sqlite3
+```
+
+Log นี้เก็บข้อมูลของทั้ง 2 บอร์ด:
+
+- Control Node `esp32-01`: heartbeat, DHT22, PIR motion, relay command/result
+- Voice Node `voice-node-01`: heartbeat/state, audio/STT result, playback result
+
+ไฟล์นี้เป็นข้อมูล runtime ของเครื่องนั้น ๆ ไม่ต้อง commit ขึ้น Git
+
 ## หยุดระบบ
 
 หยุด Cloudflare tunnel:
@@ -131,6 +144,10 @@ notepad .env
 
 ```env
 OLLAMA_MODEL=gemma4:e2b
+DEFAULT_ESP32_DEVICE_ID=esp32-01
+VOICE_NODE_DEFAULT_ID=voice-node-01
+SQLITE_LOG_ENABLED=true
+SQLITE_LOG_PATH=data/smart_home.sqlite3
 OPENWEATHER_API_KEY=
 CURRENTS_API_KEY=
 OPENROUTESERVICE_API_KEY=
@@ -215,7 +232,61 @@ pip install -r requirements.txt
 - กดไมค์ใน PWA แล้ว browser ขออนุญาตไมค์
 - `/voice/status` มี `tts_enabled=true`
 - Ollama model ตรงกับ `OLLAMA_MODEL`
-- ถ้าใช้บอร์ดจริง ให้เช็กว่า firmware ชี้ backend ถูกตัว
+- ถ้าใช้บอร์ดจริง ให้เช็กว่า control board และ voice node ชี้ backend เครื่องเดียวกัน
+- SQLite log มีข้อมูลล่าสุด:
+
+```powershell
+curl.exe http://127.0.0.1:8000/activity/recent
+```
+
+## เช็กระบบ 2 บอร์ดบนเครื่องใหม่
+
+โปรเจกต์นี้มี 2 บอร์ดหลัก และทั้งคู่ต้องคุยกับ FastAPI backend ตัวเดียวกัน:
+
+| บอร์ด | Device ID | หน้าที่ | เช็กสถานะ |
+| --- | --- | --- | --- |
+| Control Node | `esp32-01` | DHT22, PIR motion, relay, command polling | `curl.exe http://127.0.0.1:8000/dashboard/status` |
+| Voice Node | `voice-node-01` | Wake word, mic, STT/TTS, speaker playback | `curl.exe "http://127.0.0.1:8000/voice-node/status?device_id=voice-node-01"` |
+
+ถ้าย้ายไปเครื่องเพื่อน:
+
+1. หา IPv4 ของเครื่องเพื่อนด้วย `ipconfig`
+2. Control Node: แก้ `esp32/config.py` ให้ `SERVER_BASE_URL="http://<IPv4 เครื่องเพื่อน>:8000"` แล้วอัปโหลดไฟล์ใน `esp32/` ลงบอร์ด
+3. Voice Node: ตั้งค่า firmware ให้ `CONFIG_VOICE_NODE_SERVER_BASE_URL="http://<IPv4 เครื่องเพื่อน>:8000"` แล้ว build/flash บอร์ด voice node
+4. เปิด backend ด้วย `.\start_demo.ps1`
+5. เช็กว่า `/dashboard/status`, `/voice-node/status`, `/voice-node/audio/report`, `/activity/recent` ตอบได้
+
+หมายเหตุ: Vercel/PWA ไม่ต้อง deploy ใหม่เวลาเปลี่ยนเครื่อง แค่เปิด tunnel ใหม่แล้วใส่ Backend API URL ใหม่ใน PWA
+
+## ทดสอบ PIR Motion และ SQLite Log แบบไม่ต้องเสียบบอร์ด
+
+ใช้ curl จำลอง event จาก PIR:
+
+```powershell
+$now = (Get-Date).ToUniversalTime().ToString("o")
+curl.exe -X POST http://127.0.0.1:8000/esp32/motion `
+  -H "Content-Type: application/json" `
+  -d "{\"device_id\":\"esp32-01\",\"motion\":true,\"timestamp\":\"$now\"}"
+```
+
+ตรวจ dashboard status:
+
+```powershell
+curl.exe http://127.0.0.1:8000/dashboard/status
+```
+
+ตรวจ activity log:
+
+```powershell
+curl.exe http://127.0.0.1:8000/activity/recent
+```
+
+สิ่งที่ควรเห็น:
+
+- `motion.motion_detected=true`
+- `motion.occupancy_status` บอกว่ามีคนอยู่หรือกำลังเคลื่อนไหว
+- `motion.recommendation` ให้คำแนะนำ เช่น เปิดไฟ/เปิดไมค์ต่อ หรือปิดไฟเมื่อไม่มี motion นาน
+- `/activity/recent` มี event `motion_detected`
 
 ## Troubleshooting สั้น ๆ
 

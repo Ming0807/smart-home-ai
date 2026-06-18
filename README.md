@@ -21,6 +21,9 @@
 .\stop_demo.ps1
 ```
 
+ระบบจะสร้าง SQLite log ให้อัตโนมัติที่ `data/smart_home.sqlite3` สำหรับ motion/sensor/command/activity log บนเครื่องที่รันอยู่
+log ชุดเดียวนี้ครอบคลุมทั้ง Control Node `esp32-01` และ Voice Node `voice-node-01`
+
 ---
 
 ## 1. สิ่งที่ต้องติดตั้งบนเครื่องใหม่
@@ -746,6 +749,10 @@ Edge TTS ต้องใช้อินเทอร์เน็ต ถ้าเ�
 - [ ] Sensor แสดงค่า
 - [ ] Relay สั่งได้
 - [ ] PIR แสดง motion ได้
+- [ ] ตั้งค่า Voice Node ให้ `CONFIG_VOICE_NODE_SERVER_BASE_URL` เป็น IP เครื่องใหม่
+- [ ] Voice Node heartbeat เข้า `/voice-node/status`
+- [ ] Voice Node audio report เข้า `/voice-node/audio/report`
+- [ ] SQLite log มี event จากทั้ง `esp32-01` และ `voice-node-01`
 
 ---
 

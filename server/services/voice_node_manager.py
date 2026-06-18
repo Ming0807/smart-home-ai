@@ -28,6 +28,7 @@ from server.models.voice_node import (
     VoiceNodeStatusResponse,
     VoiceNodeStreamStatusResponse,
 )
+from server.services.sqlite_log_store import SQLiteLogStore, get_sqlite_log_store
 
 
 @dataclass(frozen=True)
@@ -132,8 +133,13 @@ class VoiceNodeRuntimeConfig:
 class VoiceNodeManager:
     """In-memory status/config source for the ESP32-S3 voice node."""
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        log_store: SQLiteLogStore | None = None,
+    ) -> None:
         self._settings = settings
+        self._log_store = log_store or get_sqlite_log_store()
         self._lock = Lock()
         self._nodes: dict[str, VoiceNodeRecord] = {}
         self._latest_audio: dict[str, VoiceNodeAudioRecord] = {}
@@ -157,6 +163,11 @@ class VoiceNodeManager:
     ) -> datetime:
         now = datetime.now(timezone.utc)
         with self._lock:
+            previous_record = self._nodes.get(request.device_id)
+            state_changed = (
+                previous_record is None
+                or previous_record.state != request.state
+            )
             self._nodes[request.device_id] = VoiceNodeRecord(
                 device_id=request.device_id,
                 firmware_version=request.firmware_version,
@@ -171,6 +182,14 @@ class VoiceNodeManager:
             )
             if not timed_out:
                 self._ensure_auto_wake_unlocked(request.device_id)
+        self._log_store.record_voice_node_heartbeat(
+            device_id=request.device_id,
+            state=request.state,
+            firmware_version=request.firmware_version,
+            ip_address=request.ip_address,
+            seen_at=now,
+            state_changed=state_changed,
+        )
         return now
 
     def record_audio_result(
@@ -217,28 +236,58 @@ class VoiceNodeManager:
             del history[10:]
             if should_auto_wake:
                 self._ensure_auto_wake_unlocked(resolved_device_id)
+        self._log_store.record_voice_node_audio_result(
+            device_id=resolved_device_id,
+            received_at=now,
+            stt_ok=stt_ok,
+            stt_error=stt_error,
+            stt_raw_text=stt_raw_text,
+            expected_text=expected_text,
+            stt_similarity=similarity,
+            heard_text=data.heard_text,
+            reply=data.reply,
+            intent=str(data.intent),
+            source=str(data.source),
+            action=str(data.action),
+            keep_mic_open=data.keep_mic_open,
+            uploaded_audio_size_bytes=len(uploaded_audio_bytes),
+            uploaded_audio_duration_ms=audio_metrics.duration_ms,
+            uploaded_audio_quality=audio_metrics.quality,
+            uploaded_audio_peak_ratio=audio_metrics.peak_ratio,
+            uploaded_audio_rms_ratio=audio_metrics.rms_ratio,
+        )
         return now
 
     def record_playback_status(self, request: VoiceNodePlaybackStatusRequest) -> datetime:
         resolved_device_id = self._resolve_device_id(request.device_id)
         now = datetime.now(timezone.utc)
+        playback_record = VoiceNodePlaybackRecord(
+            device_id=resolved_device_id,
+            reported_at=now,
+            stage=request.stage,
+            ok=request.ok,
+            error=request.error,
+            audio_url=request.audio_url,
+            audio_size_bytes=request.audio_size_bytes,
+        )
         with self._lock:
-            self._latest_playback[resolved_device_id] = VoiceNodePlaybackRecord(
-                device_id=resolved_device_id,
-                reported_at=now,
-                stage=request.stage,
-                ok=request.ok,
-                error=request.error,
-                audio_url=request.audio_url,
-                audio_size_bytes=request.audio_size_bytes,
-            )
+            self._latest_playback[resolved_device_id] = playback_record
             latest_audio = self._latest_audio.get(resolved_device_id)
             if latest_audio is not None:
-                updated_audio = replace(latest_audio, playback_record=self._latest_playback[resolved_device_id])
+                updated_audio = replace(latest_audio, playback_record=playback_record)
                 self._latest_audio[resolved_device_id] = updated_audio
                 history = self._audio_history.get(resolved_device_id, [])
                 if history and history[0].received_at == latest_audio.received_at:
                     history[0] = updated_audio
+        self._log_store.record_voice_node_playback_status(
+            device_id=resolved_device_id,
+            reported_at=now,
+            stage=request.stage,
+            ok=request.ok,
+            error=request.error,
+            audio_url=request.audio_url,
+            audio_size_bytes=request.audio_size_bytes,
+        )
         return now
 
     def record_stream_open(
@@ -596,6 +645,15 @@ class VoiceNodeManager:
             queue = self._commands.setdefault(resolved_device_id, [])
             queue.append(record)
             pending_count = len(queue)
+        self._log_store.record_voice_node_command(
+            device_id=resolved_device_id,
+            command_id=record.command_id,
+            command_type=record.type,
+            queued_at=record.created_at,
+            audio_url=record.audio_url,
+            expected_text=record.expected_text,
+            pending_command_count=pending_count,
+        )
 
         return VoiceNodeCommandQueueResponse(
             device_id=resolved_device_id,

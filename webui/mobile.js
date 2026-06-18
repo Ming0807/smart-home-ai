@@ -222,6 +222,8 @@ const els = {
   statusRefreshTime: document.getElementById("status-refresh-time"),
   statusSensorDetail: document.getElementById("status-sensor-detail"),
   statusSensorTime: document.getElementById("status-sensor-time"),
+  statusMotionDetail: document.getElementById("status-motion-detail"),
+  statusMotionTime: document.getElementById("status-motion-time"),
   settingsMicTest: document.getElementById("settings-test-mic"),
   settingsMicTestStatus: document.getElementById("settings-mic-test-status"),
   settingsInstallApp: document.getElementById("settings-install-app"),
@@ -586,6 +588,7 @@ function updateDashboardUi(snapshot) {
   state.dashboardSnapshot = snapshot;
   const sensor = snapshot?.sensor || {};
   const device = snapshot?.device || {};
+  const motion = snapshot?.motion || {};
   const command = device.latest_command || null;
   const temperature = formatTemperature(sensor.temperature);
   const humidity = formatPercent(sensor.humidity);
@@ -621,6 +624,11 @@ function updateDashboardUi(snapshot) {
   setText(els.statusControlBoard, device.online ? "online" : "offline");
   setText(els.statusSensorDetail, sensor.received_at ? `${temperature} • ${humidity}` : "ยังไม่มีข้อมูล");
   setText(els.statusSensorTime, formatTime(sensor.received_at));
+  setText(
+    els.statusMotionDetail,
+    motion.occupancy_status || (motion.motion_detected ? "กำลังพบการเคลื่อนไหว" : "ยังไม่มีข้อมูล motion")
+  );
+  setText(els.statusMotionTime, formatTime(motion.last_event_at || motion.last_motion_at));
   setText(els.statusRefreshTime, formatTime(new Date().toISOString()));
 }
 
