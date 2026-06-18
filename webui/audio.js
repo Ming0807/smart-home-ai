@@ -14,7 +14,8 @@ function attachAudioBlob(audioElement, blobUrl) {
 }
 
 async function fetchAudioBlobUrl(url) {
-  const bustUrl = `${url}${url.includes("?") ? "&" : "?"}v=${Date.now()}`;
+  const resolvedUrl = typeof apiUrl === "function" ? apiUrl(url) : url;
+  const bustUrl = `${resolvedUrl}${resolvedUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
   const response = await fetch(bustUrl, {
     cache: "no-store",
     headers: { Accept: "audio/mpeg" },

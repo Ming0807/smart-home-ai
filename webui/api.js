@@ -1,9 +1,69 @@
+const API_BASE_STORAGE_KEY = "nongfa.mobile.apiBase";
+const DEFAULT_API_BASE = window.NONGFA_API_BASE || "";
+
+function readApiStorage(key) {
+  try {
+    return window.localStorage?.getItem(key) || "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function writeApiStorage(key, value) {
+  try {
+    if (value) {
+      window.localStorage?.setItem(key, value);
+    } else {
+      window.localStorage?.removeItem(key);
+    }
+  } catch (error) {
+    // Ignore storage errors in restricted browser modes.
+  }
+}
+
+function normalizeApiBase(value) {
+  const rawValue = String(value || "").trim().replace(/\/+$/, "");
+  if (!rawValue) {
+    return "";
+  }
+  try {
+    const url = new URL(rawValue);
+    if (url.protocol === "https:" || url.protocol === "http:") {
+      return url.origin === window.location.origin ? "" : url.origin;
+    }
+  } catch (error) {
+    return "";
+  }
+  return "";
+}
+
+function getInitialApiBase() {
+  const params = new URLSearchParams(window.location.search);
+  const queryApiBase = normalizeApiBase(params.get("apiBase") || params.get("api_base") || "");
+  if (queryApiBase) {
+    writeApiStorage(API_BASE_STORAGE_KEY, queryApiBase);
+    return queryApiBase;
+  }
+  return normalizeApiBase(readApiStorage(API_BASE_STORAGE_KEY) || DEFAULT_API_BASE);
+}
+
+const apiBase = getInitialApiBase();
+
+function apiUrl(path) {
+  const value = String(path || "");
+  if (/^https?:\/\//i.test(value) || value.startsWith("blob:") || value.startsWith("data:")) {
+    return value;
+  }
+  const normalizedPath = value.startsWith("/") ? value : `/${value}`;
+  return `${apiBase}${normalizedPath}`;
+}
+
 async function fetchJson(url, options = {}, timeoutMs = 30000) {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(apiUrl(url), {
       ...options,
       signal: controller.signal,
       cache: "no-store",
@@ -21,7 +81,7 @@ async function fetchChatStream(message, handlers = {}, timeoutMs = 70000) {
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch("/chat/stream", {
+    const response = await fetch(apiUrl("/chat/stream"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

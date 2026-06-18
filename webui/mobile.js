@@ -3,6 +3,9 @@ const RECORDING_MIN_MS = 900;
 const RECORDING_SILENCE_STOP_MS = 1200;
 const RECORDING_NO_SPEECH_STOP_MS = 4500;
 const RECORDING_RMS_THRESHOLD = 0.035;
+const BROWSER_SPEECH_LISTEN_MAX_MS = 30000;
+const BROWSER_SPEECH_RESTART_GRACE_MS = 600;
+const VOICE_CONTINUE_DELAY_MS = 1400;
 const SpeechRecognitionConstructor =
   window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const WAKE_WORDS = ["น้องฟ้า", "นองฟ้า", "nong fa", "nongfa"];
@@ -244,6 +247,7 @@ const state = {
   wakeRecognition: null,
   voiceRecognition: null,
   voiceRecognitionTimeout: 0,
+  voiceTurnId: 0,
   dashboardSnapshot: null,
   voiceNodeStatus: null,
   deviceRegistryStatus: null,
@@ -259,6 +263,7 @@ const state = {
   voiceResumeWakeAfterTurn: false,
   audioChunks: [],
   recordingTimeout: 0,
+  voiceContinueTimer: 0,
   chatBusy: false,
   voiceBusy: false,
   chatStatusTimers: [],
@@ -1455,6 +1460,8 @@ function startVoiceActivityMonitor(stream) {
 function stopVoiceRecognition(options = {}) {
   window.clearTimeout(state.voiceRecognitionTimeout);
   state.voiceRecognitionTimeout = 0;
+  window.clearTimeout(state.voiceContinueTimer);
+  state.voiceContinueTimer = 0;
   if (state.voiceRecognition) {
     state.voiceRecognition.onresult = null;
     state.voiceRecognition.onerror = null;
@@ -1481,6 +1488,7 @@ function stopVoiceRecognition(options = {}) {
   }
   if (!options.keepConversation) {
     state.voiceConversationMode = false;
+    state.voiceTurnId += 1;
   }
 }
 
@@ -1503,7 +1511,9 @@ async function startBrowserSpeechTurn(options = {}) {
   const continueConversation = Boolean(options.continueConversation);
   if (!continueConversation) {
     state.voiceConversationMode = true;
+    state.voiceTurnId += 1;
   }
+  const turnId = state.voiceTurnId;
   if (options.resumeWakeOnEnd) {
     state.voiceResumeWakeAfterTurn = true;
   }
@@ -1540,6 +1550,25 @@ async function startBrowserSpeechTurn(options = {}) {
   let recognition = null;
   const listenStartedAt = Date.now();
   let retryNoSpeech = false;
+
+  const canKeepListening = () =>
+    !settled &&
+    state.voiceTurnId === turnId &&
+    Date.now() - listenStartedAt < BROWSER_SPEECH_LISTEN_MAX_MS - BROWSER_SPEECH_RESTART_GRACE_MS;
+
+  const restartListening = () => {
+    if (!canKeepListening()) {
+      return false;
+    }
+    try {
+      recognition.start();
+      setVoiceStatus("ยังรอฟังอยู่ พูดคำสั่งได้เลย", "live");
+      setVoiceTranscript(lastTranscript || "กำลังรอฟังคำสั่งเสียง", "live");
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
 
   const finishTurn = async (reason) => {
     if (settled) {
@@ -1592,14 +1621,15 @@ async function startBrowserSpeechTurn(options = {}) {
       }
       state.voiceBusy = false;
       if (state.voiceConversationMode) {
-        window.setTimeout(() => {
-          if (!state.voiceBusy && state.voiceConversationMode) {
+        window.clearTimeout(state.voiceContinueTimer);
+        state.voiceContinueTimer = window.setTimeout(() => {
+          if (!state.voiceBusy && state.voiceConversationMode && state.voiceTurnId === turnId) {
             void startBrowserSpeechTurn({
               continueConversation: true,
               resumeWakeOnEnd: state.voiceResumeWakeAfterTurn,
             });
           }
-        }, 650);
+        }, VOICE_CONTINUE_DELAY_MS);
       } else {
         resumePhoneWakeAfterVoiceTurn();
       }
@@ -1662,7 +1692,7 @@ async function startBrowserSpeechTurn(options = {}) {
     };
 
     recognition.onerror = (event) => {
-      if (event.error === "no-speech" && !lastTranscript && Date.now() - listenStartedAt < 29000) {
+      if (event.error === "no-speech" && !lastTranscript && canKeepListening()) {
         retryNoSpeech = true;
         setVoiceStatus("ยังรอฟังอยู่ พูดคำสั่งได้เลย", "live");
         return;
@@ -1675,16 +1705,29 @@ async function startBrowserSpeechTurn(options = {}) {
     };
 
     recognition.onend = () => {
-      if (retryNoSpeech && !settled && Date.now() - listenStartedAt < 29000) {
+      if (!lastTranscript && (retryNoSpeech || canKeepListening())) {
         retryNoSpeech = false;
-        try {
-          recognition.start();
-          return;
-        } catch (error) {
-          // Fall through to finish the turn.
-        }
+        window.setTimeout(() => {
+          if (restartListening()) {
+            return;
+          }
+          void finishTurn("end");
+        }, 120);
+        return;
       }
       void finishTurn("end");
+    };
+
+    recognition.onspeechend = () => {
+      window.setTimeout(() => {
+        if (lastTranscript && !settled && state.voiceTurnId === turnId) {
+          try {
+            recognition.stop();
+          } catch (error) {
+            // Some browsers stop automatically after speech ends.
+          }
+        }
+      }, BROWSER_SPEECH_RESTART_GRACE_MS);
     };
 
     recognition.start();
@@ -1696,7 +1739,7 @@ async function startBrowserSpeechTurn(options = {}) {
         // Already stopped.
       }
       void finishTurn("timeout");
-    }, 30000);
+    }, BROWSER_SPEECH_LISTEN_MAX_MS);
     return null;
   } catch (error) {
     stopVoiceRecognition({ resetBusy: true });

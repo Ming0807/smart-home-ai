@@ -192,7 +192,8 @@ async function refreshVoiceNodePanel() {
     }
     if (voiceNodeAudioPlayer && audioStatus.uploaded_audio_url) {
       const version = audioStatus.received_at ? new Date(audioStatus.received_at).getTime() : Date.now();
-      const nextSrc = `${audioStatus.uploaded_audio_url}&v=${version}`;
+      const rawSrc = `${audioStatus.uploaded_audio_url}&v=${version}`;
+      const nextSrc = typeof apiUrl === "function" ? apiUrl(rawSrc) : rawSrc;
       if (voiceNodeAudioPlayer.getAttribute("src") !== nextSrc) {
         voiceNodeAudioPlayer.src = nextSrc;
         voiceNodeAudioPlayer.load();
