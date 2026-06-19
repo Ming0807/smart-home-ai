@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 EDGE_TTS_MAX_ATTEMPTS = 3
 EDGE_TTS_RETRY_DELAY_SECONDS = 0.45
+EDGE_TTS_FALLBACK_VOICES = ("th-TH-NiwatNeural", "th-TH-PremwadeeNeural")
 
 try:
     import edge_tts
@@ -193,7 +194,8 @@ class TTSService:
 
     def create_pending_audio_url(self) -> tuple[str, str]:
         token = self._create_token()
-        self._set_pending_token(token)
+        if not self._synthesis_lock.locked():
+            self._set_pending_token(token)
         return token, self.get_audio_url(token=token)
 
     def get_current_audio_bytes(self, token: str | None = None) -> bytes | None:
@@ -285,15 +287,21 @@ class TTSService:
             last_error=last_error,
         )
 
-    def _write_audio_file(self, text: str, output_path: Path, token: str) -> Path:
+    def _write_audio_file(
+        self,
+        text: str,
+        output_path: Path,
+        token: str,
+        voice: str,
+    ) -> Path:
         if not self._settings.tts_overwrite_output:
-            self._run_coro_blocking(self._synthesize_with_edge_tts(text, output_path))
+            self._run_coro_blocking(self._synthesize_with_edge_tts(text, output_path, voice))
             self._ensure_non_empty_file(output_path)
             return output_path
 
         temp_path = output_path.with_name(f".{output_path.stem}.{uuid4().hex}.tmp.mp3")
         try:
-            self._run_coro_blocking(self._synthesize_with_edge_tts(text, temp_path))
+            self._run_coro_blocking(self._synthesize_with_edge_tts(text, temp_path, voice))
             self._ensure_non_empty_file(temp_path)
             if not self._is_pending_token(token):
                 return output_path
@@ -314,9 +322,11 @@ class TTSService:
         token: str,
     ) -> Path:
         last_error: Exception | None = None
+        voices = self._edge_tts_attempt_voices()
         for attempt in range(1, EDGE_TTS_MAX_ATTEMPTS + 1):
+            voice = voices[(attempt - 1) % len(voices)]
             try:
-                return self._write_audio_file(text, output_path, token)
+                return self._write_audio_file(text, output_path, token, voice)
             except Exception as exc:
                 last_error = exc
                 if attempt >= EDGE_TTS_MAX_ATTEMPTS:
@@ -324,8 +334,9 @@ class TTSService:
                 if self._settings.tts_overwrite_output and not self._is_pending_token(token):
                     break
                 logger.info(
-                    "Retrying TTS generation after %s (%s/%s)",
+                    "Retrying TTS generation after %s with %s (%s/%s)",
                     exc.__class__.__name__,
+                    voice,
                     attempt + 1,
                     EDGE_TTS_MAX_ATTEMPTS,
                 )
@@ -335,12 +346,27 @@ class TTSService:
             raise last_error
         raise RuntimeError("tts retry failed without an exception")
 
-    async def _synthesize_with_edge_tts(self, text: str, output_path: Path) -> None:
+    async def _synthesize_with_edge_tts(
+        self,
+        text: str,
+        output_path: Path,
+        voice: str,
+    ) -> None:
         communicator = edge_tts.Communicate(
             text=text,
-            voice=self._settings.tts_default_voice,
+            voice=voice,
         )
         await communicator.save(str(output_path))
+
+    def _edge_tts_attempt_voices(self) -> tuple[str, ...]:
+        default_voice = self._settings.tts_default_voice.strip()
+        voices: list[str] = []
+        if default_voice:
+            voices.append(default_voice)
+        for voice in EDGE_TTS_FALLBACK_VOICES:
+            if voice not in voices:
+                voices.append(voice)
+        return tuple(voices) or EDGE_TTS_FALLBACK_VOICES
 
     @staticmethod
     def _audio_frame_to_pcm_bytes(frame: object) -> bytes:

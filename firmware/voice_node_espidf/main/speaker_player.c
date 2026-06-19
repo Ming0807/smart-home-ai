@@ -189,12 +189,12 @@ esp_err_t speaker_player_play_beep(void)
 
 esp_err_t speaker_player_play_record_start_cue(void)
 {
-    return play_tone(880, 70, CONFIG_VOICE_NODE_SPEAKER_BEEP_AMPLITUDE / 2);
+    return play_tone(1000, 110, (CONFIG_VOICE_NODE_SPEAKER_BEEP_AMPLITUDE * 3) / 4);
 }
 
 esp_err_t speaker_player_play_record_end_cue(void)
 {
-    return play_tone(660, 60, CONFIG_VOICE_NODE_SPEAKER_BEEP_AMPLITUDE / 3);
+    return play_tone(560, 110, (CONFIG_VOICE_NODE_SPEAKER_BEEP_AMPLITUDE * 2) / 3);
 }
 
 esp_err_t speaker_player_play_self_test(void)

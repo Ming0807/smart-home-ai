@@ -3,8 +3,10 @@ from __future__ import annotations
 from array import array
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
+import gc
 import io
 import logging
+import os
 from pathlib import Path
 import re
 import sys
@@ -18,6 +20,11 @@ from server.config import Settings, get_settings
 from server.utils.observability import log_timing, start_timer
 
 logger = logging.getLogger(__name__)
+
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
 try:
     from faster_whisper import WhisperModel
@@ -165,29 +172,47 @@ class STTService:
                 error="faster-whisper is not installed",
             )
 
-        model = self._get_whisper_model()
-        result = self._transcribe_with_faster_whisper_options(
-            model=model,
-            audio_path=audio_path,
-            vad_filter=self._settings.stt_vad_filter,
-        )
-        if (
-            not result.ok
-            and self._settings.stt_vad_filter
-            and retry_without_vad
-            and result.error == "no speech detected"
-        ):
-            logger.info("STT returned no speech with VAD; retrying once without VAD")
-            retry_result = self._transcribe_with_faster_whisper_options(
+        try:
+            model = self._get_whisper_model()
+            result = self._transcribe_with_faster_whisper_options(
                 model=model,
                 audio_path=audio_path,
-                vad_filter=False,
+                vad_filter=self._settings.stt_vad_filter,
             )
-            if retry_result.ok:
-                return retry_result
-            if retry_result.raw_text and not result.raw_text:
-                return retry_result
-        return result
+            if (
+                not result.ok
+                and self._settings.stt_vad_filter
+                and retry_without_vad
+                and result.error == "no speech detected"
+            ):
+                logger.info("STT returned no speech with VAD; retrying once without VAD")
+                retry_result = self._transcribe_with_faster_whisper_options(
+                    model=model,
+                    audio_path=audio_path,
+                    vad_filter=False,
+                )
+                if retry_result.ok:
+                    return retry_result
+                if retry_result.raw_text and not result.raw_text:
+                    return retry_result
+            return result
+        except Exception as exc:  # pragma: no cover - depends on native runtime
+            error = str(exc)
+            if self._is_memory_pressure_error(error):
+                logger.warning("STT memory pressure; releasing Whisper model: %s", error)
+                self._reset_whisper_model()
+                return STTResult(
+                    ok=False,
+                    text="",
+                    provider="faster_whisper",
+                    error="stt memory pressure",
+                )
+            return STTResult(
+                ok=False,
+                text="",
+                provider="faster_whisper",
+                error=error,
+            )
 
     def _transcribe_with_faster_whisper_options(
         self,
@@ -232,9 +257,30 @@ class STTService:
                     self._settings.stt_model,
                     device="cpu",
                     compute_type="int8",
+                    cpu_threads=1,
+                    num_workers=1,
                 )
             self._warmed_up = True
             return self._whisper_model
+
+    def _reset_whisper_model(self) -> None:
+        with self._model_lock:
+            self._whisper_model = None
+            self._warmed_up = False
+        gc.collect()
+
+    @staticmethod
+    def _is_memory_pressure_error(error: str) -> bool:
+        normalized = error.casefold()
+        return any(
+            marker in normalized
+            for marker in (
+                "mkl_malloc",
+                "failed to allocate memory",
+                "bad allocation",
+                "out of memory",
+            )
+        )
 
     def warmup(self) -> None:
         provider = self._settings.stt_provider.strip().lower()

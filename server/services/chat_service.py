@@ -33,6 +33,7 @@ from server.services.system_status_service import (
 from server.services.traffic_service import TrafficService, get_traffic_service
 from server.services.smalltalk_service import SmallTalkService, get_smalltalk_service
 from server.services.tts_service import TTSService, get_tts_service
+from server.services.voice_node_text_normalizer import normalize_voice_node_transcript
 from server.services.weather_service import WeatherService, get_weather_service
 from server.utils.observability import log_timing, start_timer
 from server.utils.reply_cleaner import clean_reply_text
@@ -88,12 +89,13 @@ class ChatService:
         status_text = "ok"
 
         try:
-            intent_match = self._intent_router.classify(message)
+            routing_message = normalize_voice_node_transcript(message)
+            intent_match = self._intent_router.classify(routing_message)
             intent = intent_match.intent
 
             if intent_match.intent == "device_control":
                 device_result = self._device_control_service.handle_message(
-                    message=message,
+                    message=routing_message,
                     device_id=self._settings.default_esp32_device_id,
                 )
                 source = device_result.source
@@ -108,7 +110,7 @@ class ChatService:
 
             if intent_match.intent == "sensor_query":
                 sensor_answer = self._sensor_manager.answer_sensor_query(
-                    message=message,
+                    message=routing_message,
                     device_id=self._settings.default_esp32_device_id,
                     freshness_seconds=self._settings.sensor_freshness_seconds,
                 )
@@ -123,7 +125,7 @@ class ChatService:
                 )
 
             if intent_match.intent == "news_query":
-                news_answer = self._news_service.answer_news_query(message)
+                news_answer = self._news_service.answer_news_query(routing_message)
                 source = news_answer.source
                 response = self._build_response(
                     reply=news_answer.reply,
@@ -137,7 +139,7 @@ class ChatService:
                 return response
 
             if intent_match.intent == "line_send_request":
-                news_selection = self._news_service.select_recent_news_for_line(message)
+                news_selection = self._news_service.select_recent_news_for_line(routing_message)
                 if news_selection is None:
                     line_reply = "ยังไม่มีรายการข่าวล่าสุดให้ส่งเข้า LINE ลองถามข่าวก่อน เช่น วันนี้มีข่าวอะไรบ้าง"
                     source = "fallback"
@@ -176,7 +178,7 @@ class ChatService:
                 )
 
             if intent_match.intent == "navigation_query":
-                navigation_answer = self._navigation_service.answer_navigation_query(message)
+                navigation_answer = self._navigation_service.answer_navigation_query(routing_message)
                 source = navigation_answer.source
                 return self._build_response(
                     reply=navigation_answer.reply,
@@ -188,7 +190,7 @@ class ChatService:
                 )
 
             if intent_match.intent == "news_detail_query":
-                news_detail_answer = self._news_service.answer_news_detail_query(message)
+                news_detail_answer = self._news_service.answer_news_detail_query(routing_message)
                 source = news_detail_answer.source
                 response = self._build_response(
                     reply=news_detail_answer.reply,
@@ -216,7 +218,7 @@ class ChatService:
                 )
 
             if intent_match.intent == "weather_query":
-                weather_answer = self._weather_service.answer_weather_query(message)
+                weather_answer = self._weather_service.answer_weather_query(routing_message)
                 source = weather_answer.source
                 return self._build_response(
                     reply=weather_answer.reply,
@@ -228,7 +230,7 @@ class ChatService:
                 )
 
             if intent_match.intent == "traffic_query":
-                traffic_answer = self._traffic_service.answer_traffic_query(message)
+                traffic_answer = self._traffic_service.answer_traffic_query(routing_message)
                 source = traffic_answer.source
                 return self._build_response(
                     reply=traffic_answer.reply,
@@ -252,13 +254,13 @@ class ChatService:
                 )
 
             prefer_deep_thinking = (
-                self._llm_manager.is_thinking_request(message)
-                or self._llm_manager.is_real_thinking_request(message)
+                self._llm_manager.is_thinking_request(routing_message)
+                or self._llm_manager.is_real_thinking_request(routing_message)
             )
             fast_memory_reply = (
                 None
                 if prefer_deep_thinking
-                else self._conversation_memory.get_fast_reply("default", message)
+                else self._conversation_memory.get_fast_reply("default", routing_message)
             )
             if fast_memory_reply is not None:
                 response = self._build_response(
@@ -273,7 +275,7 @@ class ChatService:
                 return response
 
             smalltalk_reply = (
-                None if prefer_deep_thinking else self._smalltalk_service.get_reply(message)
+                None if prefer_deep_thinking else self._smalltalk_service.get_reply(routing_message)
             )
             if smalltalk_reply is not None:
                 source = "rule_based"
@@ -290,7 +292,7 @@ class ChatService:
 
             contextual_message = self._conversation_memory.build_contextual_message(
                 session_id="default",
-                message=message,
+                message=routing_message,
             )
             llm_response = self._llm_manager.generate_reply(contextual_message)
             intent = "general_chat"
@@ -303,7 +305,7 @@ class ChatService:
                 force_audio=force_audio,
                 suppress_audio=suppress_audio,
             )
-            self._remember_turn(message, response)
+            self._remember_turn(routing_message, response)
             return response
         except Exception:
             status_text = "error"
@@ -325,22 +327,23 @@ class ChatService:
         background_tasks: BackgroundTasks,
     ) -> Iterator[str]:
         """Stream a chat response as SSE, using LLM streaming only for general chat."""
-        intent_match = self._intent_router.classify(message)
+        routing_message = normalize_voice_node_transcript(message)
+        intent_match = self._intent_router.classify(routing_message)
 
         if intent_match.intent != "general_chat":
-            response = self.handle_message(message, background_tasks=background_tasks)
+            response = self.handle_message(routing_message, background_tasks=background_tasks)
             yield self._sse_event("done", response.model_dump())
             return
 
         if (
-            self._llm_manager.is_thinking_request(message)
-            or self._llm_manager.is_real_thinking_request(message)
+            self._llm_manager.is_thinking_request(routing_message)
+            or self._llm_manager.is_real_thinking_request(routing_message)
         ):
-            response = self.handle_message(message, background_tasks=background_tasks)
+            response = self.handle_message(routing_message, background_tasks=background_tasks)
             yield self._sse_event("done", response.model_dump())
             return
 
-        smalltalk_reply = self._smalltalk_service.get_reply(message)
+        smalltalk_reply = self._smalltalk_service.get_reply(routing_message)
         if smalltalk_reply is not None:
             response = self._build_response(
                 reply=smalltalk_reply.reply,
@@ -360,7 +363,7 @@ class ChatService:
         )
 
         try:
-            for chunk in self._llm_manager.stream_reply(message):
+            for chunk in self._llm_manager.stream_reply(routing_message):
                 reply_parts.append(chunk)
                 yield self._sse_event("chunk", {"text": chunk})
         except Exception as exc:

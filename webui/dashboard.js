@@ -111,17 +111,15 @@ async function refreshVoiceNodePanel() {
     setPillState(
       voiceNodeIndicator,
       nodeStatus.online ? "good" : "warn",
-      nodeStatus.online ? "Voice node online" : "Voice node offline"
+      nodeStatus.online ? formatVoiceNodeStateLabel(nodeStatus.state) : "Voice node offline"
     );
     voiceNodeBoardStatus.textContent = nodeStatus.online
       ? `ออนไลน์ ${formatHeartbeatStatus(nodeStatus.last_seen_at, nodeStatus.seconds_since_heartbeat)}`
       : "ยังไม่ออนไลน์";
     voiceNodeState.textContent = [
       nodeStatus.ip_address || "-",
-      nodeStatus.state || "-",
-      nodeStatus.wake_mode_enabled
-        ? (nodeStatus.wake_conversation_active ? "Wake: active" : "Wake: waiting")
-        : "Wake: off",
+      formatVoiceNodeStateLabel(nodeStatus.state),
+      formatVoiceNodeWakeStatus(nodeStatus),
       `คิวคำสั่ง ${nodeStatus.pending_command_count || 0}`,
     ].join(" | ");
     renderVoiceNodeStreamStatus(streamStatus);
@@ -237,7 +235,7 @@ async function refreshVoiceNodePanel() {
     if (voiceNodeRefreshStatus) {
       voiceNodeRefreshStatus.textContent = audioStatus.stt_ok
         ? "ได้ข้อความจากบอร์ดแล้ว"
-        : "อัปโหลดผ่าน แต่ STT ยังไม่ได้ข้อความ";
+        : formatVoiceNodeSttFailure(audioStatus.stt_error);
     }
   } catch (error) {
     setPillState(voiceNodeIndicator, "bad", "อ่านไม่ได้");
@@ -512,6 +510,44 @@ function formatSttScore(score) {
     return "-";
   }
   return `${Math.round(Number(score) * 100)}%`;
+}
+
+function formatVoiceNodeStateLabel(stateValue) {
+  const value = String(stateValue || "");
+  const labels = {
+    BOOT: "บอร์ดกำลังเริ่มระบบ",
+    WIFI_CONNECTING: "กำลังต่อ Wi-Fi",
+    REGISTERING: "กำลังลงทะเบียนกับ server",
+    WAKE_LISTENING: "รอฟังคำปลุก",
+    WAKE_DETECTED: "ได้ยินคำปลุก",
+    BEEPING: "กำลังส่งเสียงติ๊ด",
+    RECORDING_COMMAND: "กำลังฟังประโยคคำสั่ง",
+    UPLOADING_AUDIO: "กำลังส่งเสียงไป server",
+    WAITING_SERVER_REPLY: "AI กำลังประมวลผล",
+    PLAYING_REPLY: "กำลังเล่นเสียงตอบกลับ",
+    COOLDOWN: "พักรอบสนทนา",
+    ERROR: "บอร์ดมีข้อผิดพลาด",
+  };
+  return labels[value] || value || "-";
+}
+
+function formatVoiceNodeWakeStatus(nodeStatus) {
+  if (!nodeStatus?.wake_mode_enabled) {
+    return "Wake: ปิด";
+  }
+  return nodeStatus.wake_conversation_active
+    ? "Wake: คุยอยู่หลังคำปลุก"
+    : "Wake: รอคำว่า น้องฟ้า";
+}
+
+function formatVoiceNodeSttFailure(error) {
+  if (error === "stt memory pressure") {
+    return "STT หน่วยความจำตึง ระบบจะปล่อยโมเดลแล้วให้พูดใหม่";
+  }
+  if (error === "no speech detected") {
+    return "อัปโหลดเสียงแล้ว แต่ยังจับประโยคไม่ได้";
+  }
+  return `STT ยังไม่ได้ข้อความ${error ? `: ${error}` : ""}`;
 }
 
 function formatRatioPercent(value) {

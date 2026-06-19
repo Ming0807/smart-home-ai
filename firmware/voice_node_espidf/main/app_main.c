@@ -27,6 +27,7 @@ static const int64_t VOICE_NODE_COMMAND_POLL_INTERVAL_MS = 1500;
 static const int64_t VOICE_NODE_CONFIG_REFRESH_INTERVAL_MS = 10000;
 static const int64_t VOICE_NODE_CONVERSATION_COOLDOWN_MS = 800;
 static const int64_t VOICE_NODE_CONVERSATION_AFTER_REPLY_COOLDOWN_MS = 1600;
+static const int VOICE_NODE_CONVERSATION_NO_SPEECH_TIMEOUT_MS = 30000;
 static const int64_t VOICE_NODE_STATUS_ACTIVE_INTERVAL_MS = 1000;
 static const int64_t VOICE_NODE_STATUS_IDLE_INTERVAL_MS = 3000;
 static const int64_t VOICE_NODE_WAKE_IDLE_RETRY_MS = 300;
@@ -174,6 +175,7 @@ static bool record_and_upload_audio(
     bool play_record_cues,
     int record_seconds_override,
     bool upload_only_if_speech,
+    int no_speech_timeout_ms,
     bool *reply_audio_played)
 {
     ESP_LOGI(TAG, "%s flow started", reason);
@@ -212,6 +214,7 @@ static bool record_and_upload_audio(
         .vad_threshold = s_server_config.vad_threshold,
         .vad_min_record_ms = s_server_config.vad_min_record_ms,
         .vad_silence_stop_ms = s_server_config.vad_silence_stop_ms,
+        .no_speech_timeout_ms = no_speech_timeout_ms,
     };
     err = mic_reader_record_wav(
         &wav_data,
@@ -316,6 +319,7 @@ static void poll_remote_commands(void)
             true,
             0,
             false,
+            0,
             NULL);
         return;
     }
@@ -470,6 +474,7 @@ static void voice_node_main_loop(void)
                 true,
                 0,
                 true,
+                VOICE_NODE_CONVERSATION_NO_SPEECH_TIMEOUT_MS,
                 &reply_audio_played);
             if (keep_mic_open) {
                 const int64_t cooldown_ms = reply_audio_played
@@ -499,6 +504,7 @@ static void voice_node_main_loop(void)
                 false,
                 3,
                 true,
+                0,
                 &reply_audio_played);
             if (keep_listening) {
                 const int64_t cooldown_ms = reply_audio_played
@@ -534,6 +540,7 @@ static void voice_node_main_loop(void)
                 true,
                 0,
                 false,
+                0,
                 NULL);
             last_heartbeat_ms = -VOICE_NODE_HEARTBEAT_INTERVAL_MS;
             last_mic_log_ms = esp_timer_get_time() / 1000;
@@ -565,6 +572,7 @@ static void run_audio_upload_test_once(void)
         true,
         0,
         false,
+        0,
         NULL);
 }
 

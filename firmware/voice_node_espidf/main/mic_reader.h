@@ -21,6 +21,7 @@ typedef struct {
     int vad_threshold;
     int vad_min_record_ms;
     int vad_silence_stop_ms;
+    int no_speech_timeout_ms;
 } mic_record_config_t;
 
 typedef esp_err_t (*mic_pcm_chunk_handler_t)(

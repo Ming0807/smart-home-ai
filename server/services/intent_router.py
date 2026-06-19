@@ -74,6 +74,107 @@ class IntentRouter:
         re.compile(r"ส่ง.*(ไลน์|ไล|ลาย|line)", re.IGNORECASE),
         re.compile(r"(ไลน์|ไล|ลาย|line).*ส่ง", re.IGNORECASE),
     )
+    _DEVICE_CONTROL_DEVICE_HINTS = (
+        "ไฟ",
+        "หลอดไฟ",
+        "ดวงไฟ",
+        "โคมไฟ",
+        "แสงไฟ",
+        "พัดลม",
+        "ปลั๊ก",
+        "รีเลย์",
+        "รีเรย์",
+        "รีเล",
+        "relay",
+        "ช่อง 1",
+        "ช่องหนึ่ง",
+        "ดวงแรก",
+        "ดวงหนึ่ง",
+        "ตัวแรก",
+        "ตัวหนึ่ง",
+        "หมายเลข 1",
+        "ช่อง 2",
+        "ช่องสอง",
+        "ดวงสอง",
+        "ตัวสอง",
+        "หมายเลข 2",
+        "ช่อง 3",
+        "ช่องสาม",
+        "ดวงสาม",
+        "ตัวสาม",
+        "หมายเลข 3",
+        "ช่อง 4",
+        "ช่องสี่",
+        "ดวงสี่",
+        "ตัวสี่",
+        "หมายเลข 4",
+        "ห้องรับแขก",
+        "ห้องนั่งเล่น",
+        "ห้องเล่น",
+        "ห้องนอน",
+        "ห้องน้ำ",
+        "ห้องครัว",
+    )
+    _DEVICE_CONTROL_ACTION_HINTS = (
+        "เปิด",
+        "ปิด",
+        "ติดไฟ",
+        "ให้ไฟติด",
+        "ดับ",
+        "ดับไฟ",
+        "ให้ไฟดับ",
+        "ช่วยเปิด",
+        "ช่วยปิด",
+        "สั่งเปิด",
+        "สั่งปิด",
+        "turn on",
+        "turn off",
+    )
+    _DEVICE_CONTROL_STATUS_HINTS = (
+        "สถานะ",
+        "อยู่ไหม",
+        "เปิดอยู่",
+        "ปิดอยู่",
+        "ทำงานไหม",
+        "ติดไหม",
+        "ดับไหม",
+        "พร้อมไหม",
+        "สั่งได้ไหม",
+        "ออนไลน์ไหม",
+        "ออฟไลน์ไหม",
+        "ล่าสุด",
+        "เป็นยังไง",
+    )
+    _DEVICE_CONTROL_SPECIFIC_HINTS = (
+        "ห้องรับแขก",
+        "ห้องนั่งเล่น",
+        "ห้องเล่น",
+        "ห้องนอน",
+        "ห้องน้ำ",
+        "ห้องครัว",
+        "ช่อง1",
+        "ช่องหนึ่ง",
+        "ดวงแรก",
+        "ดวงหนึ่ง",
+        "ตัวแรก",
+        "ตัวหนึ่ง",
+        "หมายเลข1",
+        "ช่อง2",
+        "ช่องสอง",
+        "ดวงสอง",
+        "ตัวสอง",
+        "หมายเลข2",
+        "ช่อง3",
+        "ช่องสาม",
+        "ดวงสาม",
+        "ตัวสาม",
+        "หมายเลข3",
+        "ช่อง4",
+        "ช่องสี่",
+        "ดวงสี่",
+        "ตัวสี่",
+        "หมายเลข4",
+    )
 
     def __init__(self, rules: Sequence[KeywordRule] | None = None) -> None:
         self._rules = tuple(rules or DEFAULT_RULES)
@@ -227,36 +328,30 @@ class IntentRouter:
         normalized_message: str,
     ) -> IntentMatch | None:
         has_device_word = any(
-            keyword in normalized_message
-            for keyword in (
-                "ไฟ",
-                "หลอดไฟ",
-                "พัดลม",
-                "ปลั๊ก",
-                "รีเลย์",
-                "relay",
-                "ห้องรับแขก",
-                "ห้องนั่งเล่น",
-                "ห้องนอน",
-                "ห้องน้ำ",
-                "ห้องครัว",
-            )
+            self._normalize(keyword) in normalized_message
+            for keyword in self._DEVICE_CONTROL_DEVICE_HINTS
         )
         if not has_device_word:
             return None
 
         has_control_or_status_word = any(
-            keyword in normalized_message
+            self._normalize(keyword) in normalized_message
             for keyword in (
-                "เปิด",
-                "ปิด",
-                "สถานะ",
-                "อยู่ไหม",
-                "ทำงานไหม",
-                "ติดไหม",
+                *self._DEVICE_CONTROL_ACTION_HINTS,
+                *self._DEVICE_CONTROL_STATUS_HINTS,
             )
         )
         if has_control_or_status_word:
+            return IntentMatch(
+                intent="device_control",
+                matched_keyword=original_message.strip(),
+            )
+
+        has_specific_device_word = any(
+            self._normalize(keyword) in normalized_message
+            for keyword in self._DEVICE_CONTROL_SPECIFIC_HINTS
+        )
+        if has_specific_device_word:
             return IntentMatch(
                 intent="device_control",
                 matched_keyword=original_message.strip(),
@@ -331,6 +426,12 @@ DEFAULT_RULES: tuple[KeywordRule, ...] = (
         keywords=(
             "เปิดไฟ",
             "ปิดไฟ",
+            "ช่วยเปิดไฟ",
+            "ช่วยปิดไฟ",
+            "ติดไฟ",
+            "ดับไฟ",
+            "ไฟติดไหม",
+            "ไฟดับไหม",
             "เปิดพัดลม",
             "ปิดพัดลม",
             "เปิดแอร์",
@@ -339,6 +440,18 @@ DEFAULT_RULES: tuple[KeywordRule, ...] = (
             "ปิดปลั๊ก",
             "เปิดรีเลย์",
             "ปิดรีเลย์",
+            "รีเลย์ช่องหนึ่ง",
+            "รีเลย์ช่องสอง",
+            "รีเลย์ช่องสาม",
+            "รีเลย์ช่องสี่",
+            "ไฟดวงแรก",
+            "ไฟดวงสอง",
+            "ไฟดวงสาม",
+            "ไฟดวงสี่",
+            "ไฟตัวแรก",
+            "ไฟตัวสอง",
+            "ไฟตัวสาม",
+            "ไฟตัวสี่",
         ),
     ),
     KeywordRule(

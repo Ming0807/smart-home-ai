@@ -34,8 +34,17 @@ VOICE_NODE_WAKE_PHRASES: tuple[str, ...] = (
     "หวัดดีครับ",
     "หวัดดีค่ะ",
     "น้องฟ้า",
+    "น้องฟา",
+    "น้องฟ่า",
     "น้องฝ่า",
+    "น้องฝัน",
+    "น้องฟัน",
+    "นองฟ้า",
+    "น้องฟัง",
+    "น้องฟาง",
     "น้องฟ้าจ๋า",
+    "โอเคน้องฟ้า",
+    "เฮ้น้องฟ้า",
 )
 VOICE_NODE_SLEEP_PHRASES: tuple[str, ...] = (
     "ขอบคุณ",
@@ -118,30 +127,6 @@ VOICE_NODE_SHORT_FILLER_TEXTS: frozenset[str] = frozenset(
         "\u0e42\u0e2d\u0e40\u0e04",
     }
 )
-VOICE_NODE_WAKE_DIRECT_COMMAND_HINTS: tuple[str, ...] = (
-    "\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49",
-    "\u0e15\u0e2d\u0e19\u0e19\u0e35\u0e49",
-    "\u0e1e\u0e23\u0e38\u0e48\u0e07\u0e19\u0e35\u0e49",
-    "\u0e40\u0e27\u0e25\u0e32",
-    "\u0e01\u0e35\u0e48\u0e42\u0e21\u0e07",
-    "\u0e44\u0e2b\u0e21",
-    "\u0e2d\u0e30\u0e44\u0e23",
-    "\u0e0a\u0e48\u0e27\u0e22",
-    "\u0e40\u0e1b\u0e34\u0e14",
-    "\u0e1b\u0e34\u0e14",
-    "\u0e44\u0e1f",
-    "\u0e1e\u0e31\u0e14\u0e25\u0e21",
-    "\u0e23\u0e35\u0e40\u0e25\u0e22\u0e4c",
-    "\u0e2d\u0e32\u0e01\u0e32\u0e28",
-    "\u0e1d\u0e19",
-    "\u0e2d\u0e38\u0e13\u0e2b\u0e20\u0e39\u0e21\u0e34",
-    "\u0e04\u0e27\u0e32\u0e21\u0e0a\u0e37\u0e49\u0e19",
-    "\u0e02\u0e48\u0e32\u0e27",
-    "\u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c",
-    "\u0e1a\u0e2d\u0e23\u0e4c\u0e14",
-)
-
-
 class AssistantAudioService:
     """Voice Node audio upload pipeline: STT -> existing chat logic -> TTS URL."""
 
@@ -273,7 +258,7 @@ class AssistantAudioService:
             filename=filename,
             content_type=content_type,
             audio_bytes=audio_bytes,
-            retry_without_vad=not source_normalized.startswith("voice_node"),
+            retry_without_vad=True,
         )
         is_wake_upload = source_normalized == VOICE_NODE_WAKE_SOURCE
         if not stt_result.ok:
@@ -291,6 +276,23 @@ class AssistantAudioService:
                     server_received_at=server_received_at,
                 )
                 return audio_data, status_text
+            if source_normalized == "voice_node":
+                audio_data = self._build_voice_node_stt_retry_response(
+                    heard_text=stt_result.raw_text or "",
+                    error=stt_result.error,
+                )
+                self._voice_node_manager.record_audio_result(
+                    device_id=device_id,
+                    stt_ok=stt_result.ok,
+                    stt_error=stt_result.error,
+                    stt_raw_text=stt_result.raw_text,
+                    data=audio_data,
+                    uploaded_audio_bytes=audio_bytes,
+                    uploaded_audio_content_type=content_type,
+                    server_received_at=server_received_at,
+                )
+                return audio_data, status_text
+
             if source_normalized.startswith("voice_node"):
                 audio_data = self._build_silent_voice_node_retry_response(
                     heard_text=stt_result.raw_text or "",
@@ -401,14 +403,10 @@ class AssistantAudioService:
 
         if not active:
             if wake_remainder is None:
-                if self._is_meaningful_wake_direct_command(cleaned_text):
-                    self._voice_node_manager.set_wake_conversation_active(device_id, True)
-                    handoff_after_reply = True
-                else:
-                    return self._build_silent_wake_response(
-                        device_id=device_id,
-                        heard_text=cleaned_text,
-                    )
+                return self._build_silent_wake_response(
+                    device_id=device_id,
+                    heard_text=cleaned_text,
+                )
 
             else:
                 self._voice_node_manager.set_wake_conversation_active(device_id, True)
@@ -416,6 +414,7 @@ class AssistantAudioService:
                 handoff_after_reply = True
                 cleaned_text = wake_remainder.strip()
                 if not cleaned_text:
+                    self._handoff_wake_to_board_talk(device_id)
                     return self._build_wake_ack_response(heard_text=heard_text)
 
         if self._contains_sleep_phrase(cleaned_text):
@@ -463,21 +462,6 @@ class AssistantAudioService:
     @staticmethod
     def _should_record_wake_audio(audio_data: AssistantAudioData) -> bool:
         return bool(audio_data.reply.strip() or audio_data.reply_audio_url)
-
-    @staticmethod
-    def _is_meaningful_wake_direct_command(text: str) -> bool:
-        cleaned = " ".join(text.split()).strip()
-        if not cleaned:
-            return False
-
-        compact_cleaned = "".join(cleaned.casefold().split())
-        if len(compact_cleaned) <= 2 or compact_cleaned in VOICE_NODE_SHORT_FILLER_TEXTS:
-            return False
-
-        return any(
-            hint in cleaned or hint in compact_cleaned
-            for hint in VOICE_NODE_WAKE_DIRECT_COMMAND_HINTS
-        )
 
     def _build_silent_wake_response(
         self,
@@ -533,6 +517,27 @@ class AssistantAudioService:
             action="none",
             keep_mic_open=keep_mic_open,
             reply_audio_url=None,
+            reply_audio_format=self._settings.voice_node_reply_audio_format,
+        )
+
+    def _build_voice_node_stt_retry_response(
+        self,
+        heard_text: str,
+        error: str | None,
+    ) -> AssistantAudioData:
+        if error == "stt memory pressure":
+            reply = "ระบบถอดเสียงหน่วงนิดหนึ่ง ลองพูดอีกครั้งหลังเสียงติ๊ดนะ"
+        else:
+            reply = "ยังถอดเสียงไม่ชัด ลองพูดอีกครั้งหลังเสียงติ๊ดนะ"
+        reply_audio_url = self._synthesize_voice_node_reply(reply)
+        return AssistantAudioData(
+            heard_text=heard_text,
+            reply=reply,
+            intent="general_chat",
+            source="voice_control",
+            action="none",
+            keep_mic_open=True,
+            reply_audio_url=self._resolve_reply_audio_url(reply_audio_url),
             reply_audio_format=self._settings.voice_node_reply_audio_format,
         )
 
@@ -706,6 +711,7 @@ class AssistantAudioService:
             .replace("line", "ไลน์")
             .replace("URL", "ลิงก์")
             .replace("url", "ลิงก์")
+            .replace("%", " เปอร์เซ็นต์")
             .strip()
         )
 

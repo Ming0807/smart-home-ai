@@ -180,6 +180,25 @@ static int clamp_int(int value, int min_value, int max_value)
     return value;
 }
 
+static int append_pcm_samples(
+    int16_t *output,
+    int output_capacity,
+    int output_count,
+    const int16_t *input,
+    int input_count)
+{
+    if (output == NULL || input == NULL || output_capacity <= output_count || input_count <= 0) {
+        return output_count;
+    }
+
+    int copy_count = output_capacity - output_count;
+    if (copy_count > input_count) {
+        copy_count = input_count;
+    }
+    memcpy(output + output_count, input, (size_t)copy_count * sizeof(input[0]));
+    return output_count + copy_count;
+}
+
 esp_err_t mic_reader_record_wav(
     uint8_t **wav_data,
     size_t *wav_size,
@@ -202,11 +221,16 @@ esp_err_t mic_reader_record_wav(
     const int vad_threshold = clamp_int(record_config->vad_threshold, 1, 5000);
     const int vad_min_record_ms = clamp_int(record_config->vad_min_record_ms, 300, 5000);
     const int vad_silence_stop_ms = clamp_int(record_config->vad_silence_stop_ms, 200, 3000);
+    const int no_speech_timeout_ms = record_config->no_speech_timeout_ms > 0
+        ? clamp_int(record_config->no_speech_timeout_ms, 1000, 60000)
+        : 0;
     const int total_samples = sample_rate * record_seconds;
     const size_t pcm_bytes = (size_t)total_samples * sizeof(int16_t);
     const size_t total_bytes = WAV_HEADER_SIZE + pcm_bytes;
     const int min_record_samples = (sample_rate * vad_min_record_ms) / MS_PER_SECOND;
     const int silence_stop_samples = (sample_rate * vad_silence_stop_ms) / MS_PER_SECOND;
+    const int no_speech_timeout_samples = (sample_rate * no_speech_timeout_ms) / MS_PER_SECOND;
+    const bool wait_for_speech = record_config->vad_enabled && no_speech_timeout_samples > 0;
 
     uint8_t *buffer = malloc(total_bytes);
     if (buffer == NULL) {
@@ -214,11 +238,24 @@ esp_err_t mic_reader_record_wav(
     }
     write_wav_header(buffer, (uint32_t)pcm_bytes, (uint32_t)sample_rate);
 
+    const int pre_speech_capacity = MIC_SAMPLE_BUFFER_COUNT * VAD_SPEECH_START_CHUNKS;
+    int16_t *pre_speech_pcm = NULL;
+    int pre_speech_samples = 0;
+    if (wait_for_speech) {
+        pre_speech_pcm = malloc((size_t)pre_speech_capacity * sizeof(pre_speech_pcm[0]));
+        if (pre_speech_pcm == NULL) {
+            free(buffer);
+            return ESP_ERR_NO_MEM;
+        }
+    }
+
     int samples_written = 0;
+    int samples_observed = 0;
     bool speech_detected = false;
     int speech_candidate_chunks = 0;
     int silence_samples_after_speech = 0;
     int32_t samples[MIC_SAMPLE_BUFFER_COUNT] = { 0 };
+    int16_t pcm_chunk[MIC_SAMPLE_BUFFER_COUNT] = { 0 };
     int16_t *pcm = (int16_t *)(buffer + WAV_HEADER_SIZE);
 
     while (samples_written < total_samples) {
@@ -230,6 +267,7 @@ esp_err_t mic_reader_record_wav(
             &bytes_read,
             pdMS_TO_TICKS(500));
         if (err != ESP_OK) {
+            free(pre_speech_pcm);
             free(buffer);
             return err;
         }
@@ -240,9 +278,10 @@ esp_err_t mic_reader_record_wav(
         }
 
         int remaining = total_samples - samples_written;
-        if (sample_count > remaining) {
+        if (!wait_for_speech && sample_count > remaining) {
             sample_count = remaining;
         }
+        samples_observed += sample_count;
 
         double mean = 0.0;
         for (int index = 0; index < sample_count; index++) {
@@ -254,17 +293,31 @@ esp_err_t mic_reader_record_wav(
         for (int index = 0; index < sample_count; index++) {
             const double centered = (double)(samples[index] >> 16) - mean;
             sum_abs += fabs(centered);
+            const int amplified = (int)(centered * record_gain);
+            pcm_chunk[index] = clamp_i16(amplified);
         }
         const double average_abs = sum_abs / (double)sample_count;
         const bool chunk_has_speech = average_abs >= (double)vad_threshold;
+        bool speech_started_in_this_chunk = false;
+
         if (!speech_detected && chunk_has_speech) {
             speech_candidate_chunks++;
+            if (wait_for_speech && pre_speech_pcm != NULL) {
+                pre_speech_samples = append_pcm_samples(
+                    pre_speech_pcm,
+                    pre_speech_capacity,
+                    pre_speech_samples,
+                    pcm_chunk,
+                    sample_count);
+            }
         } else if (!speech_detected) {
             speech_candidate_chunks = 0;
+            pre_speech_samples = 0;
         }
 
         if (!speech_detected && speech_candidate_chunks >= VAD_SPEECH_START_CHUNKS) {
             speech_detected = true;
+            speech_started_in_this_chunk = true;
             silence_samples_after_speech = 0;
         } else if (speech_detected && chunk_has_speech) {
             silence_samples_after_speech = 0;
@@ -272,10 +325,38 @@ esp_err_t mic_reader_record_wav(
             silence_samples_after_speech += sample_count;
         }
 
-        for (int index = 0; index < sample_count; index++) {
-            const double centered = (double)(samples[index] >> 16) - mean;
-            const int amplified = (int)(centered * record_gain);
-            pcm[samples_written++] = clamp_i16(amplified);
+        if (wait_for_speech && !speech_detected) {
+            if (samples_observed >= no_speech_timeout_samples) {
+                ESP_LOGI(
+                    TAG,
+                    "VAD no-speech timeout: waited_ms=%d threshold=%d last_avg_abs=%.1f",
+                    (samples_observed * MS_PER_SECOND) / sample_rate,
+                    vad_threshold,
+                    average_abs);
+                break;
+            }
+            continue;
+        }
+
+        if (speech_started_in_this_chunk && pre_speech_samples > 0) {
+            samples_written = append_pcm_samples(
+                pcm,
+                total_samples,
+                samples_written,
+                pre_speech_pcm,
+                pre_speech_samples);
+            pre_speech_samples = 0;
+        } else {
+            remaining = total_samples - samples_written;
+            if (sample_count > remaining) {
+                sample_count = remaining;
+            }
+            samples_written = append_pcm_samples(
+                pcm,
+                total_samples,
+                samples_written,
+                pcm_chunk,
+                sample_count);
         }
 
         if (
@@ -303,16 +384,19 @@ esp_err_t mic_reader_record_wav(
         *wav_data = shrunk_buffer;
     }
     *wav_size = actual_total_bytes;
+    free(pre_speech_pcm);
     ESP_LOGI(
         TAG,
-        "Recorded WAV: max_seconds=%d actual_ms=%d bytes=%u speech=%d gain=%d vad=%d threshold=%d",
+        "Recorded WAV: max_seconds=%d actual_ms=%d observed_ms=%d bytes=%u speech=%d gain=%d vad=%d threshold=%d no_speech_timeout_ms=%d",
         record_seconds,
         (samples_written * MS_PER_SECOND) / sample_rate,
+        (samples_observed * MS_PER_SECOND) / sample_rate,
         (unsigned int)actual_total_bytes,
         speech_detected,
         record_gain,
         record_config->vad_enabled,
-        vad_threshold);
+        vad_threshold,
+        no_speech_timeout_ms);
     if (speech_detected_out != NULL) {
         *speech_detected_out = speech_detected;
     }

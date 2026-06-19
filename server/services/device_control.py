@@ -3,15 +3,58 @@ from datetime import datetime, timezone
 
 from server.config import Settings, get_settings
 from server.models.device import DeviceDefinition
-from server.models.esp32 import RelayAction
+from server.models.esp32 import DeviceStatusResponse, RelayAction
 from server.services.device_registry import DeviceRegistry, get_device_registry
 from server.services.esp32_manager import Esp32Manager, get_esp32_manager
+from server.services.voice_node_text_normalizer import normalize_voice_node_transcript
 
 
 @dataclass(frozen=True)
 class DeviceControlResult:
     reply: str
     source: str = "device_control"
+
+
+ACTION_ON_HINTS = (
+    "เปิด",
+    "ติดไฟ",
+    "ให้ไฟติด",
+    "ช่วยเปิด",
+    "สั่งเปิด",
+    "turnon",
+)
+ACTION_OFF_HINTS = (
+    "ปิด",
+    "ดับ",
+    "ดับไฟ",
+    "ให้ไฟดับ",
+    "ช่วยปิด",
+    "สั่งปิด",
+    "turnoff",
+)
+STATUS_QUERY_MARKERS = (
+    "อยู่ไหม",
+    "สถานะ",
+    "เปิดอยู่",
+    "ปิดอยู่",
+    "ทำงานไหม",
+    "ติดไหม",
+    "ดับไหม",
+    "พร้อมไหม",
+    "สั่งได้ไหม",
+    "ออนไลน์ไหม",
+    "ออฟไลน์ไหม",
+    "ล่าสุด",
+    "เป็นยังไง",
+)
+ALL_RELAY_HINTS = (
+    "ทั้งหมด",
+    "ทุกดวง",
+    "ทุกห้อง",
+    "ทุกตัว",
+    "ทุกช่อง",
+    "all",
+)
 
 
 class DeviceControlService:
@@ -32,7 +75,14 @@ class DeviceControlService:
         message: str,
         device_id: str,
     ) -> DeviceControlResult:
-        target_device = self._device_registry.find_controllable_device(message)
+        normalized_message = normalize_voice_node_transcript(message)
+        if self._is_all_relay_request(normalized_message):
+            return self._handle_all_relay_message(
+                message=normalized_message,
+                device_id=device_id,
+            )
+
+        target_device = self._device_registry.find_controllable_device(normalized_message)
         if target_device is None:
             return DeviceControlResult(
                 reply="ยังไม่พบอุปกรณ์ที่สั่งได้ ลองเพิ่มอุปกรณ์ใน Device Registry ก่อนนะ",
@@ -41,21 +91,35 @@ class DeviceControlService:
 
         spoken_name = target_device.display_name
         target_device = self._mark_timed_out_pending_command(target_device)
-        if self._is_status_query(message):
+        esp32_device_id = target_device.esp32_device_id or device_id
+        device_status = (
+            None
+            if esp32_device_id == "virtual"
+            else self._esp32_manager.get_device_status(
+                device_id=esp32_device_id,
+                offline_timeout_seconds=self._settings.esp32_offline_timeout_seconds,
+            )
+        )
+        if self._is_status_query(normalized_message):
             return DeviceControlResult(
                 reply=self._build_status_reply(
                     spoken_name=spoken_name,
                     state=target_device.state,
                     command_status=target_device.last_command_status,
+                    esp32_device_id=esp32_device_id,
+                    board_status=device_status,
                 ),
             )
 
-        action = self._detect_action(message)
+        action = self._detect_action(normalized_message)
         if action is None:
+            board_text = ""
+            if device_status is None or not device_status.online:
+                board_text = f" ตอนนี้บอร์ด {esp32_device_id} ยังไม่ออนไลน์ด้วย"
             return DeviceControlResult(
                 reply=(
-                    "ยังไม่แน่ใจว่าจะเปิดหรือปิดอุปกรณ์ "
-                    "ลองพูดว่า เปิดไฟ หรือ ปิดไฟ ได้เลย"
+                    f"เจอ{spoken_name}แล้ว แต่ยังไม่แน่ใจว่าจะเปิดหรือปิด"
+                    f"{board_text} ลองพูดว่า เปิด{spoken_name} หรือ ปิด{spoken_name} ได้เลย"
                 ),
                 source="fallback",
             )
@@ -72,12 +136,7 @@ class DeviceControlService:
                 source="fallback",
             )
 
-        esp32_device_id = target_device.esp32_device_id or device_id
-        device_status = self._esp32_manager.get_device_status(
-            device_id=esp32_device_id,
-            offline_timeout_seconds=self._settings.esp32_offline_timeout_seconds,
-        )
-        if not device_status.online:
+        if device_status is None or not device_status.online:
             return DeviceControlResult(
                 reply=(
                     f"ตอนนี้บอร์ด {esp32_device_id} ยังไม่ออนไลน์ "
@@ -124,6 +183,84 @@ class DeviceControlService:
             ),
         )
 
+    def _handle_all_relay_message(
+        self,
+        message: str,
+        device_id: str,
+    ) -> DeviceControlResult:
+        relay_devices = [
+            device
+            for device in self._device_registry.list_devices()
+            if device.enabled and device.device_type == "relay" and device.relay_channel is not None
+        ]
+        if not relay_devices:
+            return DeviceControlResult(
+                reply="ยังไม่มี relay ที่เปิดใช้งานอยู่ในระบบ",
+                source="fallback",
+            )
+
+        esp32_device_id = relay_devices[0].esp32_device_id or device_id
+        device_status = self._esp32_manager.get_device_status(
+            device_id=esp32_device_id,
+            offline_timeout_seconds=self._settings.esp32_offline_timeout_seconds,
+        )
+
+        if self._is_status_query(message):
+            states = ", ".join(
+                self._format_device_state(
+                    spoken_name=device.display_name,
+                    state=device.state,
+                    command_status=device.last_command_status,
+                )
+                for device in relay_devices
+            )
+            if not device_status.online:
+                return DeviceControlResult(
+                    reply=(
+                        f"ตอนนี้บอร์ด {esp32_device_id} ออฟไลน์ "
+                        f"เลยยืนยันสถานะจริงไม่ได้ ล่าสุดระบบจำว่า {states}"
+                    ),
+                )
+            return DeviceControlResult(
+                reply=f"บอร์ด {esp32_device_id} ออนไลน์ สถานะล่าสุดคือ {states}",
+            )
+
+        action = self._detect_action(message)
+        if action is None:
+            return DeviceControlResult(
+                reply="ยังไม่แน่ใจว่าจะเปิดหรือปิดไฟทั้งหมด ลองพูดว่า เปิดไฟทั้งหมด หรือ ปิดไฟทั้งหมด",
+                source="fallback",
+            )
+        if not device_status.online:
+            return DeviceControlResult(
+                reply=(
+                    f"ตอนนี้บอร์ด {esp32_device_id} ยังไม่ออนไลน์ "
+                    f"เลยยังสั่ง{self._action_verb(action)}ไฟทั้งหมดไม่ได้"
+                ),
+            )
+
+        queued_count = 0
+        for relay_device in relay_devices:
+            command = self._esp32_manager.enqueue_relay_command(
+                device_id=relay_device.esp32_device_id or esp32_device_id,
+                action=action,
+                channel=relay_device.relay_channel or 1,
+                target_device_id=relay_device.id,
+                gpio_pin=relay_device.gpio_pin,
+            )
+            self._device_registry.mark_command_queued(
+                device_id=relay_device.id,
+                command_id=command.command_id,
+            )
+            queued_count += 1
+
+        return DeviceControlResult(
+            reply=(
+                f"ส่งคำสั่ง{self._action_verb(action)}ไฟทั้งหมด {queued_count} จุดให้แล้ว "
+                "กำลังรอ ESP32 ยืนยันผล"
+            ),
+        )
+
     def _is_pending_command_fresh(self, target_device: DeviceDefinition) -> bool:
         updated_at = target_device.last_updated_at
         if updated_at is None:
@@ -155,9 +292,9 @@ class DeviceControlService:
     @staticmethod
     def _detect_action(message: str) -> RelayAction | None:
         normalized_message = _normalize(message)
-        if "เปิด" in normalized_message:
+        if any(_normalize(hint) in normalized_message for hint in ACTION_ON_HINTS):
             return "on"
-        if "ปิด" in normalized_message:
+        if any(_normalize(hint) in normalized_message for hint in ACTION_OFF_HINTS):
             return "off"
         return None
 
@@ -178,19 +315,57 @@ class DeviceControlService:
     def _is_status_query(message: str) -> bool:
         normalized_message = _normalize(message)
         return any(
-            marker in normalized_message
-            for marker in (
-                "อยู่ไหม",
-                "สถานะ",
-                "เปิดอยู่",
-                "ปิดอยู่",
-                "ทำงานไหม",
-                "ติดไหม",
-            )
+            _normalize(marker) in normalized_message
+            for marker in STATUS_QUERY_MARKERS
         )
 
     @staticmethod
+    def _is_all_relay_request(message: str) -> bool:
+        normalized_message = _normalize(message)
+        has_all_hint = any(_normalize(hint) in normalized_message for hint in ALL_RELAY_HINTS)
+        has_relay_hint = any(
+            hint in normalized_message
+            for hint in ("ไฟ", "รีเลย์", "relay", "ช่อง")
+        )
+        return has_all_hint and has_relay_hint
+
+    @classmethod
     def _build_status_reply(
+        cls,
+        spoken_name: str,
+        state: str,
+        command_status: str | None,
+        esp32_device_id: str | None = None,
+        board_status: DeviceStatusResponse | None = None,
+    ) -> str:
+        state_text = cls._format_device_state(
+            spoken_name=spoken_name,
+            state=state,
+            command_status=command_status,
+        )
+        if board_status is not None and not board_status.online:
+            age_text = (
+                f" ล่าสุดเห็นเมื่อ {board_status.seconds_since_heartbeat} วินาทีก่อน"
+                if board_status.seconds_since_heartbeat is not None
+                else ""
+            )
+            return (
+                f"ตอนนี้บอร์ด {esp32_device_id} ออฟไลน์{age_text} "
+                f"เลยยืนยันสถานะจริงไม่ได้ ล่าสุดระบบจำว่า{state_text}"
+            )
+
+        if board_status is not None:
+            pending_text = (
+                f" และมีคำสั่งค้างในคิว {board_status.pending_command_count} รายการ"
+                if board_status.pending_command_count
+                else ""
+            )
+            return f"บอร์ด {esp32_device_id} ออนไลน์ ตอนนี้{state_text}{pending_text}"
+
+        return state_text
+
+    @staticmethod
+    def _format_device_state(
         spoken_name: str,
         state: str,
         command_status: str | None,
@@ -198,9 +373,9 @@ class DeviceControlService:
         if command_status == "timeout":
             return f"คำสั่งล่าสุดของ{spoken_name}หมดเวลาแล้ว ตอนนี้ยังไม่รู้สถานะจริงจาก ESP32"
         if state == "on":
-            return f"{spoken_name}เปิดอยู่ตอนนี้"
+            return f"{spoken_name}เปิดอยู่"
         if state == "off":
-            return f"{spoken_name}ปิดอยู่ตอนนี้"
+            return f"{spoken_name}ปิดอยู่"
         if state == "pending":
             if command_status == "sent":
                 return f"{spoken_name}กำลังรอ ESP32 ยืนยันผลคำสั่งล่าสุด"

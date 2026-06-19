@@ -20,6 +20,7 @@ from server.services.intent_router import IntentRouter, get_intent_router
 from server.services.llm_manager import DEFAULT_FALLBACK_REPLY, LLMManager, get_llm_manager
 from server.services.smalltalk_service import SmallTalkService, get_smalltalk_service
 from server.services.tts_service import TTSService, get_tts_service
+from server.services.voice_node_text_normalizer import normalize_voice_node_transcript
 from server.utils.reply_cleaner import clean_reply_text
 
 EXIT_WORDS: tuple[str, ...] = (
@@ -81,7 +82,7 @@ class VoiceConversationService:
         background_tasks: BackgroundTasks,
         audio_mode: Literal["background", "inline", "none"] = "background",
     ) -> VoiceChatData:
-        cleaned_text = heard_text.strip()
+        cleaned_text = normalize_voice_node_transcript(heard_text.strip())
         if not cleaned_text:
             return self._build_response(
                 heard_text="",
@@ -328,10 +329,19 @@ class VoiceConversationService:
             return "none"
 
         normalized = VoiceConversationService._normalize(message)
-        is_on = "เปิด" in normalized
+        is_on = any(hint in normalized for hint in ("เปิด", "ติดไฟ", "ให้ไฟติด"))
+        is_off = any(hint in normalized for hint in ("ปิด", "ดับ", "ดับไฟ", "ให้ไฟดับ"))
         if "ไฟ" in normalized:
-            return "light_on" if is_on else "light_off"
-        return "relay_on" if is_on else "relay_off"
+            if is_on:
+                return "light_on"
+            if is_off:
+                return "light_off"
+            return "none"
+        if is_on:
+            return "relay_on"
+        if is_off:
+            return "relay_off"
+        return "none"
 
     def _parse_voice_control_json(self, raw_text: str) -> VoiceControlDecision | None:
         payload = self._extract_first_json_object(raw_text)

@@ -23,6 +23,7 @@ output/
 cloudflared*.exe
 cloudflared*.msi
 tools/*.exe
+tools/*.zip
 
 # ESP-IDF generated files
 firmware/**/build/

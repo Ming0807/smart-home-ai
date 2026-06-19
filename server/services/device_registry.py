@@ -295,6 +295,9 @@ class DeviceRegistry:
                     continue
                 updates = self._coerce_saved_metadata(config)
                 if updates:
+                    saved_aliases = updates.get("aliases")
+                    if isinstance(saved_aliases, list):
+                        updates["aliases"] = _merge_aliases(device.aliases, saved_aliases)
                     self._devices[device_id] = device.model_copy(update=updates)
 
     def _save_initial_config(self) -> None:
@@ -363,7 +366,7 @@ class DeviceRegistry:
                     continue
                 seen.add(normalized_alias)
                 clean_aliases.append(clean_alias[:80])
-            updates["aliases"] = clean_aliases[:20]
+            updates["aliases"] = clean_aliases[:40]
 
         enabled = config.get("enabled")
         if isinstance(enabled, bool):
@@ -524,10 +527,34 @@ class DeviceRegistry:
                     "หลอดไฟ",
                     "ไฟห้องรับแขก",
                     "ไฟห้องนั่งเล่น",
+                    "ไฟห้องเล่น",
                     "ไฟรับแขก",
+                    "ไฟหลัก",
+                    "โคมไฟ",
+                    "ดวงไฟ",
+                    "แสงไฟ",
                     "ห้องรับแขก",
+                    "ห้องนั่งเล่น",
+                    "ห้องเล่น",
+                    "ไฟหนึ่ง",
+                    "ไฟ 1",
+                    "ไฟดวงแรก",
+                    "ไฟดวงหนึ่ง",
+                    "ดวงแรก",
+                    "ดวงหนึ่ง",
+                    "ไฟตัวแรก",
+                    "ไฟตัวหนึ่ง",
+                    "ตัวแรก",
+                    "ตัวหนึ่ง",
+                    "หมายเลข 1",
+                    "ช่องหนึ่ง",
+                    "ช่อง 1",
+                    "รีเลย์หนึ่ง",
+                    "รีเลย์ 1",
                     "living room light",
                     "relay 1",
+                    "relay one",
+                    "ch1",
                 ],
             ),
             (
@@ -540,8 +567,21 @@ class DeviceRegistry:
                     "ไฟห้องนอน",
                     "หลอดไฟห้องนอน",
                     "ห้องนอน",
+                    "ไฟสอง",
+                    "ไฟ 2",
+                    "ไฟดวงสอง",
+                    "ดวงสอง",
+                    "ไฟตัวสอง",
+                    "ตัวสอง",
+                    "หมายเลข 2",
+                    "ช่องสอง",
+                    "ช่อง 2",
+                    "รีเลย์สอง",
+                    "รีเลย์ 2",
                     "bedroom light",
                     "relay 2",
+                    "relay two",
+                    "ch2",
                 ],
             ),
             (
@@ -554,8 +594,21 @@ class DeviceRegistry:
                     "ไฟห้องน้ำ",
                     "หลอดไฟห้องน้ำ",
                     "ห้องน้ำ",
+                    "ไฟสาม",
+                    "ไฟ 3",
+                    "ไฟดวงสาม",
+                    "ดวงสาม",
+                    "ไฟตัวสาม",
+                    "ตัวสาม",
+                    "หมายเลข 3",
+                    "ช่องสาม",
+                    "ช่อง 3",
+                    "รีเลย์สาม",
+                    "รีเลย์ 3",
                     "bathroom light",
                     "relay 3",
+                    "relay three",
+                    "ch3",
                 ],
             ),
             (
@@ -568,8 +621,21 @@ class DeviceRegistry:
                     "ไฟห้องครัว",
                     "หลอดไฟห้องครัว",
                     "ห้องครัว",
+                    "ไฟสี่",
+                    "ไฟ 4",
+                    "ไฟดวงสี่",
+                    "ดวงสี่",
+                    "ไฟตัวสี่",
+                    "ตัวสี่",
+                    "หมายเลข 4",
+                    "ช่องสี่",
+                    "ช่อง 4",
+                    "รีเลย์สี่",
+                    "รีเลย์ 4",
                     "kitchen light",
                     "relay 4",
+                    "relay four",
+                    "ch4",
                 ],
             ),
         )
@@ -640,10 +706,39 @@ def _find_best_device_match(
             normalized_name = _normalize(name)
             if not normalized_name:
                 continue
-            if normalized_name in normalized_text and len(normalized_name) > best_score:
-                best_score = len(normalized_name)
+            if normalized_name not in normalized_text:
+                continue
+            score = _device_alias_score(normalized_name)
+            if score > best_score:
+                best_score = score
                 best_device = device
     return best_device
+
+
+def _device_alias_score(normalized_name: str) -> int:
+    broad_aliases = {
+        "ไฟ",
+        "หลอดไฟ",
+        "โคมไฟ",
+        "ดวงไฟ",
+        "แสงไฟ",
+    }
+    if normalized_name in broad_aliases:
+        return 1
+    return len(normalized_name) * 10
+
+
+def _merge_aliases(*alias_groups: list[str]) -> list[str]:
+    merged_aliases: list[str] = []
+    seen: set[str] = set()
+    for aliases in alias_groups:
+        for alias in aliases:
+            normalized_alias = _normalize(alias)
+            if not normalized_alias or normalized_alias in seen:
+                continue
+            seen.add(normalized_alias)
+            merged_aliases.append(alias)
+    return merged_aliases[:40]
 
 
 def _coerce_str(value: object) -> str | None:

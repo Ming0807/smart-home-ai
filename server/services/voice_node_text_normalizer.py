@@ -4,17 +4,14 @@ import re
 
 
 def normalize_voice_node_transcript(text: str) -> str:
-    """Correct common INMP441/Faster-Whisper Thai mistakes before intent routing.
-
-    This is intentionally used only for the ESP32-S3 Voice Node path. Browser mic
-    keeps its existing browser SpeechRecognition behavior.
-    """
+    """Correct common Thai STT mistakes before intent routing."""
     cleaned = " ".join(text.split()).strip()
     if not cleaned:
         return cleaned
 
     corrected = cleaned
     corrected = _normalize_common_particles(corrected)
+    corrected = _normalize_wake_words(corrected)
     corrected = _normalize_place_and_traffic_words(corrected)
     corrected = _normalize_weather_words(corrected)
     corrected = _normalize_sensor_words(corrected)
@@ -31,6 +28,27 @@ def _normalize_common_particles(text: str) -> str:
     return corrected
 
 
+def _normalize_wake_words(text: str) -> str:
+    corrected = text
+    replacements = {
+        "สวัดดีน": "สวัสดี",
+        "สวัดดี": "สวัสดี",
+        "สวัสดีน้ำฝา": "สวัสดีน้องฟ้า",
+        "น้ำฝา": "น้องฟ้า",
+        "น้องฟา": "น้องฟ้า",
+        "น้องฟ่า": "น้องฟ้า",
+        "นองฟ้า": "น้องฟ้า",
+        "น้องฝ่า": "น้องฟ้า",
+        "น้องฝัน": "น้องฟ้า",
+        "น้องฟัน": "น้องฟ้า",
+        "น้องฟัง": "น้องฟ้า",
+        "น้องฟาง": "น้องฟ้า",
+    }
+    for wrong, right in replacements.items():
+        corrected = corrected.replace(wrong, right)
+    return corrected
+
+
 def _normalize_place_and_traffic_words(text: str) -> str:
     corrected = text
     replacements = {
@@ -39,10 +57,15 @@ def _normalize_place_and_traffic_words(text: str) -> str:
         "กรุงเทพฯ": "กรุงเทพ",
         "ยาละ": "ยะลา",
         "ยะล่ะ": "ยะลา",
+        "ยักล่า": "ยะลา",
+        "อยากล่า": "ยะลา",
         "เยลา": "ยะลา",
         "เยล่า": "ยะลา",
         "หาดใหย่": "หาดใหญ่",
         "สนามบีน": "สนามบิน",
+        "รอดติด": "รถติด",
+        "รู้ดิด": "รถติด",
+        "รถดิด": "รถติด",
     }
     for wrong, right in replacements.items():
         corrected = corrected.replace(wrong, right)
@@ -65,11 +88,16 @@ def _normalize_weather_words(text: str) -> str:
             "ตกไม่",
             "จะตก",
             "ฝนตก",
+            "ฝ่อน",
+            "ฝ่น",
             "ฟนตก",
             "โฟนตก",
             "ผมจะตก",
+            "จัดตก",
             "วันนี้",
             "อากาศ",
+            "อาการ",
+            "ร้อน",
         )
     )
     if not has_rain_context:
@@ -88,6 +116,14 @@ def _normalize_weather_words(text: str) -> str:
         "ฟนตกไม่": "ฝนตกไหม",
         "ฝนจะตกไม่": "ฝนจะตกไหม",
         "ฝนตกไม่": "ฝนตกไหม",
+        "ฝ่อนจัดตกมาย": "ฝนจะตกไหม",
+        "ฝ่นจัดตกมาก": "ฝนจะตกไหม",
+        "ฝนจัดตกมาก": "ฝนจะตกไหม",
+        "ฝนจัดตกมาย": "ฝนจะตกไหม",
+        "อาการร้อนมาย": "อากาศร้อนไหม",
+        "อาการร้อน": "อากาศร้อนไหม",
+        "ผักกาทร้อนมัยมัยมัยนี้": "อากาศร้อนไหมวันนี้",
+        "ผักกาทร้อน": "อากาศร้อน",
     }
     for wrong, right in replacements.items():
         corrected = corrected.replace(wrong, right)
@@ -205,6 +241,46 @@ def _normalize_news_words(text: str) -> str:
 
 def _normalize_device_words(text: str) -> str:
     corrected = text
+    replacements = {
+        "BIT FIRE": "ปิดไฟ",
+        "Bit Fire": "ปิดไฟ",
+        "bit fire": "ปิดไฟ",
+        "บิทไฟ": "ปิดไฟ",
+        "บิดไฟ": "ปิดไฟ",
+        "เกิดไฟ": "เปิดไฟ",
+        "เกีดไฟ": "เปิดไฟ",
+        "เกินไฟ": "เปิดไฟ",
+        "เถอะ ไฟ": "เปิดไฟ",
+        "เถอะไฟ": "เปิดไฟ",
+        "เถิดไฟ": "เปิดไฟ",
+        "เปิด ไฟ": "เปิดไฟ",
+        "ปิด ไฟ": "ปิดไฟ",
+        "เปิดไฟไง": "เปิดไฟ",
+        "ติดไฟให้หน่อย": "เปิดไฟให้หน่อย",
+        "ดับฟาย": "ดับไฟ",
+        "ดับไฟง่าย": "ดับไฟ",
+        "ใคร ห้อง": "ไฟ ห้อง",
+        "ใครห้อง": "ไฟห้อง",
+        "ห้องน้า": "ห้องน้ำ",
+        "ห้องนังเล่น": "ห้องนั่งเล่น",
+        "ห้องนั่งเลน": "ห้องนั่งเล่น",
+        "รีเล": "รีเลย์",
+        "รีเรย์": "รีเลย์",
+    }
+    for wrong, right in replacements.items():
+        corrected = corrected.replace(wrong, right)
+    corrected = corrected.replace(
+        "\u0e40\u0e1b\u0e34\u0e14\u0e44\u0e1f\u0e07\u0e48\u0e32\u0e22",
+        "\u0e40\u0e1b\u0e34\u0e14\u0e44\u0e1f\u0e43\u0e2b\u0e49",
+    )
+    corrected = corrected.replace(
+        "\u0e1b\u0e34\u0e14\u0e44\u0e1f\u0e07\u0e48\u0e32\u0e22",
+        "\u0e1b\u0e34\u0e14\u0e44\u0e1f\u0e43\u0e2b\u0e49",
+    )
+    corrected = corrected.replace(
+        "\u0e44\u0e27\u0e49\u0e2b\u0e49\u0e2d\u0e07",
+        "\u0e44\u0e1f\u0e2b\u0e49\u0e2d\u0e07",
+    )
     corrected = corrected.replace("เปีดไฟ", "เปิดไฟ")
     corrected = corrected.replace("เปิดฟาย", "เปิดไฟ")
     corrected = corrected.replace("ปิดฟาย", "ปิดไฟ")
